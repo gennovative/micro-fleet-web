@@ -14,7 +14,6 @@
     "back-lib-common-constants": "git+ssh://git@bitbucket.org:firstinteractive/back-lib-common-constants.git#1.1.0",
     "back-lib-common-contracts": "git+ssh://git@bitbucket.org:firstinteractive/back-lib-common-contracts.git#1.1.0",
     "back-lib-common-util": "git+ssh://git@bitbucket.org:firstinteractive/back-lib-common-util.git#1.1.1",
-    "back-lib-id-generator": "git+ssh://git@bitbucket.org:firstinteractive/back-lib-id-generator.git#0.1.0",
     "trails": "^2.0.0",
     "winston": "^2.3.1"
   },

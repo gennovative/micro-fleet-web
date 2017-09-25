@@ -8,6 +8,9 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -21,14 +24,12 @@ const inversify_1 = require("inversify");
 const TrailsApp = require("trails");
 const TrailsController = require("trails-controller");
 const back_lib_common_util_1 = require("back-lib-common-util");
-const back_lib_id_generator_1 = require("back-lib-id-generator");
 inversify_1.decorate(back_lib_common_util_1.injectable(), TrailsController);
 let RestControllerBase = class RestControllerBase extends TrailsController {
-    constructor(trailsApp, _ClassDTO, _repo, _idProvider) {
+    constructor(trailsApp, _ClassDTO, _repo) {
         super(trailsApp);
         this._ClassDTO = _ClassDTO;
         this._repo = _repo;
-        this._idProvider = _idProvider;
     }
     get validator() {
         return this._ClassDTO['validator'];
@@ -211,7 +212,10 @@ let RestControllerBase = class RestControllerBase extends TrailsController {
 };
 RestControllerBase = __decorate([
     back_lib_common_util_1.injectable(),
-    __metadata("design:paramtypes", [TrailsApp, Object, Object, back_lib_id_generator_1.IdProvider])
+    __param(0, back_lib_common_util_1.unmanaged()),
+    __param(1, back_lib_common_util_1.unmanaged()),
+    __param(2, back_lib_common_util_1.unmanaged()),
+    __metadata("design:paramtypes", [TrailsApp, Object, Object])
 ], RestControllerBase);
 exports.RestControllerBase = RestControllerBase;
 

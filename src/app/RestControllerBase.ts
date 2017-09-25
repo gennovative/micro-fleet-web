@@ -3,13 +3,11 @@ import { decorate } from 'inversify';
 import TrailsApp = require('trails');
 import TrailsController = require('trails-controller');
 
-import { injectable, inject, Guard } from 'back-lib-common-util';
+import { injectable, inject, unmanaged, Guard } from 'back-lib-common-util';
 import {
 	SettingItem, SettingItemDataType, ISoftDelRepository,
 	ModelAutoMapper, JoiModelValidator, PagedArray
 } from 'back-lib-common-contracts';
-import { IdProvider, Types } from 'back-lib-id-generator';
-
 
 decorate(injectable(), TrailsController);
 
@@ -17,10 +15,9 @@ decorate(injectable(), TrailsController);
 export abstract class RestControllerBase<TModel extends IModelDTO> extends TrailsController {
 
 	constructor(
-		trailsApp: TrailsApp,
-		protected _ClassDTO?: { new(): TModel },
-		protected _repo?: ISoftDelRepository<TModel, any, any>,
-		protected _idProvider?: IdProvider
+		@unmanaged() trailsApp: TrailsApp,
+		@unmanaged() protected _ClassDTO?: { new(): TModel },
+		@unmanaged() protected _repo?: ISoftDelRepository<TModel, any, any>
 	) {
 		super(trailsApp);
 	}

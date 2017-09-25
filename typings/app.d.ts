@@ -6,16 +6,14 @@ declare module 'back-lib-common-web/dist/app/RestControllerBase' {
 	import TrailsApp = require('trails');
 	import TrailsController = require('trails-controller');
 	import { ISoftDelRepository, ModelAutoMapper, JoiModelValidator } from 'back-lib-common-contracts';
-	import { IdProvider } from 'back-lib-id-generator';
 	export abstract class RestControllerBase<TModel extends IModelDTO> extends TrailsController {
 	    protected _ClassDTO: {
 	        new (): TModel;
 	    };
 	    protected _repo: ISoftDelRepository<TModel, any, any>;
-	    protected _idProvider: IdProvider;
 	    constructor(trailsApp: TrailsApp, _ClassDTO?: {
 	        new (): TModel;
-	    }, _repo?: ISoftDelRepository<TModel, any, any>, _idProvider?: IdProvider);
+	    }, _repo?: ISoftDelRepository<TModel, any, any>);
 	    protected readonly validator: JoiModelValidator<TModel>;
 	    protected readonly translator: ModelAutoMapper<TModel>;
 	    countAll(req: express.Request, res: express.Response): Promise<void>;
