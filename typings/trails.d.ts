@@ -45,7 +45,7 @@ declare module 'trails' {
 			log?: winston.LoggerStatic | any;
 			main?: any;
 			policies?: any;
-			routes?: IRouteConfiguration;
+			routes?: IRouteConfiguration[];
 			session?: any;
 			views?: any;
 			web?: any;

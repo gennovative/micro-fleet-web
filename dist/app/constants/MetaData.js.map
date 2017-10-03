@@ -1,0 +1,1 @@
+{"version":3,"sources":["app/constants/MetaData.ts"],"names":[],"mappings":";;AAAA;;AACwB,mBAAU,GAAG,uBAAuB,CAAC;AACrC,eAAM,GAAG,mBAAmB,CAAC;AAFrD,4BAGC","file":"MetaData.js","sourcesContent":["export class MetaData {\r\n\tpublic static readonly CONTROLLER = 'common-web:controller';\r\n\tpublic static readonly ACTION = 'common-web:action';\r\n}"]}

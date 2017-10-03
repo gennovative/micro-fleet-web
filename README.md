@@ -20,6 +20,11 @@ See more examples and usage guide in unit test.
 ---
 ## VERSIONS
 
+### 0.2.0
+- Split **RestControllerBase** into **RestCRUDControllerBase** (inherits **RestControllerBase**).
+- **RestControllerBase** provides basic response actions.
+- **RestCRUDControllerBase** provides CRUD actions and function `CreateRouteConfigs` to generate route configs.
+
 ### 0.1.0
 - **TrailsServerAddOn**: Service addon for igniting Trails server.
 - **RestControllerBase**: Base controller classes that handles REST CRUD endpoints.

@@ -11,211 +11,132 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 const inversify_1 = require("inversify");
 const TrailsApp = require("trails");
-const TrailsController = require("trails-controller");
+const TrailsController = require("trails/controller");
 const back_lib_common_util_1 = require("back-lib-common-util");
 inversify_1.decorate(back_lib_common_util_1.injectable(), TrailsController);
+inversify_1.decorate(back_lib_common_util_1.unmanaged(), TrailsController, 0);
 let RestControllerBase = class RestControllerBase extends TrailsController {
-    constructor(trailsApp, _ClassDTO, _repo) {
+    constructor(trailsApp) {
         super(trailsApp);
-        this._ClassDTO = _ClassDTO;
-        this._repo = _repo;
     }
-    get validator() {
-        return this._ClassDTO['validator'];
+    /**
+     * Generates Trails route configs to put in file app/config/routes.js
+     * @param {string} method Case-insensitive HTTP verb such as GET, POST, DELETE...
+     * @param {string} action Action name of this route.
+     * @param {string} controllerDepIdentifier Key to look up and resolve from dependency container.
+     * @param {string} pathPrefix Path prefix with heading slash and without trailing slash. Eg: /api/v1
+     * @param {HandlerContainer} container Handler container
+     * @param {any} config Additional configuration, such as precondition policy...
+     */
+    static createRoute(method, action, controllerDepIdentifier, pathPrefix = '', container = null, config = null) {
+        container = container || back_lib_common_util_1.HandlerContainer.instance;
+        return {
+            method,
+            path: `${pathPrefix}/:tenant/${action}`,
+            handler: container.register(action, controllerDepIdentifier),
+            config
+        };
     }
-    get translator() {
-        return this._ClassDTO['translator'];
+    /*** SUCCESS ***/
+    /**
+     * Responds as Accepted with status code 202 and optional data.
+     * @param res Express response object.
+     * @param data Data to optionally return to client.
+     */
+    accepted(res, data) {
+        this.send(res, data, 202);
     }
-    countAll(req, res) {
-        return __awaiter(this, void 0, void 0, function* () {
-            console.log('Counting model');
-            let payload = req.body();
-            try {
-                let nRows = yield this._repo.countAll(payload.options);
-                this.reply(nRows, res);
-            }
-            catch (err) {
-                this.internalError(err, res);
-            }
-        });
+    /**
+     * Responds as Created with status code 201 and optional data.
+     * @param res Express response object.
+     * @param data Data to optionally return to client.
+     */
+    created(res, data) {
+        this.send(res, data, 201);
     }
-    create(req, res) {
-        return __awaiter(this, void 0, void 0, function* () {
-            console.log('Creating model');
-            let payload = req.body(), dto = this.translator.whole(payload.model, {
-                errorCallback: err => this.validationError(err, res)
-            });
-            if (!dto) {
-                return;
-            }
-            try {
-                dto = yield this._repo.create(dto, payload.options);
-                this.reply(dto, res);
-            }
-            catch (err) {
-                this.internalError(err, res);
-            }
-        });
+    /**
+     * Responds as OK with status code 200 and optional data.
+     * @param res Express response object.
+     * @param data Data to optionally return to client.
+     */
+    ok(res, data) {
+        this.send(res, data, 200);
     }
-    deleteHard(req, res) {
-        return __awaiter(this, void 0, void 0, function* () {
-            console.log('Hard deleting model');
-            let payload = req.body(), [err, pk] = this.validator.pk(payload.pk);
-            if (!err) {
-                this.validationError(err, res);
-                return;
-            }
-            try {
-                let nRows = yield this._repo.deleteHard(pk, payload.options);
-                this.reply(nRows, res);
-            }
-            catch (err) {
-                this.internalError(err, res);
-            }
-        });
+    /*** CLIENT ERRORS ***/
+    /**
+     * Responds with error status code (default 400) and writes error to server log,
+     * then returned it to client.
+     * @param res Express response object.
+     * @param returnErr Error to dump to server log, and returned to client.
+     * @param statusCode HTTP status code. Must be 4xx. Default is 400.
+     * @param shouldLogErr Whether to write error to server log (eg: Illegal attempt to read/write resource...). Default to false.
+     */
+    clientError(res, returnErr, statusCode = 400, shouldLogErr = false) {
+        shouldLogErr && super.log.error(returnErr);
+        statusCode = (400 <= statusCode && statusCode <= 499) ? statusCode : 400;
+        res.status(statusCode).send(returnErr);
     }
-    deleteSoft(req, res) {
-        return __awaiter(this, void 0, void 0, function* () {
-            console.log('Soft deleting model');
-            let payload = req.body(), [err, pk] = this.validator.pk(payload.pk);
-            if (!err) {
-                this.validationError(err, res);
-                return;
-            }
-            try {
-                let nRows = yield this._repo.deleteSoft(pk, payload.options);
-                this.reply(nRows, res);
-            }
-            catch (err) {
-                this.internalError(err, res);
-            }
-        });
+    /**
+     * Responds as Forbidden with status code 403 and optional error message.
+     * @param res Express response object.
+     * @param returnErr Data to optionally return to client.
+     */
+    forbidden(res, returnErr) {
+        this.clientError(res, returnErr, 403);
     }
-    exists(req, res) {
-        return __awaiter(this, void 0, void 0, function* () {
-            console.log('Checking existence');
-            let payload = req.body();
-            try {
-                let gotIt = yield this._repo.exists(payload.props, payload.options);
-                this.reply(gotIt, res);
-            }
-            catch (err) {
-                this.internalError(err, res);
-            }
-        });
+    /**
+     * Responds as Not Found with status code 404 and optional error message.
+     * @param res Express response object.
+     * @param returnErr Data to optionally return to client.
+     */
+    notFound(res, returnErr) {
+        this.clientError(res, returnErr, 404);
     }
-    findByPk(req, res) {
-        return __awaiter(this, void 0, void 0, function* () {
-            console.log('Finding model');
-            let payload = req.body(), [err, pk] = this.validator.pk(payload.pk);
-            if (!err) {
-                this.validationError(err, res);
-                return;
-            }
-            try {
-                let dto = yield this._repo.findByPk(pk, payload.options);
-                this.reply(dto, res);
-            }
-            catch (err) {
-                this.internalError(err, res);
-            }
-        });
+    /**
+     * Responds as Unauthorized with status code 401 and optional error message.
+     * @param res Express response object.
+     * @param returnErr Data to optionally return to client.
+     */
+    unauthorized(res, returnErr) {
+        this.clientError(res, returnErr, 401);
     }
-    recover(req, res) {
-        return __awaiter(this, void 0, void 0, function* () {
-            console.log('Recovering model');
-            let payload = req.body(), [err, pk] = this.validator.pk(payload.pk);
-            if (!err) {
-                this.validationError(err, res);
-                return;
-            }
-            try {
-                let nRows = yield this._repo.recover(pk, payload.options);
-                this.reply(nRows, res);
-            }
-            catch (err) {
-                this.internalError(err, res);
-            }
-        });
+    /**
+     * Responds error Precondition Failed with status code 412 and
+     * then returned error to client.
+     * @param res Express response object.
+     * @param returnErr Error to returned to client.
+     */
+    validationError(res, returnErr) {
+        this.clientError(res, returnErr, 412);
     }
-    page(req, res) {
-        return __awaiter(this, void 0, void 0, function* () {
-            console.log('Paging model');
-            let payload = req.body();
-            try {
-                let models = yield this._repo.page(payload.pageIndex, payload.pageSize, payload.options);
-                this.reply(models, res);
-            }
-            catch (err) {
-                this.internalError(err, res);
-            }
-        });
-    }
-    patch(req, res) {
-        return __awaiter(this, void 0, void 0, function* () {
-            console.log('Patching model');
-            let payload = req.body(), model = this.translator.partial(payload.model, {
-                errorCallback: err => this.validationError(err, res)
-            });
-            if (!model) {
-                return;
-            }
-            try {
-                let updatedProps = yield this._repo.patch(model, payload.options);
-                this.reply(updatedProps, res);
-            }
-            catch (err) {
-                this.internalError(err, res);
-            }
-        });
-    }
-    update(req, res) {
-        return __awaiter(this, void 0, void 0, function* () {
-            console.log('Updating model');
-            let payload = req.body(), model = this.translator.whole(payload.model, {
-                errorCallback: err => this.validationError(err, res)
-            });
-            if (!model) {
-                return;
-            }
-            try {
-                let updatedModel = yield this._repo.update(model, payload.options);
-                this.reply(updatedModel, res);
-            }
-            catch (err) {
-                this.internalError(err, res);
-            }
-        });
-    }
-    validationError(err, res) {
-        super.log.error(err);
-        res.status(412).send(err); // Precondition Failed
-    }
-    internalError(err, res) {
-        super.log.error(err);
+    /*** SERVER ERRORS ***/
+    /**
+     * Responds as Internal Error with status code 500 and
+     * writes error to server log. The error is not returned to client.
+     * @param res Express response object.
+     * @param logErr Error to dump to server log, but not returned to client.
+     */
+    internalError(res, logErr) {
+        super.log.error(logErr);
         res.status(500).send('server.error.internal');
     }
-    reply(result, res) {
-        res.status(200).send(result);
+    /**
+     * Sends response to client.
+     * @param res Express response object.
+     * @param data Data to return to client.
+     * @param statusCode HTTP status code. Default is 200.
+     */
+    send(res, data, statusCode) {
+        return res.status(statusCode).send(data);
     }
 };
 RestControllerBase = __decorate([
     back_lib_common_util_1.injectable(),
     __param(0, back_lib_common_util_1.unmanaged()),
-    __param(1, back_lib_common_util_1.unmanaged()),
-    __param(2, back_lib_common_util_1.unmanaged()),
-    __metadata("design:paramtypes", [TrailsApp, Object, Object])
+    __metadata("design:paramtypes", [TrailsApp])
 ], RestControllerBase);
 exports.RestControllerBase = RestControllerBase;
 

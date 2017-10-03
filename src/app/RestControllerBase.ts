@@ -1,197 +1,165 @@
 import * as express from 'express';
 import { decorate } from 'inversify';
 import TrailsApp = require('trails');
-import TrailsController = require('trails-controller');
+import TrailsController = require('trails/controller');
 
-import { injectable, inject, unmanaged, Guard } from 'back-lib-common-util';
+import { injectable, inject, unmanaged, Guard, HandlerContainer } from 'back-lib-common-util';
 import {
 	SettingItem, SettingItemDataType, ISoftDelRepository,
 	ModelAutoMapper, JoiModelValidator, PagedArray
 } from 'back-lib-common-contracts';
 
+
+export type TrailsRouteConfigItem = {
+	method: string | string[],
+	path: string,
+	handler: string | Function,
+	config?: any
+};
+
+
 decorate(injectable(), TrailsController);
+decorate(unmanaged(), TrailsController, 0);
 
 @injectable()
-export abstract class RestControllerBase<TModel extends IModelDTO> extends TrailsController {
+export abstract class RestControllerBase extends TrailsController {
 
-	constructor(
-		@unmanaged() trailsApp: TrailsApp,
-		@unmanaged() protected _ClassDTO?: { new(): TModel },
-		@unmanaged() protected _repo?: ISoftDelRepository<TModel, any, any>
-	) {
+	/**
+	 * Generates Trails route configs to put in file app/config/routes.js
+	 * @param {string} method Case-insensitive HTTP verb such as GET, POST, DELETE...
+	 * @param {string} action Action name of this route.
+	 * @param {string} controllerDepIdentifier Key to look up and resolve from dependency container.
+	 * @param {string} pathPrefix Path prefix with heading slash and without trailing slash. Eg: /api/v1
+	 * @param {HandlerContainer} container Handler container
+	 * @param {any} config Additional configuration, such as precondition policy...
+	 */
+	public static createRoute(method: string, action: string,
+			controllerDepIdentifier: string,
+			pathPrefix: string = '',
+			container: HandlerContainer = null,
+			config: any = null
+		): TrailsRouteConfigItem {
+
+		container = container || HandlerContainer.instance;
+		return {
+			method,
+			path: `${pathPrefix}/:tenant/${action}`,
+			handler: container.register(action, controllerDepIdentifier),
+			config
+		};
+	}
+
+
+	constructor(@unmanaged() trailsApp: TrailsApp) {
 		super(trailsApp);
 	}
 
-	protected get validator(): JoiModelValidator<TModel> {
-		return this._ClassDTO['validator'];
+
+	/*** SUCCESS ***/
+
+	/**
+	 * Responds as Accepted with status code 202 and optional data.
+	 * @param res Express response object.
+	 * @param data Data to optionally return to client.
+	 */
+	protected accepted(res: express.Response, data?: any): void {
+		this.send(res, data, 202);
 	}
 
-	protected get translator(): ModelAutoMapper<TModel> {
-		return this._ClassDTO['translator'];
+	/**
+	 * Responds as Created with status code 201 and optional data.
+	 * @param res Express response object.
+	 * @param data Data to optionally return to client.
+	 */
+	protected created(res: express.Response, data?: any): void {
+		this.send(res, data, 201);
 	}
 
-
-	public async countAll(req: express.Request, res: express.Response) {
-		console.log('Counting model');
-		let payload = req.body();
-		try {
-			let nRows: number = await this._repo.countAll(payload.options);
-			this.reply(nRows, res);
-		} catch (err) {
-			this.internalError(err, res);
-		}
-	}
-
-	public async create(req: express.Request, res: express.Response) {
-		console.log('Creating model');
-		let payload = req.body(),
-			dto: TModel = this.translator.whole(payload.model, {
-				errorCallback: err => this.validationError(err, res)
-			});
-		if (!dto) { return; }
-
-		try {
-			dto = await this._repo.create(dto, payload.options);
-			this.reply(dto, res);
-		} catch (err) {
-			this.internalError(err, res);
-		}
-	}
-
-	public async deleteHard(req: express.Request, res: express.Response) {
-		console.log('Hard deleting model');
-		let payload = req.body(),
-			[err, pk] = this.validator.pk(payload.pk);
-		if (!err) {
-			this.validationError(err, res);
-			return;
-		}
-
-		try {
-			let nRows: number = await this._repo.deleteHard(pk, payload.options);
-			this.reply(nRows, res);
-		} catch (err) {
-			this.internalError(err, res);
-		}
-	}
-
-	public async deleteSoft(req: express.Request, res: express.Response) {
-		console.log('Soft deleting model');
-		let payload = req.body(),
-			[err, pk] = this.validator.pk(payload.pk);
-		if (!err) {
-			this.validationError(err, res);
-			return;
-		}
-
-		try {
-			let nRows: number = await this._repo.deleteSoft(pk, payload.options);
-			this.reply(nRows, res);
-		} catch (err) {
-			this.internalError(err, res);
-		}
-	}
-
-	public async exists(req: express.Request, res: express.Response) {
-		console.log('Checking existence');
-		let payload = req.body();
-		try {
-			let gotIt: boolean = await this._repo.exists(payload.props, payload.options);
-			this.reply(gotIt, res);
-		} catch (err) {
-			this.internalError(err, res);
-		}
-	}
-
-	public async findByPk(req: express.Request, res: express.Response) {
-		console.log('Finding model');
-		let payload = req.body(),
-			[err, pk] = this.validator.pk(payload.pk);
-		if (!err) {
-			this.validationError(err, res);
-			return;
-		}
-
-		try {
-			let dto: TModel = await this._repo.findByPk(pk, payload.options);
-			this.reply(dto, res);
-		} catch (err) {
-			this.internalError(err, res);
-		}
-	}
-
-	public async recover(req: express.Request, res: express.Response) {
-		console.log('Recovering model');
-		let payload = req.body(),
-			[err, pk] = this.validator.pk(payload.pk);
-		if (!err) {
-			this.validationError(err, res);
-			return;
-		}
-
-		try {
-			let nRows: number = await this._repo.recover(pk, payload.options);
-			this.reply(nRows, res);
-		} catch (err) {
-			this.internalError(err, res);
-		}
-	}
-
-	public async page(req: express.Request, res: express.Response) {
-		console.log('Paging model');
-		let payload = req.body();
-		try {
-			let models: PagedArray<TModel> = await this._repo.page(payload.pageIndex, payload.pageSize, payload.options);
-			this.reply(models, res);
-		} catch (err) {
-			this.internalError(err, res);
-		}
-	}
-
-	public async patch(req: express.Request, res: express.Response) {
-		console.log('Patching model');
-		let payload = req.body(),
-			model = this.translator.partial(payload.model, {
-				errorCallback: err => this.validationError(err, res)
-			});
-		if (!model) { return; }
-
-		try {
-			let updatedProps: Partial<TModel> = await this._repo.patch(model, payload.options);
-			this.reply(updatedProps, res);
-		} catch (err) {
-			this.internalError(err, res);
-		}
-	}
-
-	public async update(req: express.Request, res: express.Response) {
-		console.log('Updating model');
-		let payload = req.body(),
-			model: TModel = this.translator.whole(payload.model, {
-				errorCallback: err => this.validationError(err, res)
-			});
-		if (!model) { return; }
-
-		try {
-			let updatedModel: TModel = await this._repo.update(model, payload.options);
-			this.reply(updatedModel, res);
-		} catch (err) {
-			this.internalError(err, res);
-		}
+	/**
+	 * Responds as OK with status code 200 and optional data.
+	 * @param res Express response object.
+	 * @param data Data to optionally return to client.
+	 */
+	protected ok(res: express.Response, data?: any): void {
+		this.send(res, data, 200);
 	}
 
 
-	protected validationError(err, res: express.Response): void {
-		super.log.error(err);
-		res.status(412).send(err); // Precondition Failed
+	/*** CLIENT ERRORS ***/
+
+	/**
+	 * Responds with error status code (default 400) and writes error to server log,
+	 * then returned it to client.
+	 * @param res Express response object.
+	 * @param returnErr Error to dump to server log, and returned to client.
+	 * @param statusCode HTTP status code. Must be 4xx. Default is 400.
+	 * @param shouldLogErr Whether to write error to server log (eg: Illegal attempt to read/write resource...). Default to false.
+	 */
+	protected clientError(res: express.Response, returnErr: any, statusCode: number = 400, shouldLogErr: boolean = false): void {
+		shouldLogErr && super.log.error(returnErr);
+		statusCode = (400 <= statusCode && statusCode <= 499) ? statusCode : 400;
+		res.status(statusCode).send(returnErr);
 	}
 
-	protected internalError(err, res: express.Response): void {
-		super.log.error(err);
+	/**
+	 * Responds as Forbidden with status code 403 and optional error message.
+	 * @param res Express response object.
+	 * @param returnErr Data to optionally return to client.
+	 */
+	protected forbidden(res: express.Response, returnErr?: any): void {
+		this.clientError(res, returnErr, 403);
+	}
+
+	/**
+	 * Responds as Not Found with status code 404 and optional error message.
+	 * @param res Express response object.
+	 * @param returnErr Data to optionally return to client.
+	 */
+	protected notFound(res: express.Response, returnErr?: any): void {
+		this.clientError(res, returnErr, 404);
+	}
+
+	/**
+	 * Responds as Unauthorized with status code 401 and optional error message.
+	 * @param res Express response object.
+	 * @param returnErr Data to optionally return to client.
+	 */
+	protected unauthorized(res: express.Response, returnErr?: any): void {
+		this.clientError(res, returnErr, 401);
+	}
+
+	/**
+	 * Responds error Precondition Failed with status code 412 and
+	 * then returned error to client.
+	 * @param res Express response object.
+	 * @param returnErr Error to returned to client.
+	 */
+	protected validationError(res: express.Response, returnErr: any): void {
+		this.clientError(res, returnErr, 412);
+	}
+
+
+	/*** SERVER ERRORS ***/
+
+	/**
+	 * Responds as Internal Error with status code 500 and
+	 * writes error to server log. The error is not returned to client.
+	 * @param res Express response object.
+	 * @param logErr Error to dump to server log, but not returned to client.
+	 */
+	protected internalError(res: express.Response, logErr: any): void {
+		super.log.error(logErr);
 		res.status(500).send('server.error.internal');
 	}
 
-	protected reply(result, res: express.Response): void {
-		res.status(200).send(result);
+
+	/**
+	 * Sends response to client.
+	 * @param res Express response object.
+	 * @param data Data to return to client.
+	 * @param statusCode HTTP status code. Default is 200.
+	 */
+	protected send(res: express.Response, data: any, statusCode: number): express.Response {
+		return res.status(statusCode).send(data);
 	}
 }
