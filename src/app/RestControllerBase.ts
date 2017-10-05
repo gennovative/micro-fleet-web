@@ -1,9 +1,8 @@
 import * as express from 'express';
-import { decorate } from 'inversify';
 import TrailsApp = require('trails');
 import TrailsController = require('trails/controller');
 
-import { injectable, inject, unmanaged, Guard, HandlerContainer } from 'back-lib-common-util';
+import { injectable, decorate, unmanaged, HandlerContainer } from 'back-lib-common-util';
 import {
 	SettingItem, SettingItemDataType, ISoftDelRepository,
 	ModelAutoMapper, JoiModelValidator, PagedArray
@@ -16,7 +15,6 @@ export type TrailsRouteConfigItem = {
 	handler: string | Function,
 	config?: any
 };
-
 
 decorate(injectable(), TrailsController);
 decorate(unmanaged(), TrailsController, 0);

@@ -12,12 +12,11 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const inversify_1 = require("inversify");
 const TrailsApp = require("trails");
 const TrailsController = require("trails/controller");
 const back_lib_common_util_1 = require("back-lib-common-util");
-inversify_1.decorate(back_lib_common_util_1.injectable(), TrailsController);
-inversify_1.decorate(back_lib_common_util_1.unmanaged(), TrailsController, 0);
+back_lib_common_util_1.decorate(back_lib_common_util_1.injectable(), TrailsController);
+back_lib_common_util_1.decorate(back_lib_common_util_1.unmanaged(), TrailsController, 0);
 let RestControllerBase = class RestControllerBase extends TrailsController {
     constructor(trailsApp) {
         super(trailsApp);

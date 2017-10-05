@@ -28,13 +28,13 @@ function proxyGetter(proto: any, key: string, resolve: () => any) {
 	});
 }
 
-export type LazyInjectDecorator = (depIdentifier: string) => Function;
+export type LazyInjectDecorator = (depIdentifier: symbol | string) => Function;
 
 /**
  * Injects value to the decorated property. 
  * Used to decorate properties of a class that's cannot be resolved by dependency container.
  */
-export function lazyInject(depIdentifier: string): Function {
+export function lazyInject(depIdentifier: symbol | string): Function {
 	return function (proto: any, key: string): void {
 		let resolve = () => serverContext.dependencyContainer.resolve(depIdentifier);
 		proxyGetter(proto, key, resolve);

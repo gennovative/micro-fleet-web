@@ -96,57 +96,12 @@ declare module 'back-lib-common-web/dist/app/RestControllerBase' {
 	}
 
 }
-declare module 'back-lib-common-web/dist/app/TenantResolver' {
-	import { CacheProvider } from 'back-lib-cache-provider';
-	/**
-	 * Provides method to look up tenant ID from tenant slug.
-	 */
-	export class TenantResolver {
-	    protected _cache: CacheProvider;
-	    constructor(_cache: CacheProvider);
-	    /**
-	     * Looks up tenant ID from given slug.
-	     * @param tenantSlug
-	     */
-	    resolve(tenantSlug: string): Promise<BigSInt>;
-	}
-
-}
-declare module 'back-lib-common-web/dist/app/RestCRUDControllerBase' {
-	/// <reference types="express" />
-	import * as express from 'express';
-	import * as TrailsApp from 'trails';
-	import { ISoftDelRepository, ModelAutoMapper, JoiModelValidator } from 'back-lib-common-contracts';
-	import { RestControllerBase, TrailsRouteConfigItem } from 'back-lib-common-web/dist/app/RestControllerBase';
-	import { TenantResolver } from 'back-lib-common-web/dist/app/TenantResolver';
-	export abstract class RestCRUDControllerBase<TModel extends IModelDTO> extends RestControllerBase {
-	    protected _tenantResolver: TenantResolver;
-	    protected _ClassDTO: {
-	        new (): TModel;
-	    };
-	    protected _repo: ISoftDelRepository<TModel, any, any>;
-	    /**
-	     * Generates Trails routes for CRUD operations.
-	     * @param {string} controllerDepIdentifier Key to look up and resolve from dependency container.
-	     * @param {boolean} isSoftDel Whether to add endpoints for `deleteSoft` and `recover`.
-	     * @param {string} pathPrefix Path prefix with heading slash and without trailing slash. Eg: /api/v1
-	     */
-	    static createRoutes(controllerDepIdentifier: string, isSoftDel: boolean, pathPrefix?: string): TrailsRouteConfigItem[];
-	    constructor(trailsApp: TrailsApp, _tenantResolver: TenantResolver, _ClassDTO?: {
-	        new (): TModel;
-	    }, _repo?: ISoftDelRepository<TModel, any, any>);
-	    protected readonly validator: JoiModelValidator<TModel>;
-	    protected readonly translator: ModelAutoMapper<TModel>;
-	    	    countAll(req: express.Request, res: express.Response): Promise<void>;
-	    create(req: express.Request, res: express.Response): Promise<void>;
-	    deleteHard(req: express.Request, res: express.Response): Promise<void>;
-	    deleteSoft(req: express.Request, res: express.Response): Promise<void>;
-	    exists(req: express.Request, res: express.Response): Promise<void>;
-	    findByPk(req: express.Request, res: express.Response): Promise<void>;
-	    recover(req: express.Request, res: express.Response): Promise<void>;
-	    page(req: express.Request, res: express.Response): Promise<void>;
-	    patch(req: express.Request, res: express.Response): Promise<void>;
-	    update(req: express.Request, res: express.Response): Promise<void>;
+declare module 'back-lib-common-web/dist/app/constants/MetaData' {
+	export class MetaData {
+	    static readonly CONTROLLER: string;
+	    static readonly CONTROLLER_FILTER: string;
+	    static readonly ACTION: string;
+	    static readonly ACTION_FILTER: string;
 	}
 
 }
@@ -171,10 +126,146 @@ declare module 'back-lib-common-web/dist/app/ServerContext' {
 	export const serverContext: ServerContext;
 
 }
-declare module 'back-lib-common-web/dist/app/constants/MetaData' {
-	export class MetaData {
-	    static readonly CONTROLLER: string;
-	    static readonly ACTION: string;
+declare module 'back-lib-common-web/dist/app/decorators/lazyInject' {
+	export type LazyInjectDecorator = (depIdentifier: symbol | string) => Function;
+	/**
+	 * Injects value to the decorated property.
+	 * Used to decorate properties of a class that's cannot be resolved by dependency container.
+	 */
+	export function lazyInject(depIdentifier: symbol | string): Function;
+
+}
+declare module 'back-lib-common-web/dist/app/decorators/controller' {
+	export type ControllerDecorator = (path?: string) => Function;
+	/**
+	 * Used to decorate REST controller class.
+	 * @param {string} path Segment of URL pointing to this controller.
+	 * 		If '_' is given, it is extract from controller class name: {path}Controller.
+	 * 		If not specified, it is default to be empty string.
+	 */
+	export function controller(path?: string): Function;
+
+}
+declare module 'back-lib-common-web/dist/app/decorators/filter' {
+	import { INewable } from 'back-lib-common-util';
+	export type FilterDecorator = <T>(FilterClass: new (...param: any[]) => T, filterFunc: (filter: T) => Function, priority?: number) => Function;
+	/**
+	 * Used to add filter to controller class and controller action.
+	 * @param {class} FilterClass Filter class whose name must end with "Filter".
+	 * @param {ExpressionStatement} filterFunc An arrow function that returns filter's function.
+	 * 		This array function won't be executed, but is used to extract filter function name.
+	 * @param {number} priority A number from 0 to 10, filters with greater priority run before ones with less priority.
+	 */
+	export function filter<T>(FilterClass: INewable<T>, filterFunc: (filter: T) => Function, priority?: number): Function;
+	export function addFilterToArray<T>(filters: any[], FilterClass: INewable<T>, filterFunc: (filter: T) => Function, priority?: number): void;
+
+}
+declare module 'back-lib-common-web/dist/app/decorators/action' {
+	export type HttpVerbs = 'GET' | 'POST';
+	export type ActionDecorator = (method?: string, path?: string) => Function;
+	/**
+	 * Used to decorate action function of REST controller class.
+	 * @param {string} method Case-insensitive HTTP verb such as GET, POST, DELETE...
+	 * @param {string} path Segment of URL pointing to this controller.
+	 * 		If '_' is given, uses target function name as path.
+	 * 		If not specified, it is default to be empty tring.
+	 */
+	export function action(method?: string, path?: string): Function;
+
+}
+declare module 'back-lib-common-web/dist/app/decorators' {
+	import { LazyInjectDecorator } from 'back-lib-common-web/dist/app/decorators/lazyInject';
+	import { ControllerDecorator } from 'back-lib-common-web/dist/app/decorators/controller';
+	import { FilterDecorator } from 'back-lib-common-web/dist/app/decorators/filter';
+	import { ActionDecorator } from 'back-lib-common-web/dist/app/decorators/action';
+	export const decorators: {
+	    /**
+	     * Used to decorate action function of REST controller class.
+	     * @param {string} path Segment of URL pointing to this controller.
+	     * 		If not specified, it is default to be empty tring.
+	     */
+	    action: ActionDecorator;
+	    /**
+	     * Used to add filter to controller class and controller action.
+	     * @param {class} FilterClass Filter class.
+	     * @param {ExpressionStatement} filterFunc An arrow function that returns filter's function.
+	     * 		This array function won't be executed, but is used to extract filter function name.
+	     * @param {number} priority A number from 0 to 10, filters with greater priority run before ones with less priority.
+	     */
+	    filter: FilterDecorator;
+	    /**
+	     * Used to decorate REST controller class.
+	     * @param {string} path Segment of URL pointing to this controller,
+	     * 		if not specified, it is extract from controller class name: {path}Controller.
+	     */
+	    controller: ControllerDecorator;
+	    /**
+	     * Injects value to the decorated property.
+	     * Used to decorate properties of a class that's cannot be resolved by dependency container.
+	     */
+	    lazyInject: LazyInjectDecorator;
+	};
+
+}
+declare module 'back-lib-common-web/dist/app/RestCRUDControllerBase' {
+	/// <reference types="express" />
+	import * as express from 'express';
+	import * as TrailsApp from 'trails';
+	import { ISoftDelRepository, ModelAutoMapper, JoiModelValidator } from 'back-lib-common-contracts';
+	import { RestControllerBase, TrailsRouteConfigItem } from 'back-lib-common-web/dist/app/RestControllerBase';
+	export abstract class RestCRUDControllerBase<TModel extends IModelDTO> extends RestControllerBase {
+	    protected _ClassDTO: {
+	        new (): TModel;
+	    };
+	    /**
+	     * Generates Trails routes for CRUD operations.
+	     * @param {string} controllerDepIdentifier Key to look up and resolve from dependency container.
+	     * @param {boolean} isSoftDel Whether to add endpoints for `deleteSoft` and `recover`.
+	     * @param {string} pathPrefix Path prefix with heading slash and without trailing slash. Eg: /api/v1
+	     */
+	    static createRoutes(controllerDepIdentifier: string, isSoftDel: boolean, pathPrefix?: string): TrailsRouteConfigItem[];
+	    	    constructor(trailsApp: TrailsApp, _ClassDTO?: {
+	        new (): TModel;
+	    });
+	    protected readonly repo: ISoftDelRepository<TModel, any, any>;
+	    protected readonly validator: JoiModelValidator<TModel>;
+	    protected readonly translator: ModelAutoMapper<TModel>;
+	    	    countAll(req: express.Request, res: express.Response): Promise<void>;
+	    create(req: express.Request, res: express.Response): Promise<void>;
+	    deleteHard(req: express.Request, res: express.Response): Promise<void>;
+	    deleteSoft(req: express.Request, res: express.Response): Promise<void>;
+	    exists(req: express.Request, res: express.Response): Promise<void>;
+	    findByPk(req: express.Request, res: express.Response): Promise<void>;
+	    recover(req: express.Request, res: express.Response): Promise<void>;
+	    page(req: express.Request, res: express.Response): Promise<void>;
+	    patch(req: express.Request, res: express.Response): Promise<void>;
+	    update(req: express.Request, res: express.Response): Promise<void>;
+	}
+
+}
+declare module 'back-lib-common-web/dist/app/filters/TenantResolverFilter' {
+	/// <reference types="express" />
+	import * as express from 'express';
+	import { CacheProvider } from 'back-lib-cache-provider';
+	/**
+	 * Provides method to look up tenant ID from tenant slug.
+	 */
+	export class TenantResolverFilter {
+	    protected _cache: CacheProvider;
+	    	    constructor(_cache: CacheProvider);
+	    resolve(req: express.Request, res: express.Response, next: Function): Promise<void>;
+	}
+
+}
+declare module 'back-lib-common-web/dist/app/filters/ErrorHandlerFilter' {
+	/// <reference types="express" />
+	import * as express from 'express';
+	/**
+	 * Provides method to look up tenant ID from tenant slug.
+	 */
+	export class ErrorHandlerFilter {
+	    constructor();
+	    handle(req: express.Request, res: express.Response, next: Function): void;
 	}
 
 }
@@ -189,12 +280,13 @@ declare module 'back-lib-common-web/dist/app/Types' {
 }
 declare module 'back-lib-common-web/dist/app/TrailsServerAddOn' {
 	import TrailsApp = require('trails');
-	import { IDependencyContainer } from 'back-lib-common-util';
+	import { IDependencyContainer, INewable } from 'back-lib-common-util';
 	export class TrailsServerAddOn implements IServiceAddOn {
 	    protected _trailsOpts: TrailsApp.TrailsAppOts;
 	    pathPrefix: string;
 	    protected _server: TrailsApp;
 	    protected _onError: Function;
+	    protected _globalFilters: any[];
 	    constructor(depContainer: IDependencyContainer, _trailsOpts: TrailsApp.TrailsAppOts);
 	    readonly server: TrailsApp;
 	    /**
@@ -210,68 +302,27 @@ declare module 'back-lib-common-web/dist/app/TrailsServerAddOn' {
 	     */
 	    dispose(): Promise<void>;
 	    onError(cb: (err) => void): void;
-	    protected registerRoutes(): void;
-	    protected buildControllerRoutes(CtrlClass: Function, routes: TrailsRouteConfigItem[]): void;
-	    protected buildActionRoute(actionFunc: Function, controllerPath: string, controllerIdentifier: string): TrailsRouteConfigItem;
-	}
-
-}
-declare module 'back-lib-common-web/dist/app/decorators/lazyInject' {
-	export type LazyInjectDecorator = (depIdentifier: string) => Function;
-	/**
-	 * Injects value to the decorated property.
-	 * Used to decorate properties of a class that's cannot be resolved by dependency container.
-	 */
-	export function lazyInject(depIdentifier: string): Function;
-
-}
-declare module 'back-lib-common-web/dist/app/decorators/controller' {
-	export type ControllerDecorator = (depIdentifier: symbol | string, path?: string) => Function;
-	/**
-	 * Used to decorate REST controller class.
-	 * @param {string} depIdentifier Key to look up and resolve from dependency container.
-	 * @param {string} path Segment of URL pointing to this controller.
-	 * 		If not specified, it is extract from controller class name: {path}Controller.
-	 */
-	export function controller(depIdentifier: symbol | string, path?: string): Function;
-
-}
-declare module 'back-lib-common-web/dist/app/decorators/action' {
-	export type HttpVerbs = 'GET' | 'POST';
-	export type ActionDecorator = (method?: string, path?: string) => Function;
-	/**
-	 * Used to decorate action function of REST controller class.
-	 * @param {string} method Case-insensitive HTTP verb such as GET, POST, DELETE...
-	 * @param {string} path Segment of URL pointing to this controller.
-	 * 		If not specified, it is default to be empty tring.
-	 */
-	export function action(method?: string, path?: string): Function;
-
-}
-declare module 'back-lib-common-web/dist/app/decorators' {
-	import { LazyInjectDecorator } from 'back-lib-common-web/dist/app/decorators/lazyInject';
-	import { ControllerDecorator } from 'back-lib-common-web/dist/app/decorators/controller';
-	import { ActionDecorator } from 'back-lib-common-web/dist/app/decorators/action';
-	export const decorators: {
+	    addErrorHandlerFilter(): void;
+	    addTenantResolverFilter(): void;
 	    /**
-	     * Injects value to the decorated property.
-	     * Used to decorate properties of a class that's cannot be resolved by dependency container.
+	     * Registers a global-scoped filter which is called on every coming request.
+	     * @param FilterClass
+	     * @param filterFunc
+	     * @param priority
 	     */
-	    lazyInject: LazyInjectDecorator;
-	    /**
-	     * Used to decorate REST controller class.
-	     * @param {string} depIdentifier Key to look up and resolve from dependency container.
-	     * @param {string} path Segment of URL pointing to this controller,
-	     * 		if not specified, it is extract from controller class name: {path}Controller.
-	     */
-	    controller: ControllerDecorator;
-	    /**
-	     * Used to decorate action function of REST controller class.
-	     * @param {string} path Segment of URL pointing to this controller.
-	     * 		If not specified, it is default to be empty tring.
-	     */
-	    action: ActionDecorator;
-	};
+	    addGlobalFilter<T>(FilterClass: INewable<T>, filterFunc: (filter: T) => Function, priority?: number): void;
+	    protected buildConfig(): void;
+	    protected buildControllerConfigs(CtrlClass: Function, routes: TrailsRouteConfigItem[], ctrlFilters: Function[]): void;
+	    protected buildActionRoute(CtrlClass: any, actionFunc: Function, controllerPath: string): TrailsRouteConfigItem;
+	    protected buildGlobalScopeFilters(): void;
+	    protected buildControllerScopeFilters(CtrlClass: Function, ctrlFilters: Function[]): void;
+	    protected bindFuncWithFilterInstance(FilterClass: INewable<any>, funcName: string): Function;
+	    protected instantiateClass(TargetClass: INewable<any>, isSingleton: boolean, arg1?: any, arg2?: any, arg3?: any, arg4?: any, arg5?: any): any;
+	    protected instantiateClassFromContainer(TargetClass: INewable<any>, isSingleton: boolean): any;
+	    protected instantiateClassTraditionally(TargetClass: INewable<any>, isSingleton: boolean, arg1?: any, arg2?: any, arg3?: any, arg4?: any, arg5?: any): any;
+	    protected buildActionFilters(CtrlClass: Function, ctrlFilters: Function[], actionFunc: Function): void;
+	    protected popMetadata(metaKey: string, classOrProto: any, propName?: string): any;
+	    	}
 
 }
 declare module 'back-lib-common-web' {

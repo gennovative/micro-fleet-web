@@ -25,38 +25,50 @@ const back_lib_common_util_1 = require("back-lib-common-util");
 /**
  * Provides method to look up tenant ID from tenant slug.
  */
-let TenantResolver = class TenantResolver {
+let TenantResolverFilter = class TenantResolverFilter {
     constructor(_cache) {
         this._cache = _cache;
+        this._tenants = new Map();
     }
-    /**
-     * Looks up tenant ID from given slug.
-     * @param tenantSlug
-     */
-    resolve(tenantSlug) {
+    resolve(req, res, next) {
         return __awaiter(this, void 0, void 0, function* () {
-            // Preserved slug, specially for system services
+            const { tenantSlug } = req.params;
+            // Preserved slug, specially for system services.
             if (tenantSlug == '_') {
-                return null;
+                req.params['tenantId'] = null;
+                return next();
             }
-            let key = `tenant::${tenantSlug}`, tenantId = yield this._cache.getPrimitive(key, false, false);
+            let key = `common-web::tenant::${tenantSlug}`, tenantId;
+            if (this._cache) {
+                tenantId = (yield this._cache.getPrimitive(key, false, false));
+            }
+            else {
+                tenantId = this._tenants.get(tenantSlug);
+            }
             if (tenantId) {
-                return tenantId;
+                req.params['tenantId'] = tenantId;
+                return next();
             }
             // let tenant = await this._tenantProvider.findBySlug(tenantSlug);
             // if (!tenant) { return null; }
             // Mocking
             let tenant = { id: Math.random() + '' };
-            this._cache.setPrimitive(key, tenant.id, null, back_lib_cache_provider_1.CacheLevel.BOTH);
-            return tenant.id;
+            if (this._cache) {
+                this._cache.setPrimitive(key, tenant.id, null, back_lib_cache_provider_1.CacheLevel.BOTH);
+            }
+            else {
+                this._tenants.set(tenantSlug, tenant.id);
+            }
+            req.params['tenantId'] = tenant.id;
+            next();
         });
     }
 };
-TenantResolver = __decorate([
+TenantResolverFilter = __decorate([
     back_lib_common_util_1.injectable(),
     __param(0, back_lib_common_util_1.inject(back_lib_cache_provider_1.Types.CACHE_PROVIDER)),
     __metadata("design:paramtypes", [back_lib_cache_provider_1.CacheProvider])
-], TenantResolver);
-exports.TenantResolver = TenantResolver;
+], TenantResolverFilter);
+exports.TenantResolverFilter = TenantResolverFilter;
 
-//# sourceMappingURL=TenantResolver.js.map
+//# sourceMappingURL=TenantResolverFilter.js.map

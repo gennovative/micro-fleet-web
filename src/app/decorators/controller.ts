@@ -6,37 +6,41 @@ import { MetaData } from '../constants/MetaData';
 import { serverContext } from '../ServerContext';
 
 
-export type ControllerDecorator = (depIdentifier: symbol | string, path?: string) => Function;
+export type ControllerDecorator = (path?: string) => Function;
 
 
 /**
  * Used to decorate REST controller class.
- * @param {string} depIdentifier Key to look up and resolve from dependency container.
  * @param {string} path Segment of URL pointing to this controller.
- * 		If not specified, it is extract from controller class name: {path}Controller.
+ * 		If '_' is given, it is extract from controller class name: {path}Controller.
+ * 		If not specified, it is default to be empty string.
  */
-export function controller(depIdentifier: symbol | string, path: string = ''): Function {
+export function controller(path: string = ''): Function {
 	return function (targetClass: Function): Function {
 		if (Reflect.hasOwnMetadata(MetaData.CONTROLLER, targetClass)) {
 			throw new CriticalException('Duplicate controller decorator');
 		}
 
 		if (path == null) {
+			path = '';
+		} else if (path == '_') {
+			// Extract path from controller name.
+			// Only if controller name is in format {xxx}Controller.
 			path = targetClass.name.match(/(.+)Controller$/)[1];
+			path = path[0].toLowerCase() + path.substring(1); // to camel case
 			Guard.assertIsDefined(path, 'Cannot extract path from controller name');
 		} else {
-			if (path.startsWith('/')) {
-				// Remove heading slash
-				path = path.substring(1);
+			if (path.length >= 1 && !path.startsWith('/')) {
+				// Add heading slash
+				path = '/' + path;
 			}
-			if (path.length >= 1 && !path.endsWith('/')) {
+			if (path.endsWith('/')) {
 				// Remove trailing slash
-				path = path + '/';
+				path = path.substr(0, path.length - 1);
 			}
 		}
-		path = path.toLowerCase();
 
-		Reflect.defineMetadata(MetaData.CONTROLLER, [depIdentifier, path], targetClass);
+		Reflect.defineMetadata(MetaData.CONTROLLER, [path], targetClass);
 
 		return targetClass;
 	};

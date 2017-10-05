@@ -1,0 +1,1 @@
+{"version":3,"sources":["app/decorators/authorized.ts"],"names":[],"mappings":"AAAA,qCAAqC;AACrC,yEAAyE","file":"authorized.js","sourcesContent":["// Empty operation name => must login\r\n// Non-empty op name => check op's conditions => must or no need to login\r\n"]}

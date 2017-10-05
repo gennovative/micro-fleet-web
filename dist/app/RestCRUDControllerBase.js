@@ -20,16 +20,18 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+const express = require("express");
+const joi = require("joi");
 const TrailsApp = require("trails");
 const back_lib_common_util_1 = require("back-lib-common-util");
+const back_lib_common_contracts_1 = require("back-lib-common-contracts");
 const RestControllerBase_1 = require("./RestControllerBase");
-const TenantResolver_1 = require("./TenantResolver");
+const decorators_1 = require("./decorators");
+const { controller, action } = decorators_1.decorators;
 let RestCRUDControllerBase = class RestCRUDControllerBase extends RestControllerBase_1.RestControllerBase {
-    constructor(trailsApp, _tenantResolver, _ClassDTO, _repo) {
+    constructor(trailsApp, _ClassDTO) {
         super(trailsApp);
-        this._tenantResolver = _tenantResolver;
         this._ClassDTO = _ClassDTO;
-        this._repo = _repo;
     }
     /**
      * Generates Trails routes for CRUD operations.
@@ -54,11 +56,14 @@ let RestCRUDControllerBase = class RestCRUDControllerBase extends RestController
         isSoftDel && routes.push(genFn('GET', 'recover'));
         return routes;
     }
+    get repo() {
+        return this._repo;
+    }
     get validator() {
-        return this._ClassDTO['validator'];
+        return this._ClassDTO ? this._ClassDTO['validator'] : null;
     }
     get translator() {
-        return this._ClassDTO['translator'];
+        return this._ClassDTO ? this._ClassDTO['translator'] : null;
     }
     resolveTenant(tenantSlug) {
         // this._cache.
@@ -66,10 +71,9 @@ let RestCRUDControllerBase = class RestCRUDControllerBase extends RestController
     countAll(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             console.log('Counting model');
-            let payload = req.query;
             try {
-                let nRows = yield this._repo.countAll({
-                    tenantId: req.params.tenant
+                let nRows = yield this.repo.countAll({
+                    tenantId: req.params.tenantId
                 });
                 this.ok(res, nRows);
             }
@@ -88,7 +92,7 @@ let RestCRUDControllerBase = class RestCRUDControllerBase extends RestController
                 return;
             }
             try {
-                dto = yield this._repo.create(dto, payload.options);
+                dto = yield this.repo.create(dto);
                 this.created(res, dto);
             }
             catch (err) {
@@ -99,13 +103,13 @@ let RestCRUDControllerBase = class RestCRUDControllerBase extends RestController
     deleteHard(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             console.log('Hard deleting model');
-            let payload = req.body(), [err, pk] = this.validator.pk(payload.pk);
+            let { tenantId, id } = req.params, [err, pk] = this.validator.pk({ id, tenantId });
             if (!err) {
                 this.validationError(res, err);
                 return;
             }
             try {
-                let nRows = yield this._repo.deleteHard(pk, payload.options);
+                let nRows = yield this.repo.deleteHard(pk);
                 this.ok(res, nRows);
             }
             catch (err) {
@@ -116,13 +120,13 @@ let RestCRUDControllerBase = class RestCRUDControllerBase extends RestController
     deleteSoft(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             console.log('Soft deleting model');
-            let payload = req.body(), [err, pk] = this.validator.pk(payload.pk);
+            let { tenantId, id } = req.params, [err, pk] = this.validator.pk({ id, tenantId });
             if (!err) {
                 this.validationError(res, err);
                 return;
             }
             try {
-                let nRows = yield this._repo.deleteSoft(pk, payload.options);
+                let nRows = yield this.repo.deleteSoft(pk);
                 this.ok(res, nRows);
             }
             catch (err) {
@@ -133,9 +137,11 @@ let RestCRUDControllerBase = class RestCRUDControllerBase extends RestController
     exists(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             console.log('Checking existence');
-            let payload = req.body();
+            let uniqueProps = req.query;
             try {
-                let gotIt = yield this._repo.exists(payload.props, payload.options);
+                let gotIt = yield this.repo.exists(uniqueProps, {
+                    tenantId: req.params.tenantId
+                });
                 this.ok(res, gotIt);
             }
             catch (err) {
@@ -146,13 +152,13 @@ let RestCRUDControllerBase = class RestCRUDControllerBase extends RestController
     findByPk(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             console.log('Finding model');
-            let payload = req.body(), [err, pk] = this.validator.pk(payload.pk);
+            let { tenantId, id } = req.params, [err, pk] = this.validator.pk({ id, tenantId });
             if (!err) {
                 this.validationError(res, err);
                 return;
             }
             try {
-                let dto = yield this._repo.findByPk(pk, payload.options);
+                let dto = yield this.repo.findByPk(pk);
                 this.ok(res, dto);
             }
             catch (err) {
@@ -163,13 +169,13 @@ let RestCRUDControllerBase = class RestCRUDControllerBase extends RestController
     recover(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             console.log('Recovering model');
-            let payload = req.body(), [err, pk] = this.validator.pk(payload.pk);
+            let { tenantId, id } = req.params, [err, pk] = this.validator.pk({ id, tenantId });
             if (!err) {
                 this.validationError(res, err);
                 return;
             }
             try {
-                let nRows = yield this._repo.recover(pk, payload.options);
+                let nRows = yield this.repo.recover(pk);
                 this.ok(res, nRows);
             }
             catch (err) {
@@ -180,9 +186,19 @@ let RestCRUDControllerBase = class RestCRUDControllerBase extends RestController
     page(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             console.log('Paging model');
-            let payload = req.body();
+            let pageIndex, pageSize;
             try {
-                let models = yield this._repo.page(payload.pageIndex, payload.pageSize, payload.options);
+                pageIndex = joi.number().default(1).validate(req.params.pageIndex);
+                pageSize = joi.number().default(25).validate(req.params.pageSize);
+            }
+            catch (err) {
+                this.validationError(res, new back_lib_common_contracts_1.ValidationError(err.detail));
+                return;
+            }
+            try {
+                let models = yield this.repo.page(pageIndex, pageSize, {
+                    tenantId: req.params.tenantId
+                });
                 this.ok(res, models);
             }
             catch (err) {
@@ -193,14 +209,14 @@ let RestCRUDControllerBase = class RestCRUDControllerBase extends RestController
     patch(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             console.log('Patching model');
-            let payload = req.body(), model = this.translator.partial(payload.model, {
+            let model = this.translator.partial(req.body, {
                 errorCallback: err => this.validationError(res, err)
             });
             if (!model) {
                 return;
             }
             try {
-                let updatedProps = yield this._repo.patch(model, payload.options);
+                let updatedProps = yield this.repo.patch(model);
                 this.ok(res, updatedProps);
             }
             catch (err) {
@@ -211,14 +227,14 @@ let RestCRUDControllerBase = class RestCRUDControllerBase extends RestController
     update(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             console.log('Updating model');
-            let payload = req.body(), model = this.translator.whole(payload.model, {
+            let model = this.translator.whole(req.body, {
                 errorCallback: err => this.validationError(res, err)
             });
             if (!model) {
                 return;
             }
             try {
-                let updatedModel = yield this._repo.update(model, payload.options);
+                let updatedModel = yield this.repo.update(model);
                 this.ok(res, updatedModel);
             }
             catch (err) {
@@ -227,14 +243,71 @@ let RestCRUDControllerBase = class RestCRUDControllerBase extends RestController
         });
     }
 };
+__decorate([
+    action('GET', 'countAll'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:returntype", Promise)
+], RestCRUDControllerBase.prototype, "countAll", null);
+__decorate([
+    action('POST'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:returntype", Promise)
+], RestCRUDControllerBase.prototype, "create", null);
+__decorate([
+    action('DELETE', ':id'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:returntype", Promise)
+], RestCRUDControllerBase.prototype, "deleteHard", null);
+__decorate([
+    action('DELETE', 'soft/:id'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:returntype", Promise)
+], RestCRUDControllerBase.prototype, "deleteSoft", null);
+__decorate([
+    action('GET', 'exists'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:returntype", Promise)
+], RestCRUDControllerBase.prototype, "exists", null);
+__decorate([
+    action('GET', ':id'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:returntype", Promise)
+], RestCRUDControllerBase.prototype, "findByPk", null);
+__decorate([
+    action('GET', 'recover/:id'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:returntype", Promise)
+], RestCRUDControllerBase.prototype, "recover", null);
+__decorate([
+    action('GET', ':pageIndex?/:pageSize?'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:returntype", Promise)
+], RestCRUDControllerBase.prototype, "page", null);
+__decorate([
+    action('PATCH', ''),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:returntype", Promise)
+], RestCRUDControllerBase.prototype, "patch", null);
+__decorate([
+    action('PUT', ''),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:returntype", Promise)
+], RestCRUDControllerBase.prototype, "update", null);
 RestCRUDControllerBase = __decorate([
     back_lib_common_util_1.injectable(),
     __param(0, back_lib_common_util_1.unmanaged()),
     __param(1, back_lib_common_util_1.unmanaged()),
-    __param(2, back_lib_common_util_1.unmanaged()),
-    __param(3, back_lib_common_util_1.unmanaged()),
-    __metadata("design:paramtypes", [TrailsApp,
-        TenantResolver_1.TenantResolver, Object, Object])
+    __metadata("design:paramtypes", [TrailsApp, Object])
 ], RestCRUDControllerBase);
 exports.RestCRUDControllerBase = RestCRUDControllerBase;
 

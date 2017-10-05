@@ -29,12 +29,13 @@ export class ServerContext {
 	}
 
 	public setPathPrefix(prefix: string): void {
-		if (!prefix.startsWith('/')) {
+		if (prefix.length >= 1 && !prefix.startsWith('/')) {
+			// Add heading slash
 			prefix = '/' + prefix;
 		}
-		if (!prefix.endsWith('/')) {
+		if (prefix.endsWith('/')) {
 			// Remove trailing slash
-			prefix = prefix + '/';
+			prefix = prefix.substr(0, prefix.length - 1);
 		}
 		this._pathPrefix = prefix;
 	}
