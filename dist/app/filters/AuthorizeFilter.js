@@ -12,30 +12,18 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const back_lib_common_util_1 = require("back-lib-common-util");
-const back_lib_common_contracts_1 = require("back-lib-common-contracts");
 /**
  * Provides method to look up tenant ID from tenant slug.
  */
-let ErrorHandlerFilter = class ErrorHandlerFilter {
+let AuthorizeFilter = class AuthorizeFilter {
     constructor() {
     }
     handle(req, res, next) {
-        try {
-            next();
-        }
-        catch (err) {
-            if (err instanceof back_lib_common_contracts_1.ValidationError) {
-                res.status(412).send(err);
-            }
-            else {
-                // logProvider.error(err);
-                res.status(500).send('server.error.internal');
-            }
-        }
+        next();
     }
 };
-ErrorHandlerFilter = __decorate([
+AuthorizeFilter = __decorate([
     back_lib_common_util_1.injectable(),
     __metadata("design:paramtypes", [])
-], ErrorHandlerFilter);
-exports.ErrorHandlerFilter = ErrorHandlerFilter;
+], AuthorizeFilter);
+exports.AuthorizeFilter = AuthorizeFilter;

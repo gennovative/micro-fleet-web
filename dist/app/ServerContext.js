@@ -34,5 +34,3 @@ class ServerContext {
 }
 exports.ServerContext = ServerContext;
 exports.serverContext = new ServerContext();
-
-//# sourceMappingURL=ServerContext.js.map

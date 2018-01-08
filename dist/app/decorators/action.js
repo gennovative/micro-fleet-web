@@ -36,5 +36,3 @@ function action(method = 'GET', path = '') {
     };
 }
 exports.action = action;
-
-//# sourceMappingURL=action.js.map

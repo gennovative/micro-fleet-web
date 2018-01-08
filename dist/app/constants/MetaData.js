@@ -7,5 +7,3 @@ MetaData.CONTROLLER_FILTER = 'common-web:controllerFilter';
 MetaData.ACTION = 'common-web:action';
 MetaData.ACTION_FILTER = 'common-web:actionFilter';
 exports.MetaData = MetaData;
-
-//# sourceMappingURL=MetaData.js.map

@@ -310,5 +310,3 @@ RestCRUDControllerBase = __decorate([
     __metadata("design:paramtypes", [TrailsApp, Object])
 ], RestCRUDControllerBase);
 exports.RestCRUDControllerBase = RestCRUDControllerBase;
-
-//# sourceMappingURL=RestCRUDControllerBase.js.map

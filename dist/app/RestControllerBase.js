@@ -138,5 +138,3 @@ RestControllerBase = __decorate([
     __metadata("design:paramtypes", [TrailsApp])
 ], RestControllerBase);
 exports.RestControllerBase = RestControllerBase;
-
-//# sourceMappingURL=RestControllerBase.js.map

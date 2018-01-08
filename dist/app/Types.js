@@ -7,5 +7,3 @@ Types.TRAILS_ADDON = 'common-web.TrailsServerAddOn';
 Types.TRAILS_APP = 'common-web.TrailsApp';
 Types.TRAILS_OPTS = 'common-web.TrailsAppOts';
 exports.Types = Types;
-
-//# sourceMappingURL=Types.js.map

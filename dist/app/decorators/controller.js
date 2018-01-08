@@ -39,5 +39,3 @@ function controller(path = '') {
     };
 }
 exports.controller = controller;
-
-//# sourceMappingURL=controller.js.map

@@ -154,6 +154,7 @@ declare module 'back-lib-common-web/dist/app/decorators/filter' {
 	 * @param {class} FilterClass Filter class whose name must end with "Filter".
 	 * @param {ExpressionStatement} filterFunc An arrow function that returns filter's function.
 	 * 		This array function won't be executed, but is used to extract filter function name.
+	 * 		Default as "execute".
 	 * @param {number} priority A number from 0 to 10, filters with greater priority run before ones with less priority.
 	 */
 	export function filter<T>(FilterClass: INewable<T>, filterFunc: (filter: T) => Function, priority?: number): Function;
@@ -286,7 +287,7 @@ declare module 'back-lib-common-web/dist/app/TrailsServerAddOn' {
 	    pathPrefix: string;
 	    protected _server: TrailsApp;
 	    protected _onError: Function;
-	    protected _globalFilters: any[];
+	    protected _globalFilters: any[][][];
 	    constructor(depContainer: IDependencyContainer, _trailsOpts: TrailsApp.TrailsAppOts);
 	    readonly server: TrailsApp;
 	    /**
@@ -331,5 +332,17 @@ declare module 'back-lib-common-web' {
 	export * from 'back-lib-common-web/dist/app/TrailsServerAddOn';
 	export * from 'back-lib-common-web/dist/app/Types';
 	export * from 'back-lib-common-web/dist/app/decorators';
+
+}
+declare module 'back-lib-common-web/dist/app/filters/AuthorizeFilter' {
+	/// <reference types="express" />
+	import * as express from 'express';
+	/**
+	 * Provides method to look up tenant ID from tenant slug.
+	 */
+	export class AuthorizeFilter {
+	    constructor();
+	    handle(req: express.Request, res: express.Response, next: Function): void;
+	}
 
 }

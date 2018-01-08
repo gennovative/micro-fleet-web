@@ -13,5 +13,3 @@ exports.decorators = {
     filter: filter_1.filter,
     lazyInject: lazyInject_1.lazyInject
 };
-
-//# sourceMappingURL=index.js.map

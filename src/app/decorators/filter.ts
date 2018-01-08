@@ -19,6 +19,7 @@ export type FilterDecorator = <T>(
  * @param {class} FilterClass Filter class whose name must end with "Filter".
  * @param {ExpressionStatement} filterFunc An arrow function that returns filter's function.
  * 		This array function won't be executed, but is used to extract filter function name.
+ * 		Default as "execute".
  * @param {number} priority A number from 0 to 10, filters with greater priority run before ones with less priority.
  */
 export function filter<T>(FilterClass: INewable<T>, filterFunc: (filter: T) => Function,
@@ -38,7 +39,6 @@ export function filter<T>(FilterClass: INewable<T>, filterFunc: (filter: T) => F
 		let filters: any[][] = isCtrlScope
 			? Reflect.getOwnMetadata(metaKey, TargetClass)
 			: Reflect.getMetadata(metaKey, TargetClass, key);
-		// let filters: any[][] = Reflect.getMetadata(metaKey, TargetClass, key);
 		filters = filters || [];
 
 		addFilterToArray(filters, FilterClass, filterFunc, priority);
@@ -53,14 +53,18 @@ export function addFilterToArray<T>(filters: any[], FilterClass: INewable<T>, fi
 	Guard.assertIsTruthy(priority >= 1 && priority <= 10, 'Filter priority must be between 1 and 10.');
 	Guard.assertIsTruthy(FilterClass.name.endsWith('Filter'), 'Filter class name must end with "Filter".');
 
-	let func: ESTree.Program = acorn.parse(filterFunc.toString()),
-		body = func.body[0] as ESTree.ExpressionStatement,
-		expression = body.expression as ESTree.ArrowFunctionExpression,
-		isArrowFunc = expression.type == 'ArrowFunctionExpression',
-		filterFuncName: string;
+	let filterFuncName: string;
+	if (filterFunc != null) {
+		let func: ESTree.Program = acorn.parse(filterFunc.toString()),
+			body = func.body[0] as ESTree.ExpressionStatement,
+			expression = body.expression as ESTree.ArrowFunctionExpression,
+			isArrowFunc = expression.type == 'ArrowFunctionExpression';
 
-	Guard.assertIsTruthy(isArrowFunc, '`filterFunc` must be an arrow statement.');
-	filterFuncName = expression.body['property']['name'];
+		Guard.assertIsTruthy(isArrowFunc, '`filterFunc` must be an arrow statement.');
+		filterFuncName = expression.body['property']['name'];
+	} else {
+		filterFuncName = 'execute';
+	}
 
 	// `filters` is a 3-dimensioned matrix:
 	// filters = [

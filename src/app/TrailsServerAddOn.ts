@@ -20,7 +20,7 @@ export class TrailsServerAddOn implements IServiceAddOn {
 
 	protected _server: TrailsApp;
 	protected _onError: Function;
-	protected _globalFilters: any[];
+	protected _globalFilters: any[][][];
 
 
 	constructor(
@@ -47,10 +47,11 @@ export class TrailsServerAddOn implements IServiceAddOn {
 		this.addErrorHandlerFilter();
 
 		this.buildConfig();
-		this._server = new TrailsApp(this._trailsOpts);
-		serverContext.dependencyContainer.bindConstant(T.TRAILS_APP, this._server);
-		return <any>this._server.start()
-			.catch(err => this._server.stop(err));
+		let server = this._server = new TrailsApp(this._trailsOpts);
+		server.on('error', this._onError);
+		serverContext.dependencyContainer.bindConstant(T.TRAILS_APP, server);
+		return <any>server.start()
+			.catch(err => server.stop(err));
 	}
 
 	/**
@@ -104,7 +105,7 @@ export class TrailsServerAddOn implements IServiceAddOn {
 			}
 			
 			// Clone array to make sure global filters are executed before controller ones.
-			ctrlFilters = this._globalFilters.slice();
+			ctrlFilters = <any>this._globalFilters.slice();
 			this.buildControllerConfigs(CtrlClass, routes, ctrlFilters);
 		}
 
@@ -162,9 +163,16 @@ export class TrailsServerAddOn implements IServiceAddOn {
 
 	protected buildGlobalScopeFilters(): void {
 		let filters = [];
-		this._globalFilters.reverse().forEach(p => {
-			let [FilterClass, funcName] = p;
-			filters.push(this.bindFuncWithFilterInstance(FilterClass, funcName));
+		// `globalFilters` is a 3-dimensioned matrix:
+		// globalFilters = [
+		//		1: [ [FilterClass, funcName], [FilterClass, funcName] ]
+		//		5: [ [FilterClass, funcName], [FilterClass, funcName] ]
+		// ]
+		this._globalFilters.reverse().forEach(priorityList => {
+			priorityList.forEach(p => {
+				let [FilterClass, funcName] = p;
+				filters.push(this.bindFuncWithFilterInstance(FilterClass, funcName));
+			});
 		});
 		this._globalFilters = filters;
 	}
