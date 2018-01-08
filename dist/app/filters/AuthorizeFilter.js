@@ -18,7 +18,13 @@ const back_lib_common_util_1 = require("back-lib-common-util");
 let AuthorizeFilter = class AuthorizeFilter {
     constructor() {
     }
-    handle(req, res, next) {
+    authenticate(req, res, next) {
+        if (!req.header('Authorization')) {
+            return res.status(401).send();
+        }
+        // Decode token to get user ID
+        // Look up user role based on user ID
+        // Check if
         next();
     }
 };

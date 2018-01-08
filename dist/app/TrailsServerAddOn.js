@@ -73,7 +73,7 @@ let TrailsServerAddOn = class TrailsServerAddOn {
      * @param priority
      */
     addGlobalFilter(FilterClass, filterFunc, priority) {
-        filter_1.addFilterToArray(this._globalFilters, FilterClass, filterFunc, priority);
+        filter_1.pushFilterToArray(this._globalFilters, FilterClass, filterFunc, priority);
     }
     buildConfig() {
         let config = this._trailsOpts.config, routes = config.routes || [], ctrlFilters;
