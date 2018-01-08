@@ -72,7 +72,7 @@ let TrailsServerAddOn = class TrailsServerAddOn {
      * @param priority
      */
     addGlobalFilter(FilterClass, filterFunc, priority) {
-        filter_1.addFilterToArray(this._globalFilters, FilterClass, filterFunc, priority);
+        filter_1.pushFilterToArray(this._globalFilters, FilterClass, filterFunc, priority);
     }
     buildConfig() {
         let config = this._trailsOpts.config, routes = config.routes || [], ctrlFilters;
@@ -143,10 +143,17 @@ let TrailsServerAddOn = class TrailsServerAddOn {
             return;
         }
         // `reverse()`: Policies with priority of greater number should run before ones with less priority.
-        metaFilters.reverse().forEach(p => {
-            let [FilterClass, funcName] = p;
-            ctrlFilters.push(this.bindFuncWithFilterInstance(FilterClass, funcName));
-        });
+        // filters = [
+        //		5: [ [FilterClass, funcName], [FilterClass, funcName] ]
+        //		1: [ [FilterClass, funcName], [FilterClass, funcName] ]
+        // ]
+        let FilterClass, funcName;
+        for (let pFilters of metaFilters.reverse()) {
+            for (let f of pFilters) {
+                [FilterClass, funcName] = f;
+                ctrlFilters.push(this.bindFuncWithFilterInstance(FilterClass, funcName));
+            }
+        }
     }
     bindFuncWithFilterInstance(FilterClass, funcName) {
         let filter = this.instantiateClass(FilterClass, true);
