@@ -3,7 +3,7 @@ import TrailsApp = require('trails');
 import { injectable, inject, IDependencyContainer, Guard, HandlerContainer,
 	INewable, Types as CmT } from 'back-lib-common-util';
 
-import { addFilterToArray } from './decorators/filter';
+import { pushFilterToArray } from './decorators/filter';
 import { TenantResolverFilter } from './filters/TenantResolverFilter';
 import { ErrorHandlerFilter } from './filters/ErrorHandlerFilter';
 import { serverContext } from './ServerContext';
@@ -86,7 +86,7 @@ export class TrailsServerAddOn implements IServiceAddOn {
 	 * @param priority 
 	 */
 	public addGlobalFilter<T>(FilterClass: INewable<T>, filterFunc: (filter: T) => Function, priority?: number): void {
-		addFilterToArray(this._globalFilters, FilterClass, filterFunc, priority);
+		pushFilterToArray(this._globalFilters, FilterClass, filterFunc, priority);
 	}
 
 

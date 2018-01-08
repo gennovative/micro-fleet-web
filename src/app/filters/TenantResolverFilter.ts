@@ -35,6 +35,7 @@ export class TenantResolverFilter {
 		}
 
 		if (tenantId) {
+			console.log('TenantResolver: from cache');
 			req.params['tenantId'] = tenantId;
 			return next();
 		}
@@ -50,6 +51,7 @@ export class TenantResolverFilter {
 		} else {
 			this._tenants.set(tenantSlug, tenant.id);
 		}
+		console.log('TenantResolver: from repo');
 		req.params['tenantId'] = tenant.id;
 		next();
 	}
