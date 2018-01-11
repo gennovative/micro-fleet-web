@@ -19,41 +19,8 @@ const { controller, action } = decorators;
 export abstract class RestCRUDControllerBase<TModel extends IModelDTO> 
 	extends RestControllerBase {
 
-
-	/**
-	 * Generates Trails routes for CRUD operations.
-	 * @param {string} controllerDepIdentifier Key to look up and resolve from dependency container.
-	 * @param {boolean} isSoftDel Whether to add endpoints for `deleteSoft` and `recover`.
-	 * @param {string} pathPrefix Path prefix with heading slash and without trailing slash. Eg: /api/v1
-	 */
-	public static createRoutes(controllerDepIdentifier: string, isSoftDel: boolean, pathPrefix: string = ''): TrailsRouteConfigItem[] {
-		let container = HandlerContainer.instance,
-			genFn = (method, action) => {
-				return RestControllerBase.createRoute(method, action,
-					controllerDepIdentifier, pathPrefix, container);
-			};
-
-		let routes = [
-			genFn('GET', ''),
-			genFn('POST', ''),
-			genFn('PUT', ''),
-			genFn('PATCH', ''),
-			genFn('DELETE', ''),
-			genFn('GET', 'countAll'),
-			genFn('GET', 'exists'),
-			genFn('GET', 'findByPk'),
-		];
-
-		isSoftDel && routes.push(
-			genFn('GET', 'recover')
-		);
-
-		return routes;
-	}
-
-
 	// Should be overriden by derived class with:
-	// @lazyInject(IDENTIFIER) private _repo: ISoftDelRepository<TModel, any, any>;
+	// @lazyInject(IDENTIFIER) private _repo: ISomethingRepository;
 	private _repo: ISoftDelRepository<TModel, any, any>;
 	
 	constructor(
@@ -64,6 +31,7 @@ export abstract class RestCRUDControllerBase<TModel extends IModelDTO>
 	}
 
 	protected get repo(): ISoftDelRepository<TModel, any, any> {
+		Guard.assertIsDefined(this._repo, '`this._repo` is not defined. It should be overriden by derived class with: @lazyInject(IDENTIFIER) private _repo: ISomethingRepository;');
 		return this._repo;
 	}
 
@@ -79,125 +47,182 @@ export abstract class RestCRUDControllerBase<TModel extends IModelDTO>
 		// this._cache.
 	}
 
+	//#region countAll
+
 	@action('GET', 'countAll')
 	public async countAll(req: express.Request, res: express.Response) {
-		console.log('Counting model');
 		try {
-			let nRows: number = await this.repo.countAll({
-				tenantId: req.params.tenantId
-			});
+			let nRows: number = await this.doCountAll(req, res);
 			this.ok(res, nRows);
 		} catch (err) {
 			this.internalError(res, err);
 		}
 	}
 
+	protected doCountAll(req: express.Request, res: express.Response): Promise<number> {
+		return this.repo.countAll({
+			tenantId: req.params.tenantId
+		});
+	}
+
+	//#endregion countAll
+
+
+	//#region create
+
 	@action('POST')
 	public async create(req: express.Request, res: express.Response) {
-		console.log('Creating model');
-		let payload = req.body(),
+		let payload = req.body,
 			dto: TModel = this.translator.whole(payload.model, {
 				errorCallback: details => this.validationError(res, details)
 			});
 		if (!dto) { return; }
 
 		try {
-			dto = await this.repo.create(dto);
+			dto = await this.doCreate(dto, req, res);
 			this.created(res, dto);
 		} catch (err) {
 			this.internalError(res, err);
 		}
 	}
 
+	protected doCreate(dto: TModel, req: express.Request, res: express.Response): Promise<TModel & TModel[]> {
+		return this.repo.create(dto);
+	}
+
+	//#endregion create
+
+
+	//#region deleteHard
+
 	@action('DELETE', ':id')
 	public async deleteHard(req: express.Request, res: express.Response) {
-		console.log('Hard deleting model');
 		let { tenantId, id } = req.params,
-			[err, pk] = this.validator.pk({ id, tenantId });
-		if (!err) {
+			[err, pk] = this.validator.pk(tenantId ? { id, tenantId } : id);
+		if (err) {
 			this.validationError(res, err);
 			return;
 		}
 
 		try {
-			let nRows: number = await this.repo.deleteHard(pk);
+			let nRows: number = await this.doDeleteHard(pk, req, res);
 			this.ok(res, nRows);
 		} catch (err) {
 			this.internalError(res, err);
 		}
 	}
+
+	protected doDeleteHard(pk: any, req: express.Request, res: express.Response): Promise<number> {
+		return this.repo.deleteHard(pk);
+	}
+
+	//#endregion deleteHard
+
+
+	//#region deleteSoft
 
 	@action('DELETE', 'soft/:id')
 	public async deleteSoft(req: express.Request, res: express.Response) {
-		console.log('Soft deleting model');
 		let { tenantId, id } = req.params,
-			[err, pk] = this.validator.pk({ id, tenantId });
-		if (!err) {
+			[err, pk] = this.validator.pk(tenantId ? { id, tenantId } : id);
+		if (err) {
 			this.validationError(res, err);
 			return;
 		}
 
 		try {
-			let nRows: number = await this.repo.deleteSoft(pk);
+			let nRows: number = await this.doDeleteSoft(pk, req, res);
 			this.ok(res, nRows);
 		} catch (err) {
 			this.internalError(res, err);
 		}
 	}
 
+	protected doDeleteSoft(pk: any, req: express.Request, res: express.Response): Promise<number> {
+		return this.repo.deleteSoft(pk);
+	}
+
+	//#endregion deleteSoft
+
+
+	//#region exists
+
 	@action('GET', 'exists')
 	public async exists(req: express.Request, res: express.Response) {
-		console.log('Checking existence');
 		let uniqueProps = req.query;
 		try {
-			let gotIt: boolean = await this.repo.exists(uniqueProps, {
-				tenantId: req.params.tenantId
-			});
+			let gotIt: boolean = await this.doExists(uniqueProps, req, res);
 			this.ok(res, gotIt);
 		} catch (err) {
 			this.internalError(res, err);
 		}
 	}
 
+	protected doExists(uniqueProps: any, req: express.Request, res: express.Response): Promise<boolean> {
+		return this.repo.exists(uniqueProps, {
+			tenantId: req.params.tenantId
+		});
+	}
+
+	//#endregion exists
+
+
+	//#region findByPk
+
 	@action('GET', ':id')
 	public async findByPk(req: express.Request, res: express.Response) {
-		console.log('Finding model');
 		let { tenantId, id } = req.params,
-			[err, pk] = this.validator.pk({ id, tenantId });
-		if (!err) {
+			[err, pk] = this.validator.pk(tenantId ? { id, tenantId } : id);
+		if (err) {
 			this.validationError(res, err);
 			return;
 		}
 
 		try {
-			let dto: TModel = await this.repo.findByPk(pk);
+			let dto: TModel = await this.doFindByPk(pk, req, res);
 			this.ok(res, dto);
 		} catch (err) {
 			this.internalError(res, err);
 		}
 	}
 
+	protected doFindByPk(pk: any, req: express.Request, res: express.Response): Promise<TModel> {
+		return this.repo.findByPk(pk);
+	}
+
+	//#endregion findByPk
+
+
+	//#region recover
+
 	@action('GET', 'recover/:id')
 	public async recover(req: express.Request, res: express.Response) {
-		console.log('Recovering model');
 		let { tenantId, id } = req.params,
-			[err, pk] = this.validator.pk({ id, tenantId });
-		if (!err) {
+			[err, pk] = this.validator.pk(tenantId ? { id, tenantId } : id);
+		if (err) {
 			this.validationError(res, err);
 			return;
 		}
 
 		try {
-			let nRows: number = await this.repo.recover(pk);
+			let nRows: number = await this.doRecover(pk, req, res);
 			this.ok(res, nRows);
 		} catch (err) {
 			this.internalError(res, err);
 		}
 	}
 
-	@action('GET', ':pageIndex?/:pageSize?')
+	protected doRecover(pk: any, req: express.Request, res: express.Response): Promise<number> {
+		return this.repo.recover(pk);
+	}
+
+	//#endregion recover
+
+
+	//#region page
+
+	@action('GET', 'page/:pageIndex?/:pageSize?')
 	public async page(req: express.Request, res: express.Response) {
-		console.log('Paging model');
 		let pageIndex, pageSize;
 		try {
 			pageIndex = joi.number().default(1).validate(req.params.pageIndex);
@@ -207,44 +232,70 @@ export abstract class RestCRUDControllerBase<TModel extends IModelDTO>
 			return;
 		}
 		try {
-			let models: PagedArray<TModel> = await this.repo.page(pageIndex, pageSize, {
-				tenantId: req.params.tenantId
+			let result: PagedArray<TModel> = await this.doPage(pageIndex, pageSize, req, res);
+			this.ok(res, !result ? new PagedArray<TModel>(0) : {
+				total: result.total,
+				data: result
 			});
-			this.ok(res, models);
 		} catch (err) {
 			this.internalError(res, err);
 		}
 	}
 
+	protected doPage(pageIndex: number, pageSize: number, req: express.Request, res: express.Response): Promise<PagedArray<TModel>> {
+		return this.repo.page(pageIndex, pageSize, {
+			tenantId: req.params.tenantId
+		});
+	}
+
+	//#endregion page
+
+
+	//#region patch
+
 	@action('PATCH', '')
 	public async patch(req: express.Request, res: express.Response) {
-		console.log('Patching model');
 		let model = this.translator.partial(req.body, {
 				errorCallback: err => this.validationError(res, err)
 			});
 		if (!model) { return; }
 
 		try {
-			let updatedProps: Partial<TModel> = await this.repo.patch(model);
+			let updatedProps: Partial<TModel> = await this.doPatch(model, req, res);
 			this.ok(res, updatedProps);
 		} catch (err) {
 			this.internalError(res, err);
 		}
 	}
 
+	protected doPatch(model: Partial<TModel> & Partial<TModel>[], req: express.Request, res: express.Response): Promise<Partial<TModel> & Partial<TModel>[]> {
+		return this.repo.patch(model);
+	}
+
+	//#endregion patch
+
+
+	//#region update
+
 	@action('PUT', '')
 	public async update(req: express.Request, res: express.Response) {
-		console.log('Updating model');
 		let model: TModel = this.translator.whole(req.body, {
 				errorCallback: err => this.validationError(res, err)
 			});
 		if (!model) { return; }
 
 		try {
-			let updatedModel: TModel = await this.repo.update(model);
+			let updatedModel: TModel = await this.doUpdate(model, req, res);
 			this.ok(res, updatedModel);
 		} catch (err) {
 			this.internalError(res, err);
 		}
 	}
+
+	protected doUpdate(dto: TModel | TModel[], req: express.Request, res: express.Response): Promise<TModel & TModel[]> {
+		return this.repo.update(dto);
+	}
+
+	//#endregion update
+
 }

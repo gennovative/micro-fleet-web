@@ -20,6 +20,11 @@ See more examples and usage guide in unit test.
 ---
 ## VERSIONS
 
+### 0.2.1
+- Improved controller and action filter pre-binding process.
+- Improved automatic route generation process.
+- Fixed some bugs in `RestCRUDControllerBase`.
+
 ### 0.2.0
 - Split **RestControllerBase** into **RestCRUDControllerBase** (inherits **RestControllerBase**).
 - **RestControllerBase** provides basic response actions.

@@ -12,7 +12,7 @@ const MetaData_1 = require("../constants/MetaData");
  */
 function action(method = 'GET', path = '') {
     return function (proto, funcName) {
-        if (Reflect.hasMetadata(MetaData_1.MetaData.ACTION, proto.constructor, funcName)) {
+        if (Reflect.hasOwnMetadata(MetaData_1.MetaData.ACTION, proto.constructor, funcName)) {
             throw new back_lib_common_util_1.CriticalException('Duplicate action decorator');
         }
         if (path == null) {

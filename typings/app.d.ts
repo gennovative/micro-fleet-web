@@ -5,7 +5,6 @@ declare module 'back-lib-common-web/dist/app/RestControllerBase' {
 	import * as express from 'express';
 	import TrailsApp = require('trails');
 	import TrailsController = require('trails/controller');
-	import { HandlerContainer } from 'back-lib-common-util';
 	export type TrailsRouteConfigItem = {
 	    method: string | string[];
 	    path: string;
@@ -13,16 +12,6 @@ declare module 'back-lib-common-web/dist/app/RestControllerBase' {
 	    config?: any;
 	};
 	export abstract class RestControllerBase extends TrailsController {
-	    /**
-	     * Generates Trails route configs to put in file app/config/routes.js
-	     * @param {string} method Case-insensitive HTTP verb such as GET, POST, DELETE...
-	     * @param {string} action Action name of this route.
-	     * @param {string} controllerDepIdentifier Key to look up and resolve from dependency container.
-	     * @param {string} pathPrefix Path prefix with heading slash and without trailing slash. Eg: /api/v1
-	     * @param {HandlerContainer} container Handler container
-	     * @param {any} config Additional configuration, such as precondition policy...
-	     */
-	    static createRoute(method: string, action: string, controllerDepIdentifier: string, pathPrefix?: string, container?: HandlerContainer, config?: any): TrailsRouteConfigItem;
 	    constructor(trailsApp: TrailsApp);
 	    /*** SUCCESS ***/
 	    /**
@@ -175,7 +164,6 @@ declare module 'back-lib-common-web/dist/app/decorators/filter' {
 
 }
 declare module 'back-lib-common-web/dist/app/decorators/action' {
-	export type HttpVerbs = 'GET' | 'POST';
 	export type ActionDecorator = (method?: string, path?: string) => Function;
 	/**
 	 * Used to decorate action function of REST controller class.
@@ -225,19 +213,12 @@ declare module 'back-lib-common-web/dist/app/RestCRUDControllerBase' {
 	/// <reference types="express" />
 	import * as express from 'express';
 	import * as TrailsApp from 'trails';
-	import { ISoftDelRepository, ModelAutoMapper, JoiModelValidator } from 'back-lib-common-contracts';
-	import { RestControllerBase, TrailsRouteConfigItem } from 'back-lib-common-web/dist/app/RestControllerBase';
+	import { ISoftDelRepository, ModelAutoMapper, JoiModelValidator, PagedArray } from 'back-lib-common-contracts';
+	import { RestControllerBase } from 'back-lib-common-web/dist/app/RestControllerBase';
 	export abstract class RestCRUDControllerBase<TModel extends IModelDTO> extends RestControllerBase {
 	    protected _ClassDTO: {
 	        new (): TModel;
 	    };
-	    /**
-	     * Generates Trails routes for CRUD operations.
-	     * @param {string} controllerDepIdentifier Key to look up and resolve from dependency container.
-	     * @param {boolean} isSoftDel Whether to add endpoints for `deleteSoft` and `recover`.
-	     * @param {string} pathPrefix Path prefix with heading slash and without trailing slash. Eg: /api/v1
-	     */
-	    static createRoutes(controllerDepIdentifier: string, isSoftDel: boolean, pathPrefix?: string): TrailsRouteConfigItem[];
 	    	    constructor(trailsApp: TrailsApp, _ClassDTO?: {
 	        new (): TModel;
 	    });
@@ -245,15 +226,25 @@ declare module 'back-lib-common-web/dist/app/RestCRUDControllerBase' {
 	    protected readonly validator: JoiModelValidator<TModel>;
 	    protected readonly translator: ModelAutoMapper<TModel>;
 	    	    countAll(req: express.Request, res: express.Response): Promise<void>;
+	    protected doCountAll(req: express.Request, res: express.Response): Promise<number>;
 	    create(req: express.Request, res: express.Response): Promise<void>;
+	    protected doCreate(dto: TModel, req: express.Request, res: express.Response): Promise<TModel & TModel[]>;
 	    deleteHard(req: express.Request, res: express.Response): Promise<void>;
+	    protected doDeleteHard(pk: any, req: express.Request, res: express.Response): Promise<number>;
 	    deleteSoft(req: express.Request, res: express.Response): Promise<void>;
+	    protected doDeleteSoft(pk: any, req: express.Request, res: express.Response): Promise<number>;
 	    exists(req: express.Request, res: express.Response): Promise<void>;
+	    protected doExists(uniqueProps: any, req: express.Request, res: express.Response): Promise<boolean>;
 	    findByPk(req: express.Request, res: express.Response): Promise<void>;
+	    protected doFindByPk(pk: any, req: express.Request, res: express.Response): Promise<TModel>;
 	    recover(req: express.Request, res: express.Response): Promise<void>;
+	    protected doRecover(pk: any, req: express.Request, res: express.Response): Promise<number>;
 	    page(req: express.Request, res: express.Response): Promise<void>;
+	    protected doPage(pageIndex: number, pageSize: number, req: express.Request, res: express.Response): Promise<PagedArray<TModel>>;
 	    patch(req: express.Request, res: express.Response): Promise<void>;
+	    protected doPatch(model: Partial<TModel> & Partial<TModel>[], req: express.Request, res: express.Response): Promise<Partial<TModel> & Partial<TModel>[]>;
 	    update(req: express.Request, res: express.Response): Promise<void>;
+	    protected doUpdate(dto: TModel | TModel[], req: express.Request, res: express.Response): Promise<TModel & TModel[]>;
 	}
 
 }

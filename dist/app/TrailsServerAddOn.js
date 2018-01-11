@@ -95,7 +95,7 @@ let TrailsServerAddOn = class TrailsServerAddOn {
             return (desc && (desc.get || desc.set));
         };
         this.buildControllerScopeFilters(CtrlClass, ctrlFilters);
-        let allFunctions = [], actionFunc;
+        let allFunctions = new Map(), actionFunc;
         // Iterates over all function in prototype chain, except root Object.prototype
         for (let proto = CtrlClass.prototype; proto != Object.prototype; proto = Object.getPrototypeOf(proto)) {
             for (let actionName of Object.getOwnPropertyNames(proto)) {
@@ -103,14 +103,17 @@ let TrailsServerAddOn = class TrailsServerAddOn {
                     continue;
                 }
                 actionFunc = proto[actionName];
-                if (typeof actionFunc !== 'function' || !Reflect.hasMetadata(MetaData_1.MetaData.ACTION, CtrlClass, actionName)) {
+                if (typeof actionFunc !== 'function' ||
+                    allFunctions.has(actionName) || // Make sure function in super class never overides function in derives class.
+                    !Reflect.hasMetadata(MetaData_1.MetaData.ACTION, CtrlClass, actionName)) {
                     continue;
                 }
                 // Let actions in derived class override actions in super class.
-                allFunctions.unshift(actionFunc);
+                allFunctions.set(actionName, actionFunc);
             }
         }
-        for (actionFunc of allFunctions) {
+        // Destructuring to get second element
+        for ([, actionFunc] of allFunctions) {
             routes.push(this.buildActionRoute(CtrlClass, actionFunc, path));
             this.buildActionFilters(CtrlClass, ctrlFilters, actionFunc);
         }
@@ -156,8 +159,12 @@ let TrailsServerAddOn = class TrailsServerAddOn {
         //		1: [ [FilterClass, funcName], [FilterClass, funcName] ]
         // ]
         let FilterClass, funcName;
-        for (let pFilters of metaFilters.reverse()) {
-            for (let f of pFilters) {
+        for (let priorityFilters of metaFilters.reverse()) {
+            for (let f of priorityFilters) {
+                if ((typeof f) == 'function') {
+                    ctrlFilters.push(f);
+                    continue;
+                }
                 [FilterClass, funcName] = f;
                 ctrlFilters.push(this.bindFuncWithFilterInstance(FilterClass, funcName));
             }
@@ -193,17 +200,30 @@ let TrailsServerAddOn = class TrailsServerAddOn {
         return new TargetClass(arg1, arg2, arg3, arg4, arg5);
     }
     buildActionFilters(CtrlClass, ctrlFilters, actionFunc) {
-        let funcName = actionFunc.name, metaPolicies = this.popMetadata(MetaData_1.MetaData.ACTION_FILTER, CtrlClass, funcName);
+        let funcName = actionFunc.name, metaFilters = this.popMetadata(MetaData_1.MetaData.ACTION_FILTER, CtrlClass, funcName);
         let ctrlName = CtrlClass.name, 
         // Clone array. Controller filters will be executed before action's own filters.
         actFilters = ctrlFilters.slice();
-        if (metaPolicies) {
+        if (metaFilters) {
             // `reverse()`: Policies with priority of greater number should run before ones with less priority.
-            metaPolicies.reverse().forEach(p => {
-                //actPolicies.push(`${p[0]}.${p[1]}`); // Expect: "PolicyClassName.functionName"
-                let [FilterClass, funcName] = p;
-                actFilters.push(this.bindFuncWithFilterInstance(FilterClass, funcName));
-            });
+            // metaFilters.reverse().forEach(p => {
+            // 	//actPolicies.push(`${p[0]}.${p[1]}`); // Expect: "PolicyClassName.functionName"
+            // 	let [FilterClass, funcName] = p;
+            // 	actFilters.push(
+            // 			this.bindFuncWithFilterInstance(FilterClass, funcName)
+            // 		);
+            // });
+            let FilterClass, funcName;
+            for (let priorityFilters of metaFilters.reverse()) {
+                for (let f of priorityFilters) {
+                    if ((typeof f) == 'function') {
+                        actFilters.push(f);
+                        continue;
+                    }
+                    [FilterClass, funcName] = f;
+                    actFilters.push(this.bindFuncWithFilterInstance(FilterClass, funcName));
+                }
+            }
         }
         // Save these filters and will execute them whenever
         // a request is routed to this action.
