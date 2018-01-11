@@ -6,7 +6,6 @@ import { MetaData } from '../constants/MetaData';
 import { serverContext } from '../ServerContext';
 
 
-export type HttpVerbs = 'GET' | 'POST';
 export type ActionDecorator = (method?: string, path?: string) => Function;
 
 /**
@@ -18,7 +17,7 @@ export type ActionDecorator = (method?: string, path?: string) => Function;
  */
 export function action(method: string = 'GET', path: string = ''): Function {
 	return function (proto: any, funcName: string): Function {
-		if (Reflect.hasMetadata(MetaData.ACTION, proto.constructor, funcName)) {
+		if (Reflect.hasOwnMetadata(MetaData.ACTION, proto.constructor, funcName)) {
 			throw new CriticalException('Duplicate action decorator');
 		}
 

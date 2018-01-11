@@ -33,30 +33,8 @@ let RestCRUDControllerBase = class RestCRUDControllerBase extends RestController
         super(trailsApp);
         this._ClassDTO = _ClassDTO;
     }
-    /**
-     * Generates Trails routes for CRUD operations.
-     * @param {string} controllerDepIdentifier Key to look up and resolve from dependency container.
-     * @param {boolean} isSoftDel Whether to add endpoints for `deleteSoft` and `recover`.
-     * @param {string} pathPrefix Path prefix with heading slash and without trailing slash. Eg: /api/v1
-     */
-    static createRoutes(controllerDepIdentifier, isSoftDel, pathPrefix = '') {
-        let container = back_lib_common_util_1.HandlerContainer.instance, genFn = (method, action) => {
-            return RestControllerBase_1.RestControllerBase.createRoute(method, action, controllerDepIdentifier, pathPrefix, container);
-        };
-        let routes = [
-            genFn('GET', ''),
-            genFn('POST', ''),
-            genFn('PUT', ''),
-            genFn('PATCH', ''),
-            genFn('DELETE', ''),
-            genFn('GET', 'countAll'),
-            genFn('GET', 'exists'),
-            genFn('GET', 'findByPk'),
-        ];
-        isSoftDel && routes.push(genFn('GET', 'recover'));
-        return routes;
-    }
     get repo() {
+        back_lib_common_util_1.Guard.assertIsDefined(this._repo, '`this._repo` is not defined. It should be overriden by derived class with: @lazyInject(IDENTIFIER) private _repo: ISomethingRepository;');
         return this._repo;
     }
     get validator() {
@@ -68,13 +46,11 @@ let RestCRUDControllerBase = class RestCRUDControllerBase extends RestController
     resolveTenant(tenantSlug) {
         // this._cache.
     }
+    //#region countAll
     countAll(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
-            console.log('Counting model');
             try {
-                let nRows = yield this.repo.countAll({
-                    tenantId: req.params.tenantId
-                });
+                let nRows = yield this.doCountAll(req, res);
                 this.ok(res, nRows);
             }
             catch (err) {
@@ -82,17 +58,23 @@ let RestCRUDControllerBase = class RestCRUDControllerBase extends RestController
             }
         });
     }
+    doCountAll(req, res) {
+        return this.repo.countAll({
+            tenantId: req.params.tenantId
+        });
+    }
+    //#endregion countAll
+    //#region create
     create(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
-            console.log('Creating model');
-            let payload = req.body(), dto = this.translator.whole(payload.model, {
+            let payload = req.body, dto = this.translator.whole(payload.model, {
                 errorCallback: details => this.validationError(res, details)
             });
             if (!dto) {
                 return;
             }
             try {
-                dto = yield this.repo.create(dto);
+                dto = yield this.doCreate(dto, req, res);
                 this.created(res, dto);
             }
             catch (err) {
@@ -100,16 +82,20 @@ let RestCRUDControllerBase = class RestCRUDControllerBase extends RestController
             }
         });
     }
+    doCreate(dto, req, res) {
+        return this.repo.create(dto);
+    }
+    //#endregion create
+    //#region deleteHard
     deleteHard(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
-            console.log('Hard deleting model');
-            let { tenantId, id } = req.params, [err, pk] = this.validator.pk({ id, tenantId });
-            if (!err) {
+            let { tenantId, id } = req.params, [err, pk] = this.validator.pk(tenantId ? { id, tenantId } : id);
+            if (err) {
                 this.validationError(res, err);
                 return;
             }
             try {
-                let nRows = yield this.repo.deleteHard(pk);
+                let nRows = yield this.doDeleteHard(pk, req, res);
                 this.ok(res, nRows);
             }
             catch (err) {
@@ -117,16 +103,20 @@ let RestCRUDControllerBase = class RestCRUDControllerBase extends RestController
             }
         });
     }
+    doDeleteHard(pk, req, res) {
+        return this.repo.deleteHard(pk);
+    }
+    //#endregion deleteHard
+    //#region deleteSoft
     deleteSoft(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
-            console.log('Soft deleting model');
-            let { tenantId, id } = req.params, [err, pk] = this.validator.pk({ id, tenantId });
-            if (!err) {
+            let { tenantId, id } = req.params, [err, pk] = this.validator.pk(tenantId ? { id, tenantId } : id);
+            if (err) {
                 this.validationError(res, err);
                 return;
             }
             try {
-                let nRows = yield this.repo.deleteSoft(pk);
+                let nRows = yield this.doDeleteSoft(pk, req, res);
                 this.ok(res, nRows);
             }
             catch (err) {
@@ -134,14 +124,16 @@ let RestCRUDControllerBase = class RestCRUDControllerBase extends RestController
             }
         });
     }
+    doDeleteSoft(pk, req, res) {
+        return this.repo.deleteSoft(pk);
+    }
+    //#endregion deleteSoft
+    //#region exists
     exists(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
-            console.log('Checking existence');
             let uniqueProps = req.query;
             try {
-                let gotIt = yield this.repo.exists(uniqueProps, {
-                    tenantId: req.params.tenantId
-                });
+                let gotIt = yield this.doExists(uniqueProps, req, res);
                 this.ok(res, gotIt);
             }
             catch (err) {
@@ -149,16 +141,22 @@ let RestCRUDControllerBase = class RestCRUDControllerBase extends RestController
             }
         });
     }
+    doExists(uniqueProps, req, res) {
+        return this.repo.exists(uniqueProps, {
+            tenantId: req.params.tenantId
+        });
+    }
+    //#endregion exists
+    //#region findByPk
     findByPk(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
-            console.log('Finding model');
-            let { tenantId, id } = req.params, [err, pk] = this.validator.pk({ id, tenantId });
-            if (!err) {
+            let { tenantId, id } = req.params, [err, pk] = this.validator.pk(tenantId ? { id, tenantId } : id);
+            if (err) {
                 this.validationError(res, err);
                 return;
             }
             try {
-                let dto = yield this.repo.findByPk(pk);
+                let dto = yield this.doFindByPk(pk, req, res);
                 this.ok(res, dto);
             }
             catch (err) {
@@ -166,16 +164,20 @@ let RestCRUDControllerBase = class RestCRUDControllerBase extends RestController
             }
         });
     }
+    doFindByPk(pk, req, res) {
+        return this.repo.findByPk(pk);
+    }
+    //#endregion findByPk
+    //#region recover
     recover(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
-            console.log('Recovering model');
-            let { tenantId, id } = req.params, [err, pk] = this.validator.pk({ id, tenantId });
-            if (!err) {
+            let { tenantId, id } = req.params, [err, pk] = this.validator.pk(tenantId ? { id, tenantId } : id);
+            if (err) {
                 this.validationError(res, err);
                 return;
             }
             try {
-                let nRows = yield this.repo.recover(pk);
+                let nRows = yield this.doRecover(pk, req, res);
                 this.ok(res, nRows);
             }
             catch (err) {
@@ -183,9 +185,13 @@ let RestCRUDControllerBase = class RestCRUDControllerBase extends RestController
             }
         });
     }
+    doRecover(pk, req, res) {
+        return this.repo.recover(pk);
+    }
+    //#endregion recover
+    //#region page
     page(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
-            console.log('Paging model');
             let pageIndex, pageSize;
             try {
                 pageIndex = joi.number().default(1).validate(req.params.pageIndex);
@@ -196,19 +202,26 @@ let RestCRUDControllerBase = class RestCRUDControllerBase extends RestController
                 return;
             }
             try {
-                let models = yield this.repo.page(pageIndex, pageSize, {
-                    tenantId: req.params.tenantId
+                let result = yield this.doPage(pageIndex, pageSize, req, res);
+                this.ok(res, !result ? new back_lib_common_contracts_1.PagedArray(0) : {
+                    total: result.total,
+                    data: result
                 });
-                this.ok(res, models);
             }
             catch (err) {
                 this.internalError(res, err);
             }
         });
     }
+    doPage(pageIndex, pageSize, req, res) {
+        return this.repo.page(pageIndex, pageSize, {
+            tenantId: req.params.tenantId
+        });
+    }
+    //#endregion page
+    //#region patch
     patch(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
-            console.log('Patching model');
             let model = this.translator.partial(req.body, {
                 errorCallback: err => this.validationError(res, err)
             });
@@ -216,7 +229,7 @@ let RestCRUDControllerBase = class RestCRUDControllerBase extends RestController
                 return;
             }
             try {
-                let updatedProps = yield this.repo.patch(model);
+                let updatedProps = yield this.doPatch(model, req, res);
                 this.ok(res, updatedProps);
             }
             catch (err) {
@@ -224,9 +237,13 @@ let RestCRUDControllerBase = class RestCRUDControllerBase extends RestController
             }
         });
     }
+    doPatch(model, req, res) {
+        return this.repo.patch(model);
+    }
+    //#endregion patch
+    //#region update
     update(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
-            console.log('Updating model');
             let model = this.translator.whole(req.body, {
                 errorCallback: err => this.validationError(res, err)
             });
@@ -234,13 +251,16 @@ let RestCRUDControllerBase = class RestCRUDControllerBase extends RestController
                 return;
             }
             try {
-                let updatedModel = yield this.repo.update(model);
+                let updatedModel = yield this.doUpdate(model, req, res);
                 this.ok(res, updatedModel);
             }
             catch (err) {
                 this.internalError(res, err);
             }
         });
+    }
+    doUpdate(dto, req, res) {
+        return this.repo.update(dto);
     }
 };
 __decorate([
@@ -286,7 +306,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], RestCRUDControllerBase.prototype, "recover", null);
 __decorate([
-    action('GET', ':pageIndex?/:pageSize?'),
+    action('GET', 'page/:pageIndex?/:pageSize?'),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object, Object]),
     __metadata("design:returntype", Promise)

@@ -22,32 +22,6 @@ decorate(unmanaged(), TrailsController, 0);
 @injectable()
 export abstract class RestControllerBase extends TrailsController {
 
-	/**
-	 * Generates Trails route configs to put in file app/config/routes.js
-	 * @param {string} method Case-insensitive HTTP verb such as GET, POST, DELETE...
-	 * @param {string} action Action name of this route.
-	 * @param {string} controllerDepIdentifier Key to look up and resolve from dependency container.
-	 * @param {string} pathPrefix Path prefix with heading slash and without trailing slash. Eg: /api/v1
-	 * @param {HandlerContainer} container Handler container
-	 * @param {any} config Additional configuration, such as precondition policy...
-	 */
-	public static createRoute(method: string, action: string,
-			controllerDepIdentifier: string,
-			pathPrefix: string = '',
-			container: HandlerContainer = null,
-			config: any = null
-		): TrailsRouteConfigItem {
-
-		container = container || HandlerContainer.instance;
-		return {
-			method,
-			path: `${pathPrefix}/:tenant/${action}`,
-			handler: container.register(action, controllerDepIdentifier),
-			config
-		};
-	}
-
-
 	constructor(@unmanaged() trailsApp: TrailsApp) {
 		super(trailsApp);
 	}

@@ -21,24 +21,6 @@ let RestControllerBase = class RestControllerBase extends TrailsController {
     constructor(trailsApp) {
         super(trailsApp);
     }
-    /**
-     * Generates Trails route configs to put in file app/config/routes.js
-     * @param {string} method Case-insensitive HTTP verb such as GET, POST, DELETE...
-     * @param {string} action Action name of this route.
-     * @param {string} controllerDepIdentifier Key to look up and resolve from dependency container.
-     * @param {string} pathPrefix Path prefix with heading slash and without trailing slash. Eg: /api/v1
-     * @param {HandlerContainer} container Handler container
-     * @param {any} config Additional configuration, such as precondition policy...
-     */
-    static createRoute(method, action, controllerDepIdentifier, pathPrefix = '', container = null, config = null) {
-        container = container || back_lib_common_util_1.HandlerContainer.instance;
-        return {
-            method,
-            path: `${pathPrefix}/:tenant/${action}`,
-            handler: container.register(action, controllerDepIdentifier),
-            config
-        };
-    }
     /*** SUCCESS ***/
     /**
      * Responds as Accepted with status code 202 and optional data.
