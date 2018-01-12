@@ -78,8 +78,8 @@ let TrailsServerAddOn = class TrailsServerAddOn {
     buildConfig() {
         let config = this._trailsOpts.config, routes = config.routes || [], ctrlFilters;
         this.buildGlobalScopeFilters();
-        for (let ctrlName of Object.getOwnPropertyNames(this._trailsOpts.api.controllers)) {
-            let CtrlClass = this._trailsOpts.api.controllers[ctrlName];
+        for (let ctrlName of Object.getOwnPropertyNames(this._trailsOpts.controllers)) {
+            let CtrlClass = this._trailsOpts.controllers[ctrlName];
             if (typeof CtrlClass !== 'function' || !Reflect.hasOwnMetadata(MetaData_1.MetaData.CONTROLLER, CtrlClass)) {
                 continue;
             }

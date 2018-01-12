@@ -98,8 +98,8 @@ export class TrailsServerAddOn implements IServiceAddOn {
 
 		this.buildGlobalScopeFilters();
 
-		for (let ctrlName of Object.getOwnPropertyNames(this._trailsOpts.api.controllers)) {
-			let CtrlClass = this._trailsOpts.api.controllers[ctrlName];
+		for (let ctrlName of Object.getOwnPropertyNames(this._trailsOpts.controllers)) {
+			let CtrlClass = this._trailsOpts.controllers[ctrlName];
 			if (typeof CtrlClass !== 'function' || !Reflect.hasOwnMetadata(MetaData.CONTROLLER, CtrlClass)) {
 				continue;
 			}

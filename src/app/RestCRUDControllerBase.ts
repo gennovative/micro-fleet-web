@@ -72,8 +72,7 @@ export abstract class RestCRUDControllerBase<TModel extends IModelDTO>
 
 	@action('POST')
 	public async create(req: express.Request, res: express.Response) {
-		let payload = req.body,
-			dto: TModel = this.translator.whole(payload.model, {
+		let dto: TModel = this.translator.whole(req.body.model, {
 				errorCallback: details => this.validationError(res, details)
 			});
 		if (!dto) { return; }
@@ -255,7 +254,7 @@ export abstract class RestCRUDControllerBase<TModel extends IModelDTO>
 
 	@action('PATCH', '')
 	public async patch(req: express.Request, res: express.Response) {
-		let model = this.translator.partial(req.body, {
+		let model = this.translator.partial(req.body.model, {
 				errorCallback: err => this.validationError(res, err)
 			});
 		if (!model) { return; }
@@ -279,7 +278,7 @@ export abstract class RestCRUDControllerBase<TModel extends IModelDTO>
 
 	@action('PUT', '')
 	public async update(req: express.Request, res: express.Response) {
-		let model: TModel = this.translator.whole(req.body, {
+		let model: TModel = this.translator.whole(req.body.model, {
 				errorCallback: err => this.validationError(res, err)
 			});
 		if (!model) { return; }

@@ -60,7 +60,12 @@ declare module 'trails' {
 			/**
 			 * The application api (api/ folder).
 			 */
-			api: IAppApi;
+			// api: IAppApi;
+
+			/**
+			 * The application controllers
+			 */
+			controllers: any;
 
 			/**
 			 * The application configuration (config/ folder).

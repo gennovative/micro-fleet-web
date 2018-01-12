@@ -67,7 +67,7 @@ let RestCRUDControllerBase = class RestCRUDControllerBase extends RestController
     //#region create
     create(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
-            let payload = req.body, dto = this.translator.whole(payload.model, {
+            let dto = this.translator.whole(req.body.model, {
                 errorCallback: details => this.validationError(res, details)
             });
             if (!dto) {
@@ -222,7 +222,7 @@ let RestCRUDControllerBase = class RestCRUDControllerBase extends RestController
     //#region patch
     patch(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
-            let model = this.translator.partial(req.body, {
+            let model = this.translator.partial(req.body.model, {
                 errorCallback: err => this.validationError(res, err)
             });
             if (!model) {
@@ -244,7 +244,7 @@ let RestCRUDControllerBase = class RestCRUDControllerBase extends RestController
     //#region update
     update(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
-            let model = this.translator.whole(req.body, {
+            let model = this.translator.whole(req.body.model, {
                 errorCallback: err => this.validationError(res, err)
             });
             if (!model) {
