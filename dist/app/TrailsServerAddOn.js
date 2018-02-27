@@ -159,7 +159,7 @@ let TrailsServerAddOn = class TrailsServerAddOn {
         //		1: [ [FilterClass, funcName], [FilterClass, funcName] ]
         // ]
         let FilterClass, funcName;
-        for (let priorityFilters of metaFilters.reverse()) {
+        metaFilters.reverse().forEach(priorityFilters => {
             for (let f of priorityFilters) {
                 if ((typeof f) == 'function') {
                     ctrlFilters.push(f);
@@ -168,7 +168,7 @@ let TrailsServerAddOn = class TrailsServerAddOn {
                 [FilterClass, funcName] = f;
                 ctrlFilters.push(this.bindFuncWithFilterInstance(FilterClass, funcName));
             }
-        }
+        });
     }
     bindFuncWithFilterInstance(FilterClass, funcName) {
         let filter = this.instantiateClass(FilterClass, true);
@@ -214,7 +214,7 @@ let TrailsServerAddOn = class TrailsServerAddOn {
             // 		);
             // });
             let FilterClass, funcName;
-            for (let priorityFilters of metaFilters.reverse()) {
+            metaFilters.reverse().forEach(priorityFilters => {
                 for (let f of priorityFilters) {
                     if ((typeof f) == 'function') {
                         actFilters.push(f);
@@ -223,7 +223,7 @@ let TrailsServerAddOn = class TrailsServerAddOn {
                     [FilterClass, funcName] = f;
                     actFilters.push(this.bindFuncWithFilterInstance(FilterClass, funcName));
                 }
-            }
+            });
         }
         // Save these filters and will execute them whenever
         // a request is routed to this action.
