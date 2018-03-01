@@ -160,6 +160,14 @@ declare module 'back-lib-common-web/dist/app/Types' {
 	}
 
 }
+declare module 'back-lib-common-web/dist/app/constants/AuthConstant' {
+	 enum TokenType {
+	    ACCESS = "jwt-access",
+	    REFRESH = "jwt-refresh",
+	}
+	export { TokenType };
+
+}
 declare module 'back-lib-common-web/dist/app/filters/AuthFilter' {
 	/// <reference types="express" />
 	import * as express from 'express';
@@ -218,6 +226,7 @@ declare module 'back-lib-common-web/dist/app/TrailsServerAddOn' {
 declare module 'back-lib-common-web/dist/app/AuthAddOn' {
 	import TrailsApp = require('trails');
 	import { IConfigurationProvider } from 'back-lib-common-contracts';
+	import { IAccountRepository } from 'back-lib-membership-contracts';
 	import { TrailsServerAddOn } from 'back-lib-common-web/dist/app/TrailsServerAddOn';
 	export type AuthResult = {
 	    payload: any;
@@ -225,14 +234,14 @@ declare module 'back-lib-common-web/dist/app/AuthAddOn' {
 	    status: any;
 	};
 	export class AuthAddOn implements IServiceAddOn {
-	    	    	    constructor(_serverAddOn: TrailsServerAddOn, _configProvider: IConfigurationProvider);
+	    	    	    	    constructor(_serverAddOn: TrailsServerAddOn, _configProvider: IConfigurationProvider, _accountRepo: IAccountRepository);
 	    readonly server: TrailsApp;
 	    /**
 	     * @see IServiceAddOn.init
 	     */
 	    init(): Promise<void>;
-	    	    	    authenticate(request: any, response: any, next: any): Promise<AuthResult>;
-	    createToken(payload: any): Promise<string>;
+	    	    authenticate(request: any, response: any, next: any): Promise<AuthResult>;
+	    createToken(payload: any, isRefresh: Boolean): Promise<string>;
 	    /**
 	     * @see IServiceAddOn.deadLetter
 	     */

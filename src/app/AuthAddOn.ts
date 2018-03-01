@@ -3,7 +3,9 @@ import jwt = require('jsonwebtoken');
 import * as passport from 'passport';
 import * as passportJwt from 'passport-jwt';
 import { Types as cmT, IConfigurationProvider } from 'back-lib-common-contracts';
+import {IAccountRepository, Types as cT} from 'back-lib-membership-contracts';
 import { injectable, inject } from 'back-lib-common-util';
+
 import { TrailsServerAddOn } from './TrailsServerAddOn';
 import { Types as T } from './Types';
 import bluebird = require('bluebird');
@@ -24,6 +26,7 @@ export class AuthAddOn implements IServiceAddOn {
 	constructor(
 		@inject(T.TRAILS_ADDON) private _serverAddOn: TrailsServerAddOn,
 		@inject(cmT.CONFIG_PROVIDER) private _configProvider: IConfigurationProvider,
+		@inject(cT.ACCOUNT_REPO) private _accountRepo: IAccountRepository,
 	) {
 	}
 
@@ -47,29 +50,25 @@ export class AuthAddOn implements IServiceAddOn {
 			jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
 			issuer: this._configProvider.get('jwtIssuer'),
 		};
-		this.initAccessToken(opts);
+		this.initToken(opts);
 		return Promise.resolve();
 	}
 
-	private initAccessToken(opts): void {
+	private initToken(opts): void {
+		// `payload` is decrypted from Access token from header.
 		let strategy = new JwtStrategy(opts, (payload, done) => {
+			// TODO: 1. Validate payload object
+			// Optional: Log timestamp for statistics purpose
 			done(null, payload);
 		});
-		passport.use('jwt-access', strategy);
-	}
-
-	private initRefreshToken(opts): void {
-		let strategy = new JwtStrategy(opts, async (payload, done) => {
-			done();
-		});
-		passport.use('jwt-refresh', strategy);
+		passport.use('jwt', strategy);
 	}
 
 	//#endregion Init
 
 	public authenticate(request, response, next): Promise<AuthResult> {
 		return new Promise<any>((resolve, reject) => {
-			passport.authenticate('jwt-access', (error, payload, info, status) => {
+			passport.authenticate('jwt', (error, payload, info, status) => {
 				if (error) {
 					return reject(error);
 				}
@@ -78,7 +77,7 @@ export class AuthAddOn implements IServiceAddOn {
 		});
 	}
 
-	public async createToken(payload): Promise<string> {
+	public async createToken(payload, isRefresh: Boolean): Promise<string> {
 		let sign = new Promise<any>((resolve, reject) => {
 			jwt.sign(
 				// Data
@@ -90,7 +89,7 @@ export class AuthAddOn implements IServiceAddOn {
 				this._configProvider.get('jwtSecret'),
 				// Config
 				{
-					expiresIn: 60 * 30,
+					expiresIn: isRefresh ? '30d' : 60 * 30,
 					issuer: this._configProvider.get('jwtIssuer'),
 				},
 				// Callback

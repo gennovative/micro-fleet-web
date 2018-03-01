@@ -24,15 +24,17 @@ const jwt = require("jsonwebtoken");
 const passport = require("passport");
 const passportJwt = require("passport-jwt");
 const back_lib_common_contracts_1 = require("back-lib-common-contracts");
+const back_lib_membership_contracts_1 = require("back-lib-membership-contracts");
 const back_lib_common_util_1 = require("back-lib-common-util");
 const TrailsServerAddOn_1 = require("./TrailsServerAddOn");
 const Types_1 = require("./Types");
 const ExtractJwt = passportJwt.ExtractJwt;
 const JwtStrategy = passportJwt.Strategy;
 let AuthAddOn = class AuthAddOn {
-    constructor(_serverAddOn, _configProvider) {
+    constructor(_serverAddOn, _configProvider, _accountRepo) {
         this._serverAddOn = _serverAddOn;
         this._configProvider = _configProvider;
+        this._accountRepo = _accountRepo;
     }
     get server() {
         return this._serverAddOn.server;
@@ -49,25 +51,22 @@ let AuthAddOn = class AuthAddOn {
             jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
             issuer: this._configProvider.get('jwtIssuer'),
         };
-        this.initAccessToken(opts);
+        this.initToken(opts);
         return Promise.resolve();
     }
-    initAccessToken(opts) {
+    initToken(opts) {
+        // `payload` is decrypted from Access token from header.
         let strategy = new JwtStrategy(opts, (payload, done) => {
+            // TODO: 1. Validate payload object
+            // Optional: Log timestamp for statistics purpose
             done(null, payload);
         });
-        passport.use('jwt-access', strategy);
-    }
-    initRefreshToken(opts) {
-        let strategy = new JwtStrategy(opts, (payload, done) => __awaiter(this, void 0, void 0, function* () {
-            done();
-        }));
-        passport.use('jwt-refresh', strategy);
+        passport.use('jwt', strategy);
     }
     //#endregion Init
     authenticate(request, response, next) {
         return new Promise((resolve, reject) => {
-            passport.authenticate('jwt-access', (error, payload, info, status) => {
+            passport.authenticate('jwt', (error, payload, info, status) => {
                 if (error) {
                     return reject(error);
                 }
@@ -75,7 +74,7 @@ let AuthAddOn = class AuthAddOn {
             })(request, response, next);
         });
     }
-    createToken(payload) {
+    createToken(payload, isRefresh) {
         return __awaiter(this, void 0, void 0, function* () {
             let sign = new Promise((resolve, reject) => {
                 jwt.sign(
@@ -88,7 +87,7 @@ let AuthAddOn = class AuthAddOn {
                 this._configProvider.get('jwtSecret'), 
                 // Config
                 {
-                    expiresIn: 60 * 30,
+                    expiresIn: isRefresh ? '30d' : 60 * 30,
                     issuer: this._configProvider.get('jwtIssuer'),
                 }, 
                 // Callback
@@ -119,6 +118,7 @@ AuthAddOn = __decorate([
     back_lib_common_util_1.injectable(),
     __param(0, back_lib_common_util_1.inject(Types_1.Types.TRAILS_ADDON)),
     __param(1, back_lib_common_util_1.inject(back_lib_common_contracts_1.Types.CONFIG_PROVIDER)),
-    __metadata("design:paramtypes", [TrailsServerAddOn_1.TrailsServerAddOn, Object])
+    __param(2, back_lib_common_util_1.inject(back_lib_membership_contracts_1.Types.ACCOUNT_REPO)),
+    __metadata("design:paramtypes", [TrailsServerAddOn_1.TrailsServerAddOn, Object, Object])
 ], AuthAddOn);
 exports.AuthAddOn = AuthAddOn;

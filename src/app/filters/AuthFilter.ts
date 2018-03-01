@@ -4,7 +4,7 @@ const { lazyInject } = decorators;
 
 import { AuthAddOn } from '../AuthAddOn';
 import { Types as aT } from '../Types';
-
+import { TokenType } from '../constants/AuthConstant';
 
 export class AuthFilter {
 
@@ -14,7 +14,7 @@ export class AuthFilter {
 		try {
 			const authResult = await this._authAddon.authenticate(request, response, next);
 			if (!authResult || !authResult.payload) {
-				return response.status(401).send(authResult.info.message);
+				return response.status(401).json({message: authResult.info.message, name: authResult.info.name});
 			}
 			request.params['accountId'] = authResult.payload.accountId;
 			request.params['username'] = authResult.payload.username;
