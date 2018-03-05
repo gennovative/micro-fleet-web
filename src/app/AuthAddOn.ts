@@ -26,7 +26,6 @@ export class AuthAddOn implements IServiceAddOn {
 	constructor(
 		@inject(T.TRAILS_ADDON) private _serverAddOn: TrailsServerAddOn,
 		@inject(cmT.CONFIG_PROVIDER) private _configProvider: IConfigurationProvider,
-		@inject(cT.ACCOUNT_REPO) private _accountRepo: IAccountRepository,
 	) {
 	}
 

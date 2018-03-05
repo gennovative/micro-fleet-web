@@ -24,17 +24,15 @@ const jwt = require("jsonwebtoken");
 const passport = require("passport");
 const passportJwt = require("passport-jwt");
 const back_lib_common_contracts_1 = require("back-lib-common-contracts");
-const back_lib_membership_contracts_1 = require("back-lib-membership-contracts");
 const back_lib_common_util_1 = require("back-lib-common-util");
 const TrailsServerAddOn_1 = require("./TrailsServerAddOn");
 const Types_1 = require("./Types");
 const ExtractJwt = passportJwt.ExtractJwt;
 const JwtStrategy = passportJwt.Strategy;
 let AuthAddOn = class AuthAddOn {
-    constructor(_serverAddOn, _configProvider, _accountRepo) {
+    constructor(_serverAddOn, _configProvider) {
         this._serverAddOn = _serverAddOn;
         this._configProvider = _configProvider;
-        this._accountRepo = _accountRepo;
     }
     get server() {
         return this._serverAddOn.server;
@@ -118,7 +116,6 @@ AuthAddOn = __decorate([
     back_lib_common_util_1.injectable(),
     __param(0, back_lib_common_util_1.inject(Types_1.Types.TRAILS_ADDON)),
     __param(1, back_lib_common_util_1.inject(back_lib_common_contracts_1.Types.CONFIG_PROVIDER)),
-    __param(2, back_lib_common_util_1.inject(back_lib_membership_contracts_1.Types.ACCOUNT_REPO)),
-    __metadata("design:paramtypes", [TrailsServerAddOn_1.TrailsServerAddOn, Object, Object])
+    __metadata("design:paramtypes", [TrailsServerAddOn_1.TrailsServerAddOn, Object])
 ], AuthAddOn);
 exports.AuthAddOn = AuthAddOn;
