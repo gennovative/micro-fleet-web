@@ -226,7 +226,6 @@ declare module 'back-lib-common-web/dist/app/TrailsServerAddOn' {
 declare module 'back-lib-common-web/dist/app/AuthAddOn' {
 	import TrailsApp = require('trails');
 	import { IConfigurationProvider } from 'back-lib-common-contracts';
-	import { IAccountRepository } from 'back-lib-membership-contracts';
 	import { TrailsServerAddOn } from 'back-lib-common-web/dist/app/TrailsServerAddOn';
 	export type AuthResult = {
 	    payload: any;
@@ -234,7 +233,7 @@ declare module 'back-lib-common-web/dist/app/AuthAddOn' {
 	    status: any;
 	};
 	export class AuthAddOn implements IServiceAddOn {
-	    	    	    	    constructor(_serverAddOn: TrailsServerAddOn, _configProvider: IConfigurationProvider, _accountRepo: IAccountRepository);
+	    	    	    constructor(_serverAddOn: TrailsServerAddOn, _configProvider: IConfigurationProvider);
 	    readonly server: TrailsApp;
 	    /**
 	     * @see IServiceAddOn.init
@@ -369,7 +368,7 @@ declare module 'back-lib-common-web/dist/app/RestCRUDControllerBase' {
 	    recover(req: express.Request, res: express.Response): Promise<void>;
 	    protected doRecover(pk: any, req: express.Request, res: express.Response): Promise<number>;
 	    page(req: express.Request, res: express.Response): Promise<void>;
-	    protected doPage(pageIndex: number, pageSize: number, req: express.Request, res: express.Response): Promise<PagedArray<TModel>>;
+	    protected doPage(pageIndex: number, pageSize: number, sortBy: string, sortType: string, req: express.Request, res: express.Response): Promise<PagedArray<TModel>>;
 	    patch(req: express.Request, res: express.Response): Promise<void>;
 	    protected doPatch(model: Partial<TModel> & Partial<TModel>[], req: express.Request, res: express.Response): Promise<Partial<TModel> & Partial<TModel>[]>;
 	    update(req: express.Request, res: express.Response): Promise<void>;

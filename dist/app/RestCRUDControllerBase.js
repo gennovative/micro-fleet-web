@@ -192,30 +192,42 @@ let RestCRUDControllerBase = class RestCRUDControllerBase extends RestController
     //#region page
     page(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
-            let pageIndex, pageSize;
+            let pageIndex, pageSize, sortBy, sortType, error;
             try {
-                pageIndex = joi.number().default(1).validate(req.params.pageIndex);
-                pageSize = joi.number().default(25).validate(req.params.pageSize);
+                ({ value: pageIndex, error } = joi.number().min(1).default(1).validate(req.params.pageIndex));
+                if (error) {
+                    throw error;
+                }
+                ({ value: pageSize, error } = joi.number().min(10).max(100).default(25).validate(req.params.pageSize));
+                if (error) {
+                    throw error;
+                }
+                ({ value: sortBy, error } = joi.string().min(1).validate(req.params.sortBy));
+                if (error) {
+                    throw error;
+                }
+                ({ value: sortType, error } = joi.string().valid('asc', 'desc').validate(req.params.sortType));
+                if (error) {
+                    throw error;
+                }
             }
             catch (err) {
-                this.validationError(res, new back_lib_common_contracts_1.ValidationError(err.detail));
+                this.validationError(res, new back_lib_common_contracts_1.ValidationError(err.details));
                 return;
             }
             try {
-                let result = yield this.doPage(pageIndex, pageSize, req, res);
-                this.ok(res, !result ? new back_lib_common_contracts_1.PagedArray(0) : {
-                    total: result.total,
-                    data: result
-                });
+                let result = yield this.doPage(pageIndex, pageSize, sortBy, sortType, req, res);
+                this.ok(res, result ? result.asObject() : new back_lib_common_contracts_1.PagedArray());
             }
             catch (err) {
                 this.internalError(res, err);
             }
         });
     }
-    doPage(pageIndex, pageSize, req, res) {
+    doPage(pageIndex, pageSize, sortBy, sortType, req, res) {
         return this.repo.page(pageIndex, pageSize, {
-            tenantId: req.params.tenantId
+            tenantId: req.params.tenantId,
+            sortBy, sortType
         });
     }
     //#endregion page
@@ -306,7 +318,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], RestCRUDControllerBase.prototype, "recover", null);
 __decorate([
-    action('GET', 'page/:pageIndex?/:pageSize?'),
+    action('GET', 'page/:pageIndex?/:pageSize?/:sortBy?/:sortType?'),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object, Object]),
     __metadata("design:returntype", Promise)

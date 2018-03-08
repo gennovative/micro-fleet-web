@@ -220,30 +220,42 @@ export abstract class RestCRUDControllerBase<TModel extends IModelDTO>
 
 	//#region page
 
-	@action('GET', 'page/:pageIndex?/:pageSize?')
+	@action('GET', 'page/:pageIndex?/:pageSize?/:sortBy?/:sortType?')
 	public async page(req: express.Request, res: express.Response) {
-		let pageIndex, pageSize;
+		let pageIndex, pageSize, sortBy, sortType, error;
 		try {
-			pageIndex = joi.number().default(1).validate(req.params.pageIndex);
-			pageSize = joi.number().default(25).validate(req.params.pageSize);
+			({ value: pageIndex, error } = joi.number().min(1).default(1).validate(req.params.pageIndex));
+			if (error) {
+				throw error;
+			}
+			({ value: pageSize, error } = joi.number().min(10).max(100).default(25).validate(req.params.pageSize));
+			if (error) {
+				throw error;
+			}
+			({ value: sortBy, error } = joi.string().min(1).validate(req.params.sortBy));
+			if (error) {
+				throw error;
+			}
+			({ value: sortType, error } = joi.string().valid('asc', 'desc').validate(req.params.sortType));
+			if (error) {
+				throw error;
+			}
 		} catch (err) {
-			this.validationError(res, new ValidationError(err.detail));
+			this.validationError(res, new ValidationError(err.details));
 			return;
 		}
 		try {
-			let result: PagedArray<TModel> = await this.doPage(pageIndex, pageSize, req, res);
-			this.ok(res, !result ? new PagedArray<TModel>(0) : {
-				total: result.total,
-				data: result
-			});
+			let result: PagedArray<TModel> = await this.doPage(pageIndex, pageSize, sortBy, sortType, req, res);
+			this.ok(res, result ? result.asObject() : new PagedArray());
 		} catch (err) {
 			this.internalError(res, err);
 		}
 	}
 
-	protected doPage(pageIndex: number, pageSize: number, req: express.Request, res: express.Response): Promise<PagedArray<TModel>> {
+	protected doPage(pageIndex: number, pageSize: number, sortBy: string, sortType: string, req: express.Request, res: express.Response): Promise<PagedArray<TModel>> {
 		return this.repo.page(pageIndex, pageSize, {
-			tenantId: req.params.tenantId
+			tenantId: req.params.tenantId, 
+			sortBy, sortType
 		});
 	}
 

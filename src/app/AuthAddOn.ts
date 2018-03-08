@@ -3,7 +3,6 @@ import jwt = require('jsonwebtoken');
 import * as passport from 'passport';
 import * as passportJwt from 'passport-jwt';
 import { Types as cmT, IConfigurationProvider } from 'back-lib-common-contracts';
-import {IAccountRepository, Types as cT} from 'back-lib-membership-contracts';
 import { injectable, inject } from 'back-lib-common-util';
 
 import { TrailsServerAddOn } from './TrailsServerAddOn';
@@ -26,7 +25,6 @@ export class AuthAddOn implements IServiceAddOn {
 	constructor(
 		@inject(T.TRAILS_ADDON) private _serverAddOn: TrailsServerAddOn,
 		@inject(cmT.CONFIG_PROVIDER) private _configProvider: IConfigurationProvider,
-		@inject(cT.ACCOUNT_REPO) private _accountRepo: IAccountRepository,
 	) {
 	}
 
