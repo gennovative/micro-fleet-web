@@ -70,6 +70,9 @@ export abstract class RestControllerBase extends TrailsController {
 	protected clientError(res: express.Response, returnErr: any, statusCode: number = 400, shouldLogErr: boolean = false): void {
 		shouldLogErr && super.log.error(returnErr);
 		statusCode = (400 <= statusCode && statusCode <= 499) ? statusCode : 400;
+		if (typeof returnErr == 'number') {
+			returnErr += <any>'';
+		}
 		res.status(statusCode).send(returnErr);
 	}
 
@@ -132,6 +135,9 @@ export abstract class RestControllerBase extends TrailsController {
 	 * @param statusCode HTTP status code. Default is 200.
 	 */
 	protected send(res: express.Response, data: any, statusCode: number): express.Response {
+		if (typeof data == 'number') {
+			data += <any>'';
+		}
 		return res.status(statusCode).send(data);
 	}
 }

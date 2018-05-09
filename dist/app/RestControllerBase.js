@@ -58,6 +58,9 @@ let RestControllerBase = class RestControllerBase extends TrailsController {
     clientError(res, returnErr, statusCode = 400, shouldLogErr = false) {
         shouldLogErr && super.log.error(returnErr);
         statusCode = (400 <= statusCode && statusCode <= 499) ? statusCode : 400;
+        if (typeof returnErr == 'number') {
+            returnErr += '';
+        }
         res.status(statusCode).send(returnErr);
     }
     /**
@@ -111,6 +114,9 @@ let RestControllerBase = class RestControllerBase extends TrailsController {
      * @param statusCode HTTP status code. Default is 200.
      */
     send(res, data, statusCode) {
+        if (typeof data == 'number') {
+            data += '';
+        }
         return res.status(statusCode).send(data);
     }
 };

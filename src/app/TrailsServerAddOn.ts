@@ -6,6 +6,7 @@ import { injectable, inject, IDependencyContainer, Guard, HandlerContainer,
 import { pushFilterToArray } from './decorators/filter';
 import { TenantResolverFilter } from './filters/TenantResolverFilter';
 import { ErrorHandlerFilter } from './filters/ErrorHandlerFilter';
+import { AuthFilter } from './filters/AuthFilter';
 import { serverContext } from './ServerContext';
 import { MetaData } from './constants/MetaData';
 import { Types as T } from './Types';
@@ -192,7 +193,7 @@ export class TrailsServerAddOn implements IServiceAddOn {
 		//		1: [ [FilterClass, funcName], [FilterClass, funcName] ]
 		// ]
 		let FilterClass, funcName;
-		for (let priorityFilters of metaFilters.reverse()) {
+		metaFilters.reverse().forEach(priorityFilters => {
 			for (let f of priorityFilters) { // 1: [ [FilterClass, funcName], [FilterClass, funcName] ]
 				if ((typeof f) == 'function') {
 					ctrlFilters.push(f);
@@ -203,7 +204,7 @@ export class TrailsServerAddOn implements IServiceAddOn {
 						this.bindFuncWithFilterInstance(FilterClass, funcName)
 					);
 			}
-		}
+		});
 	}
 
 	protected bindFuncWithFilterInstance(FilterClass: INewable<any>, funcName: string): Function {
@@ -259,7 +260,7 @@ export class TrailsServerAddOn implements IServiceAddOn {
 			// });
 
 			let FilterClass, funcName;
-			for (let priorityFilters of metaFilters.reverse()) {
+			metaFilters.reverse().forEach(priorityFilters => {
 				for (let f of priorityFilters) { // 1: [ [FilterClass, funcName], [FilterClass, funcName] ]
 					if ((typeof f) == 'function') {
 						actFilters.push(f);
@@ -270,7 +271,7 @@ export class TrailsServerAddOn implements IServiceAddOn {
 							this.bindFuncWithFilterInstance(FilterClass, funcName)
 						);
 				}
-			}
+			});
 		}
 
 		// Save these filters and will execute them whenever
