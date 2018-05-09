@@ -78,14 +78,14 @@ export abstract class RestCRUDControllerBase<TModel extends IModelDTO>
 		if (!dto) { return; }
 
 		try {
-			dto = await this.doCreate(dto, req, res);
+			dto = await this.doCreate(req, res, dto);
 			this.created(res, dto);
 		} catch (err) {
 			this.internalError(res, err);
 		}
 	}
 
-	protected doCreate(dto: TModel, req: express.Request, res: express.Response): Promise<TModel & TModel[]> {
+	protected doCreate(req: express.Request, res: express.Response, dto: TModel): Promise<TModel & TModel[]> {
 		return this.repo.create(dto);
 	}
 
@@ -104,14 +104,14 @@ export abstract class RestCRUDControllerBase<TModel extends IModelDTO>
 		}
 
 		try {
-			let nRows: number = await this.doDeleteHard(pk, req, res);
+			let nRows: number = await this.doDeleteHard(req, res, pk);
 			this.ok(res, nRows);
 		} catch (err) {
 			this.internalError(res, err);
 		}
 	}
 
-	protected doDeleteHard(pk: any, req: express.Request, res: express.Response): Promise<number> {
+	protected doDeleteHard(req: express.Request, res: express.Response, pk: any): Promise<number> {
 		return this.repo.deleteHard(pk);
 	}
 
@@ -130,14 +130,14 @@ export abstract class RestCRUDControllerBase<TModel extends IModelDTO>
 		}
 
 		try {
-			let nRows: number = await this.doDeleteSoft(pk, req, res);
+			let nRows: number = await this.doDeleteSoft(req, res, pk);
 			this.ok(res, nRows);
 		} catch (err) {
 			this.internalError(res, err);
 		}
 	}
 
-	protected doDeleteSoft(pk: any, req: express.Request, res: express.Response): Promise<number> {
+	protected doDeleteSoft(req: express.Request, res: express.Response, pk: any): Promise<number> {
 		return this.repo.deleteSoft(pk);
 	}
 
@@ -150,14 +150,14 @@ export abstract class RestCRUDControllerBase<TModel extends IModelDTO>
 	public async exists(req: express.Request, res: express.Response) {
 		let uniqueProps = req.query;
 		try {
-			let gotIt: boolean = await this.doExists(uniqueProps, req, res);
+			let gotIt: boolean = await this.doExists(req, res, uniqueProps);
 			this.ok(res, gotIt);
 		} catch (err) {
 			this.internalError(res, err);
 		}
 	}
 
-	protected doExists(uniqueProps: any, req: express.Request, res: express.Response): Promise<boolean> {
+	protected doExists(req: express.Request, res: express.Response, uniqueProps: any): Promise<boolean> {
 		return this.repo.exists(uniqueProps, {
 			tenantId: req.params.tenantId
 		});
@@ -178,14 +178,14 @@ export abstract class RestCRUDControllerBase<TModel extends IModelDTO>
 		}
 
 		try {
-			let dto: TModel = await this.doFindByPk(pk, req, res);
+			let dto: TModel = await this.doFindByPk(req, res, pk);
 			this.ok(res, dto);
 		} catch (err) {
 			this.internalError(res, err);
 		}
 	}
 
-	protected doFindByPk(pk: any, req: express.Request, res: express.Response): Promise<TModel> {
+	protected doFindByPk(req: express.Request, res: express.Response, pk: any): Promise<TModel> {
 		return this.repo.findByPk(pk);
 	}
 
@@ -204,14 +204,14 @@ export abstract class RestCRUDControllerBase<TModel extends IModelDTO>
 		}
 
 		try {
-			let nRows: number = await this.doRecover(pk, req, res);
+			let nRows: number = await this.doRecover(req, res, pk);
 			this.ok(res, nRows);
 		} catch (err) {
 			this.internalError(res, err);
 		}
 	}
 
-	protected doRecover(pk: any, req: express.Request, res: express.Response): Promise<number> {
+	protected doRecover(req: express.Request, res: express.Response, pk: any): Promise<number> {
 		return this.repo.recover(pk);
 	}
 
@@ -220,30 +220,37 @@ export abstract class RestCRUDControllerBase<TModel extends IModelDTO>
 
 	//#region page
 
-	@action('GET', 'page/:pageIndex?/:pageSize?')
+	@action('GET', 'page/:pageIndex?/:pageSize?/:sortBy?/:sortType?')
 	public async page(req: express.Request, res: express.Response) {
-		let pageIndex, pageSize;
+		let pageIndex, pageSize, sortBy, sortType, error;
 		try {
-			pageIndex = joi.number().default(1).validate(req.params.pageIndex);
-			pageSize = joi.number().default(25).validate(req.params.pageSize);
+			({value: pageIndex, error} = joi.number().min(1).default(1).validate(req.params.pageIndex));
+			if (error) { throw error; }
+
+			({value: pageSize, error} = joi.number().min(10).max(100).default(25).validate(req.params.pageSize));
+			if (error) { throw error; }
+
+			({value: sortBy, error} = joi.string().min(1).validate(req.params.sortBy));
+			if (error) { throw error; }
+
+			({value: sortType, error} = joi.string().valid('asc', 'desc').validate(req.params.sortType));
+			if (error) { throw error; }
 		} catch (err) {
 			this.validationError(res, new ValidationError(err.detail));
 			return;
 		}
 		try {
-			let result: PagedArray<TModel> = await this.doPage(pageIndex, pageSize, req, res);
-			this.ok(res, !result ? new PagedArray<TModel>(0) : {
-				total: result.total,
-				data: result
-			});
+			let result: PagedArray<TModel> = await this.doPage(req, res, pageIndex - 1, pageSize, sortBy, sortType);
+			this.ok(res, result ? result.asObject() : new PagedArray<TModel>());
 		} catch (err) {
 			this.internalError(res, err);
 		}
 	}
 
-	protected doPage(pageIndex: number, pageSize: number, req: express.Request, res: express.Response): Promise<PagedArray<TModel>> {
+	protected doPage( req: express.Request, res: express.Response, pageIndex: number, pageSize: number, sortBy: string, sortType: 'asc' | 'desc'): Promise<PagedArray<TModel>> {
 		return this.repo.page(pageIndex, pageSize, {
-			tenantId: req.params.tenantId
+			tenantId: req.params.tenantId,
+			sortBy, sortType
 		});
 	}
 
@@ -260,14 +267,14 @@ export abstract class RestCRUDControllerBase<TModel extends IModelDTO>
 		if (!model) { return; }
 
 		try {
-			let updatedProps: Partial<TModel> = await this.doPatch(model, req, res);
+			let updatedProps: Partial<TModel> = await this.doPatch(req, res, model);
 			this.ok(res, updatedProps);
 		} catch (err) {
 			this.internalError(res, err);
 		}
 	}
 
-	protected doPatch(model: Partial<TModel> & Partial<TModel>[], req: express.Request, res: express.Response): Promise<Partial<TModel> & Partial<TModel>[]> {
+	protected doPatch(req: express.Request, res: express.Response, model: Partial<TModel> & Partial<TModel>[]): Promise<Partial<TModel> & Partial<TModel>[]> {
 		return this.repo.patch(model);
 	}
 
@@ -284,14 +291,14 @@ export abstract class RestCRUDControllerBase<TModel extends IModelDTO>
 		if (!model) { return; }
 
 		try {
-			let updatedModel: TModel = await this.doUpdate(model, req, res);
+			let updatedModel: TModel = await this.doUpdate(req, res, model);
 			this.ok(res, updatedModel);
 		} catch (err) {
 			this.internalError(res, err);
 		}
 	}
 
-	protected doUpdate(dto: TModel | TModel[], req: express.Request, res: express.Response): Promise<TModel & TModel[]> {
+	protected doUpdate(req: express.Request, res: express.Response, dto: TModel | TModel[]): Promise<TModel & TModel[]> {
 		return this.repo.update(dto);
 	}
 

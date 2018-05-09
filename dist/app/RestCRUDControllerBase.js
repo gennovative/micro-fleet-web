@@ -74,7 +74,7 @@ let RestCRUDControllerBase = class RestCRUDControllerBase extends RestController
                 return;
             }
             try {
-                dto = yield this.doCreate(dto, req, res);
+                dto = yield this.doCreate(req, res, dto);
                 this.created(res, dto);
             }
             catch (err) {
@@ -82,7 +82,7 @@ let RestCRUDControllerBase = class RestCRUDControllerBase extends RestController
             }
         });
     }
-    doCreate(dto, req, res) {
+    doCreate(req, res, dto) {
         return this.repo.create(dto);
     }
     //#endregion create
@@ -95,7 +95,7 @@ let RestCRUDControllerBase = class RestCRUDControllerBase extends RestController
                 return;
             }
             try {
-                let nRows = yield this.doDeleteHard(pk, req, res);
+                let nRows = yield this.doDeleteHard(req, res, pk);
                 this.ok(res, nRows);
             }
             catch (err) {
@@ -103,7 +103,7 @@ let RestCRUDControllerBase = class RestCRUDControllerBase extends RestController
             }
         });
     }
-    doDeleteHard(pk, req, res) {
+    doDeleteHard(req, res, pk) {
         return this.repo.deleteHard(pk);
     }
     //#endregion deleteHard
@@ -116,7 +116,7 @@ let RestCRUDControllerBase = class RestCRUDControllerBase extends RestController
                 return;
             }
             try {
-                let nRows = yield this.doDeleteSoft(pk, req, res);
+                let nRows = yield this.doDeleteSoft(req, res, pk);
                 this.ok(res, nRows);
             }
             catch (err) {
@@ -124,7 +124,7 @@ let RestCRUDControllerBase = class RestCRUDControllerBase extends RestController
             }
         });
     }
-    doDeleteSoft(pk, req, res) {
+    doDeleteSoft(req, res, pk) {
         return this.repo.deleteSoft(pk);
     }
     //#endregion deleteSoft
@@ -133,7 +133,7 @@ let RestCRUDControllerBase = class RestCRUDControllerBase extends RestController
         return __awaiter(this, void 0, void 0, function* () {
             let uniqueProps = req.query;
             try {
-                let gotIt = yield this.doExists(uniqueProps, req, res);
+                let gotIt = yield this.doExists(req, res, uniqueProps);
                 this.ok(res, gotIt);
             }
             catch (err) {
@@ -141,7 +141,7 @@ let RestCRUDControllerBase = class RestCRUDControllerBase extends RestController
             }
         });
     }
-    doExists(uniqueProps, req, res) {
+    doExists(req, res, uniqueProps) {
         return this.repo.exists(uniqueProps, {
             tenantId: req.params.tenantId
         });
@@ -156,7 +156,7 @@ let RestCRUDControllerBase = class RestCRUDControllerBase extends RestController
                 return;
             }
             try {
-                let dto = yield this.doFindByPk(pk, req, res);
+                let dto = yield this.doFindByPk(req, res, pk);
                 this.ok(res, dto);
             }
             catch (err) {
@@ -164,7 +164,7 @@ let RestCRUDControllerBase = class RestCRUDControllerBase extends RestController
             }
         });
     }
-    doFindByPk(pk, req, res) {
+    doFindByPk(req, res, pk) {
         return this.repo.findByPk(pk);
     }
     //#endregion findByPk
@@ -177,7 +177,7 @@ let RestCRUDControllerBase = class RestCRUDControllerBase extends RestController
                 return;
             }
             try {
-                let nRows = yield this.doRecover(pk, req, res);
+                let nRows = yield this.doRecover(req, res, pk);
                 this.ok(res, nRows);
             }
             catch (err) {
@@ -185,37 +185,49 @@ let RestCRUDControllerBase = class RestCRUDControllerBase extends RestController
             }
         });
     }
-    doRecover(pk, req, res) {
+    doRecover(req, res, pk) {
         return this.repo.recover(pk);
     }
     //#endregion recover
     //#region page
     page(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
-            let pageIndex, pageSize;
+            let pageIndex, pageSize, sortBy, sortType, error;
             try {
-                pageIndex = joi.number().default(1).validate(req.params.pageIndex);
-                pageSize = joi.number().default(25).validate(req.params.pageSize);
+                ({ value: pageIndex, error } = joi.number().min(1).default(1).validate(req.params.pageIndex));
+                if (error) {
+                    throw error;
+                }
+                ({ value: pageSize, error } = joi.number().min(10).max(100).default(25).validate(req.params.pageSize));
+                if (error) {
+                    throw error;
+                }
+                ({ value: sortBy, error } = joi.string().min(1).validate(req.params.sortBy));
+                if (error) {
+                    throw error;
+                }
+                ({ value: sortType, error } = joi.string().valid('asc', 'desc').validate(req.params.sortType));
+                if (error) {
+                    throw error;
+                }
             }
             catch (err) {
                 this.validationError(res, new back_lib_common_contracts_1.ValidationError(err.detail));
                 return;
             }
             try {
-                let result = yield this.doPage(pageIndex, pageSize, req, res);
-                this.ok(res, !result ? new back_lib_common_contracts_1.PagedArray(0) : {
-                    total: result.total,
-                    data: result
-                });
+                let result = yield this.doPage(req, res, pageIndex - 1, pageSize, sortBy, sortType);
+                this.ok(res, result ? result.asObject() : new back_lib_common_contracts_1.PagedArray());
             }
             catch (err) {
                 this.internalError(res, err);
             }
         });
     }
-    doPage(pageIndex, pageSize, req, res) {
+    doPage(req, res, pageIndex, pageSize, sortBy, sortType) {
         return this.repo.page(pageIndex, pageSize, {
-            tenantId: req.params.tenantId
+            tenantId: req.params.tenantId,
+            sortBy, sortType
         });
     }
     //#endregion page
@@ -229,7 +241,7 @@ let RestCRUDControllerBase = class RestCRUDControllerBase extends RestController
                 return;
             }
             try {
-                let updatedProps = yield this.doPatch(model, req, res);
+                let updatedProps = yield this.doPatch(req, res, model);
                 this.ok(res, updatedProps);
             }
             catch (err) {
@@ -237,7 +249,7 @@ let RestCRUDControllerBase = class RestCRUDControllerBase extends RestController
             }
         });
     }
-    doPatch(model, req, res) {
+    doPatch(req, res, model) {
         return this.repo.patch(model);
     }
     //#endregion patch
@@ -251,7 +263,7 @@ let RestCRUDControllerBase = class RestCRUDControllerBase extends RestController
                 return;
             }
             try {
-                let updatedModel = yield this.doUpdate(model, req, res);
+                let updatedModel = yield this.doUpdate(req, res, model);
                 this.ok(res, updatedModel);
             }
             catch (err) {
@@ -259,7 +271,7 @@ let RestCRUDControllerBase = class RestCRUDControllerBase extends RestController
             }
         });
     }
-    doUpdate(dto, req, res) {
+    doUpdate(req, res, dto) {
         return this.repo.update(dto);
     }
 };
@@ -306,7 +318,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], RestCRUDControllerBase.prototype, "recover", null);
 __decorate([
-    action('GET', 'page/:pageIndex?/:pageSize?'),
+    action('GET', 'page/:pageIndex?/:pageSize?/:sortBy?/:sortType?'),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object, Object]),
     __metadata("design:returntype", Promise)

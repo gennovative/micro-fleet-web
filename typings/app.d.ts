@@ -228,23 +228,23 @@ declare module 'back-lib-common-web/dist/app/RestCRUDControllerBase' {
 	    	    countAll(req: express.Request, res: express.Response): Promise<void>;
 	    protected doCountAll(req: express.Request, res: express.Response): Promise<number>;
 	    create(req: express.Request, res: express.Response): Promise<void>;
-	    protected doCreate(dto: TModel, req: express.Request, res: express.Response): Promise<TModel & TModel[]>;
+	    protected doCreate(req: express.Request, res: express.Response, dto: TModel): Promise<TModel & TModel[]>;
 	    deleteHard(req: express.Request, res: express.Response): Promise<void>;
-	    protected doDeleteHard(pk: any, req: express.Request, res: express.Response): Promise<number>;
+	    protected doDeleteHard(req: express.Request, res: express.Response, pk: any): Promise<number>;
 	    deleteSoft(req: express.Request, res: express.Response): Promise<void>;
-	    protected doDeleteSoft(pk: any, req: express.Request, res: express.Response): Promise<number>;
+	    protected doDeleteSoft(req: express.Request, res: express.Response, pk: any): Promise<number>;
 	    exists(req: express.Request, res: express.Response): Promise<void>;
-	    protected doExists(uniqueProps: any, req: express.Request, res: express.Response): Promise<boolean>;
+	    protected doExists(req: express.Request, res: express.Response, uniqueProps: any): Promise<boolean>;
 	    findByPk(req: express.Request, res: express.Response): Promise<void>;
-	    protected doFindByPk(pk: any, req: express.Request, res: express.Response): Promise<TModel>;
+	    protected doFindByPk(req: express.Request, res: express.Response, pk: any): Promise<TModel>;
 	    recover(req: express.Request, res: express.Response): Promise<void>;
-	    protected doRecover(pk: any, req: express.Request, res: express.Response): Promise<number>;
+	    protected doRecover(req: express.Request, res: express.Response, pk: any): Promise<number>;
 	    page(req: express.Request, res: express.Response): Promise<void>;
-	    protected doPage(pageIndex: number, pageSize: number, req: express.Request, res: express.Response): Promise<PagedArray<TModel>>;
+	    protected doPage(req: express.Request, res: express.Response, pageIndex: number, pageSize: number, sortBy: string, sortType: 'asc' | 'desc'): Promise<PagedArray<TModel>>;
 	    patch(req: express.Request, res: express.Response): Promise<void>;
-	    protected doPatch(model: Partial<TModel> & Partial<TModel>[], req: express.Request, res: express.Response): Promise<Partial<TModel> & Partial<TModel>[]>;
+	    protected doPatch(req: express.Request, res: express.Response, model: Partial<TModel> & Partial<TModel>[]): Promise<Partial<TModel> & Partial<TModel>[]>;
 	    update(req: express.Request, res: express.Response): Promise<void>;
-	    protected doUpdate(dto: TModel | TModel[], req: express.Request, res: express.Response): Promise<TModel & TModel[]>;
+	    protected doUpdate(req: express.Request, res: express.Response, dto: TModel | TModel[]): Promise<TModel & TModel[]>;
 	}
 
 }

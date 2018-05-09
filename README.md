@@ -24,6 +24,7 @@ See more examples and usage guide in unit test.
 - Improved controller and action filter pre-binding process.
 - Improved automatic route generation process.
 - Fixed some bugs in `RestCRUDControllerBase`.
+- Removed `api` property from TrailsOpts.
 
 ### 0.2.0
 - Split **RestControllerBase** into **RestCRUDControllerBase** (inherits **RestControllerBase**).
