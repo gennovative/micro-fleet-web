@@ -1,7 +1,7 @@
 "use strict";
 /// <reference types="reflect-metadata" />
 Object.defineProperty(exports, "__esModule", { value: true });
-const back_lib_common_util_1 = require("back-lib-common-util");
+const common_1 = require("@micro-fleet/common");
 const MetaData_1 = require("../constants/MetaData");
 /**
  * Used to decorate REST controller class.
@@ -12,7 +12,7 @@ const MetaData_1 = require("../constants/MetaData");
 function controller(path = '') {
     return function (targetClass) {
         if (Reflect.hasOwnMetadata(MetaData_1.MetaData.CONTROLLER, targetClass)) {
-            throw new back_lib_common_util_1.CriticalException('Duplicate controller decorator');
+            throw new common_1.CriticalException('Duplicate controller decorator');
         }
         if (path == null) {
             path = '';
@@ -22,7 +22,7 @@ function controller(path = '') {
             // Only if controller name is in format {xxx}Controller.
             path = targetClass.name.match(/(.+)Controller$/)[1];
             path = path[0].toLowerCase() + path.substring(1); // to camel case
-            back_lib_common_util_1.Guard.assertIsDefined(path, 'Cannot extract path from controller name');
+            common_1.Guard.assertIsDefined(path, 'Cannot extract path from controller name');
         }
         else {
             if (path.length >= 1 && !path.startsWith('/')) {
@@ -39,3 +39,4 @@ function controller(path = '') {
     };
 }
 exports.controller = controller;
+//# sourceMappingURL=controller.js.map

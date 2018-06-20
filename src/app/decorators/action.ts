@@ -1,9 +1,9 @@
 /// <reference types="reflect-metadata" />
 
-import { IDependencyContainer, CriticalException } from 'back-lib-common-util';
+import { IDependencyContainer, CriticalException } from '@micro-fleet/common';
 
 import { MetaData } from '../constants/MetaData';
-import { serverContext } from '../ServerContext';
+import { webContext } from '../WebContext';
 
 
 export type ActionDecorator = (method?: string, path?: string) => Function;

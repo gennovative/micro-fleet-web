@@ -16,7 +16,9 @@ const back_lib_common_util_1 = require("back-lib-common-util");
  * Provides method to look up tenant ID from tenant slug.
  */
 let AuthorizeFilter = class AuthorizeFilter {
-    constructor() {
+    constructor(
+    // @inject() private logProvider: ILogProvider
+    ) {
     }
     authenticate(req, res, next) {
         if (!req.header('Authorization')) {
@@ -33,3 +35,4 @@ AuthorizeFilter = __decorate([
     __metadata("design:paramtypes", [])
 ], AuthorizeFilter);
 exports.AuthorizeFilter = AuthorizeFilter;
+//# sourceMappingURL=AuthorizeFilter.js.map

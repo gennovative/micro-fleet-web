@@ -3,7 +3,7 @@
 
 import * as express from 'express';
 
-import { injectable, inject } from 'back-lib-common-util';
+import { injectable, inject } from '@micro-fleet/common';
 
 /**
  * Provides method to look up tenant ID from tenant slug.

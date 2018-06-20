@@ -12,6 +12,8 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+var _a;
+"use strict";
 const TrailsApp = require("trails");
 const TrailsController = require("trails/controller");
 const back_lib_common_util_1 = require("back-lib-common-util");
@@ -123,6 +125,7 @@ let RestControllerBase = class RestControllerBase extends TrailsController {
 RestControllerBase = __decorate([
     back_lib_common_util_1.injectable(),
     __param(0, back_lib_common_util_1.unmanaged()),
-    __metadata("design:paramtypes", [TrailsApp])
+    __metadata("design:paramtypes", [typeof (_a = typeof TrailsApp !== "undefined" && TrailsApp) === "function" && _a || Object])
 ], RestControllerBase);
 exports.RestControllerBase = RestControllerBase;
+//# sourceMappingURL=RestControllerBase.js.map

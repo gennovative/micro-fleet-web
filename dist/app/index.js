@@ -9,3 +9,4 @@ __export(require("./TrailsServerAddOn"));
 __export(require("./AuthAddOn"));
 __export(require("./Types"));
 __export(require("./decorators"));
+//# sourceMappingURL=index.js.map

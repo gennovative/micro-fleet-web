@@ -1,17 +1,14 @@
-import TrailsApp = require('trails');
 import jwt = require('jsonwebtoken');
 import * as passport from 'passport';
 import * as passportJwt from 'passport-jwt';
-import { Types as cmT, IConfigurationProvider } from 'back-lib-common-contracts';
-import { injectable, inject } from 'back-lib-common-util';
+import { injectable, inject, Types as cmT, IConfigurationProvider } from '@micro-fleet/common';
 
-import { TrailsServerAddOn } from './TrailsServerAddOn';
+import { ExpressServerAddOn } from './ExpressServerAddOn';
 import { Types as T } from './Types';
-import bluebird = require('bluebird');
-
 
 const ExtractJwt = passportJwt.ExtractJwt;
 const JwtStrategy = passportJwt.Strategy;
+
 
 export type AuthResult = {
 	payload: any,
@@ -22,15 +19,12 @@ export type AuthResult = {
 @injectable()
 export class AuthAddOn implements IServiceAddOn {
 
+	public readonly name: string = 'AuthAddOn';
+
 	constructor(
-		@inject(T.TRAILS_ADDON) private _serverAddOn: TrailsServerAddOn,
+		@inject(T.WEBSERVER_ADDON) private _serverAddOn: ExpressServerAddOn,
 		@inject(cmT.CONFIG_PROVIDER) private _configProvider: IConfigurationProvider,
 	) {
-	}
-
-
-	public get server(): TrailsApp {
-		return this._serverAddOn.server;
 	}
 
 
@@ -40,19 +34,19 @@ export class AuthAddOn implements IServiceAddOn {
 	 * @see IServiceAddOn.init
 	 */
 	public init(): Promise<void> {
-		this._serverAddOn.server['config'].web.middlewares.passportInit = passport.initialize();
+		this._serverAddOn.express.use(passport.initialize());
 
-		const opts = {
+		const opts: passportJwt.StrategyOptions = {
 			algorithms: ['HS256'],
-			secretOrKey: this._configProvider.get('jwtSecret'),
+			secretOrKey: this._configProvider.get('jwtSecret').value as string,
 			jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-			issuer: this._configProvider.get('jwtIssuer'),
+			issuer: this._configProvider.get('jwtIssuer').value as string,
 		};
 		this.initToken(opts);
 		return Promise.resolve();
 	}
 
-	private initToken(opts): void {
+	private initToken(opts: passportJwt.StrategyOptions): void {
 		// `payload` is decrypted from Access token from header.
 		let strategy = new JwtStrategy(opts, (payload, done) => {
 			// TODO: 1. Validate payload object
@@ -64,7 +58,8 @@ export class AuthAddOn implements IServiceAddOn {
 
 	//#endregion Init
 
-	public authenticate(request, response, next): Promise<AuthResult> {
+
+	public authenticate(request: any, response: any, next: Function): Promise<AuthResult> {
 		return new Promise<any>((resolve, reject) => {
 			passport.authenticate('jwt', (error, payload, info, status) => {
 				if (error) {
@@ -75,7 +70,7 @@ export class AuthAddOn implements IServiceAddOn {
 		});
 	}
 
-	public async createToken(payload, isRefresh: Boolean): Promise<string> {
+	public async createToken(payload: any, isRefresh: Boolean): Promise<string> {
 		let sign = new Promise<any>((resolve, reject) => {
 			jwt.sign(
 				// Data
@@ -84,11 +79,11 @@ export class AuthAddOn implements IServiceAddOn {
 					username: payload.username
 				},
 				// Secret
-				this._configProvider.get('jwtSecret'),
+				this._configProvider.get('jwtSecret').value as string,
 				// Config
 				{
 					expiresIn: isRefresh ? '30d' : 60 * 30,
-					issuer: this._configProvider.get('jwtIssuer'),
+					issuer: this._configProvider.get('jwtIssuer').value as string,
 				},
 				// Callback
 				(err, token) => {

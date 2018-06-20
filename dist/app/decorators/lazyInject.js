@@ -1,7 +1,7 @@
 "use strict";
 /// <reference types="reflect-metadata" />
 Object.defineProperty(exports, "__esModule", { value: true });
-const ServerContext_1 = require("../ServerContext");
+const common_1 = require("@micro-fleet/common");
 const INJECTION = Symbol();
 function proxyGetter(proto, key, resolve) {
     function getter() {
@@ -13,12 +13,13 @@ function proxyGetter(proto, key, resolve) {
     function setter(newVal) {
         Reflect.defineMetadata(INJECTION, newVal, this, key);
     }
-    Object.defineProperty(proto, key, {
+    const desc = Object.getOwnPropertyDescriptor(proto, key) || {
         configurable: true,
         enumerable: true,
-        get: getter,
-        set: setter
-    });
+    };
+    desc.get = getter;
+    desc.set = setter;
+    Object.defineProperty(proto, key, desc);
 }
 /**
  * Injects value to the decorated property.
@@ -26,8 +27,9 @@ function proxyGetter(proto, key, resolve) {
  */
 function lazyInject(depIdentifier) {
     return function (proto, key) {
-        let resolve = () => ServerContext_1.serverContext.dependencyContainer.resolve(depIdentifier);
+        const resolve = () => common_1.serviceContext.dependencyContainer.resolve(depIdentifier);
         proxyGetter(proto, key, resolve);
     };
 }
 exports.lazyInject = lazyInject;
+//# sourceMappingURL=lazyInject.js.map

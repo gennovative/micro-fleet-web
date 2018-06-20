@@ -8,3 +8,4 @@ Types.TRAILS_APP = 'common-web.TrailsApp';
 Types.TRAILS_OPTS = 'common-web.TrailsAppOts';
 Types.AUTH_ADDON = 'common-web.AuthAddOn';
 exports.Types = Types;
+//# sourceMappingURL=Types.js.map

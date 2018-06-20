@@ -11,20 +11,11 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 const jwt = require("jsonwebtoken");
 const passport = require("passport");
 const passportJwt = require("passport-jwt");
-const back_lib_common_contracts_1 = require("back-lib-common-contracts");
-const back_lib_common_util_1 = require("back-lib-common-util");
+const common_1 = require("@micro-fleet/common");
 const TrailsServerAddOn_1 = require("./TrailsServerAddOn");
 const Types_1 = require("./Types");
 const ExtractJwt = passportJwt.ExtractJwt;
@@ -33,9 +24,7 @@ let AuthAddOn = class AuthAddOn {
     constructor(_serverAddOn, _configProvider) {
         this._serverAddOn = _serverAddOn;
         this._configProvider = _configProvider;
-    }
-    get server() {
-        return this._serverAddOn.server;
+        this.name = 'AuthAddOn';
     }
     //#region Init
     /**
@@ -45,9 +34,9 @@ let AuthAddOn = class AuthAddOn {
         this._serverAddOn.server['config'].web.middlewares.passportInit = passport.initialize();
         const opts = {
             algorithms: ['HS256'],
-            secretOrKey: this._configProvider.get('jwtSecret'),
+            secretOrKey: this._configProvider.get('jwtSecret').value,
             jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-            issuer: this._configProvider.get('jwtIssuer'),
+            issuer: this._configProvider.get('jwtIssuer').value,
         };
         this.initToken(opts);
         return Promise.resolve();
@@ -72,32 +61,30 @@ let AuthAddOn = class AuthAddOn {
             })(request, response, next);
         });
     }
-    createToken(payload, isRefresh) {
-        return __awaiter(this, void 0, void 0, function* () {
-            let sign = new Promise((resolve, reject) => {
-                jwt.sign(
-                // Data
-                {
-                    accountId: payload.id,
-                    username: payload.username
-                }, 
-                // Secret
-                this._configProvider.get('jwtSecret'), 
-                // Config
-                {
-                    expiresIn: isRefresh ? '30d' : 60 * 30,
-                    issuer: this._configProvider.get('jwtIssuer'),
-                }, 
-                // Callback
-                (err, token) => {
-                    if (token) {
-                        resolve(token);
-                    }
-                });
+    async createToken(payload, isRefresh) {
+        let sign = new Promise((resolve, reject) => {
+            jwt.sign(
+            // Data
+            {
+                accountId: payload.id,
+                username: payload.username
+            }, 
+            // Secret
+            this._configProvider.get('jwtSecret').value, 
+            // Config
+            {
+                expiresIn: isRefresh ? '30d' : 60 * 30,
+                issuer: this._configProvider.get('jwtIssuer').value,
+            }, 
+            // Callback
+            (err, token) => {
+                if (token) {
+                    resolve(token);
+                }
             });
-            let token = yield sign;
-            return token;
         });
+        let token = await sign;
+        return token;
     }
     /**
      * @see IServiceAddOn.deadLetter
@@ -113,9 +100,10 @@ let AuthAddOn = class AuthAddOn {
     }
 };
 AuthAddOn = __decorate([
-    back_lib_common_util_1.injectable(),
-    __param(0, back_lib_common_util_1.inject(Types_1.Types.TRAILS_ADDON)),
-    __param(1, back_lib_common_util_1.inject(back_lib_common_contracts_1.Types.CONFIG_PROVIDER)),
+    common_1.injectable(),
+    __param(0, common_1.inject(Types_1.Types.TRAILS_ADDON)),
+    __param(1, common_1.inject(common_1.Types.CONFIG_PROVIDER)),
     __metadata("design:paramtypes", [TrailsServerAddOn_1.TrailsServerAddOn, Object])
 ], AuthAddOn);
 exports.AuthAddOn = AuthAddOn;
+//# sourceMappingURL=AuthAddOn.js.map

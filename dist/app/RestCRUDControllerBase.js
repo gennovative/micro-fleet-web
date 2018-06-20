@@ -11,18 +11,11 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", { value: true });
+var _a;
+"use strict";
 const express = require("express");
 const joi = require("joi");
-const TrailsApp = require("trails");
 const back_lib_common_util_1 = require("back-lib-common-util");
 const back_lib_common_contracts_1 = require("back-lib-common-contracts");
 const RestControllerBase_1 = require("./RestControllerBase");
@@ -47,16 +40,14 @@ let RestCRUDControllerBase = class RestCRUDControllerBase extends RestController
         // this._cache.
     }
     //#region countAll
-    countAll(req, res) {
-        return __awaiter(this, void 0, void 0, function* () {
-            try {
-                let nRows = yield this.doCountAll(req, res);
-                this.ok(res, nRows);
-            }
-            catch (err) {
-                this.internalError(res, err);
-            }
-        });
+    async countAll(req, res) {
+        try {
+            let nRows = await this.doCountAll(req, res);
+            this.ok(res, nRows);
+        }
+        catch (err) {
+            this.internalError(res, err);
+        }
     }
     doCountAll(req, res) {
         return this.repo.countAll({
@@ -65,81 +56,73 @@ let RestCRUDControllerBase = class RestCRUDControllerBase extends RestController
     }
     //#endregion countAll
     //#region create
-    create(req, res) {
-        return __awaiter(this, void 0, void 0, function* () {
-            let dto = this.translator.whole(req.body.model, {
-                errorCallback: details => this.validationError(res, details)
-            });
-            if (!dto) {
-                return;
-            }
-            try {
-                dto = yield this.doCreate(req, res, dto);
-                this.created(res, dto);
-            }
-            catch (err) {
-                this.internalError(res, err);
-            }
+    async create(req, res) {
+        let dto = this.translator.whole(req.body.model, {
+            errorCallback: details => this.validationError(res, details)
         });
+        if (!dto) {
+            return;
+        }
+        try {
+            dto = await this.doCreate(req, res, dto);
+            this.created(res, dto);
+        }
+        catch (err) {
+            this.internalError(res, err);
+        }
     }
     doCreate(req, res, dto) {
         return this.repo.create(dto);
     }
     //#endregion create
     //#region deleteHard
-    deleteHard(req, res) {
-        return __awaiter(this, void 0, void 0, function* () {
-            let { tenantId, id } = req.params, [err, pk] = this.validator.pk(tenantId ? { id, tenantId } : id);
-            if (err) {
-                this.validationError(res, err);
-                return;
-            }
-            try {
-                let nRows = yield this.doDeleteHard(req, res, pk);
-                this.ok(res, nRows);
-            }
-            catch (err) {
-                this.internalError(res, err);
-            }
-        });
+    async deleteHard(req, res) {
+        let { tenantId, id } = req.params, [err, pk] = this.validator.pk(tenantId ? { id, tenantId } : id);
+        if (err) {
+            this.validationError(res, err);
+            return;
+        }
+        try {
+            let nRows = await this.doDeleteHard(req, res, pk);
+            this.ok(res, nRows);
+        }
+        catch (err) {
+            this.internalError(res, err);
+        }
     }
     doDeleteHard(req, res, pk) {
         return this.repo.deleteHard(pk);
     }
     //#endregion deleteHard
     //#region deleteSoft
-    deleteSoft(req, res) {
-        return __awaiter(this, void 0, void 0, function* () {
-            let { tenantId, id } = req.params, [err, pk] = this.validator.pk(tenantId ? { id, tenantId } : id);
-            if (err) {
-                this.validationError(res, err);
-                return;
-            }
-            try {
-                let nRows = yield this.doDeleteSoft(req, res, pk);
-                this.ok(res, nRows);
-            }
-            catch (err) {
-                this.internalError(res, err);
-            }
-        });
+    async deleteSoft(req, res) {
+        let { tenantId, id } = req.params, [err, pk] = this.validator.pk(tenantId ? { id, tenantId } : id);
+        if (err) {
+            this.validationError(res, err);
+            return;
+        }
+        try {
+            let nRows = await this.doDeleteSoft(req, res, pk);
+            this.ok(res, nRows);
+        }
+        catch (err) {
+            this.internalError(res, err);
+        }
     }
     doDeleteSoft(req, res, pk) {
         return this.repo.deleteSoft(pk);
     }
     //#endregion deleteSoft
     //#region exists
-    exists(req, res) {
-        return __awaiter(this, void 0, void 0, function* () {
-            let uniqueProps = req.query;
-            try {
-                let gotIt = yield this.doExists(req, res, uniqueProps);
-                this.ok(res, gotIt);
-            }
-            catch (err) {
-                this.internalError(res, err);
-            }
-        });
+    async exists(req, res) {
+        let uniqueProps = req.query;
+        try {
+            let gotIt = await this.doExists(req, res, uniqueProps);
+            this.ok(res, gotIt);
+        }
+        catch (err) {
+            this.internalError(res, err);
+        }
     }
     doExists(req, res, uniqueProps) {
         return this.repo.exists(uniqueProps, {
@@ -148,81 +131,75 @@ let RestCRUDControllerBase = class RestCRUDControllerBase extends RestController
     }
     //#endregion exists
     //#region findByPk
-    findByPk(req, res) {
-        return __awaiter(this, void 0, void 0, function* () {
-            let { tenantId, id } = req.params, [err, pk] = this.validator.pk(tenantId ? { id, tenantId } : id);
-            if (err) {
-                this.validationError(res, err);
-                return;
-            }
-            try {
-                let dto = yield this.doFindByPk(req, res, pk);
-                this.ok(res, dto);
-            }
-            catch (err) {
-                this.internalError(res, err);
-            }
-        });
+    async findByPk(req, res) {
+        let { tenantId, id } = req.params, [err, pk] = this.validator.pk(tenantId ? { id, tenantId } : id);
+        if (err) {
+            this.validationError(res, err);
+            return;
+        }
+        try {
+            let dto = await this.doFindByPk(req, res, pk);
+            this.ok(res, dto);
+        }
+        catch (err) {
+            this.internalError(res, err);
+        }
     }
     doFindByPk(req, res, pk) {
         return this.repo.findByPk(pk);
     }
     //#endregion findByPk
     //#region recover
-    recover(req, res) {
-        return __awaiter(this, void 0, void 0, function* () {
-            let { tenantId, id } = req.params, [err, pk] = this.validator.pk(tenantId ? { id, tenantId } : id);
-            if (err) {
-                this.validationError(res, err);
-                return;
-            }
-            try {
-                let nRows = yield this.doRecover(req, res, pk);
-                this.ok(res, nRows);
-            }
-            catch (err) {
-                this.internalError(res, err);
-            }
-        });
+    async recover(req, res) {
+        let { tenantId, id } = req.params, [err, pk] = this.validator.pk(tenantId ? { id, tenantId } : id);
+        if (err) {
+            this.validationError(res, err);
+            return;
+        }
+        try {
+            let nRows = await this.doRecover(req, res, pk);
+            this.ok(res, nRows);
+        }
+        catch (err) {
+            this.internalError(res, err);
+        }
     }
     doRecover(req, res, pk) {
         return this.repo.recover(pk);
     }
     //#endregion recover
     //#region page
-    page(req, res) {
-        return __awaiter(this, void 0, void 0, function* () {
-            let pageIndex, pageSize, sortBy, sortType, error;
-            try {
-                ({ value: pageIndex, error } = joi.number().min(1).default(1).validate(req.params.pageIndex));
-                if (error) {
-                    throw error;
-                }
-                ({ value: pageSize, error } = joi.number().min(10).max(100).default(25).validate(req.params.pageSize));
-                if (error) {
-                    throw error;
-                }
-                ({ value: sortBy, error } = joi.string().min(1).validate(req.params.sortBy));
-                if (error) {
-                    throw error;
-                }
-                ({ value: sortType, error } = joi.string().valid('asc', 'desc').validate(req.params.sortType));
-                if (error) {
-                    throw error;
-                }
+    async page(req, res) {
+        let pageIndex, pageSize, sortBy, sortType, error;
+        try {
+            ({ value: pageIndex, error } = joi.number().min(1).default(1).validate(req.params.pageIndex));
+            if (error) {
+                throw error;
             }
-            catch (err) {
-                this.validationError(res, new back_lib_common_contracts_1.ValidationError(err.detail));
-                return;
+            ({ value: pageSize, error } = joi.number().min(10).max(100).default(25).validate(req.params.pageSize));
+            if (error) {
+                throw error;
             }
-            try {
-                let result = yield this.doPage(req, res, pageIndex - 1, pageSize, sortBy, sortType);
-                this.ok(res, result ? result.asObject() : new back_lib_common_contracts_1.PagedArray());
+            ({ value: sortBy, error } = joi.string().min(1).validate(req.params.sortBy));
+            if (error) {
+                throw error;
             }
-            catch (err) {
-                this.internalError(res, err);
+            ({ value: sortType, error } = joi.string().valid('asc', 'desc').validate(req.params.sortType));
+            if (error) {
+                throw error;
             }
-        });
+        }
+        catch (err) {
+            this.validationError(res, new back_lib_common_contracts_1.ValidationError(err.detail));
+            return;
+        }
+        try {
+            let result = await this.doPage(req, res, pageIndex - 1, pageSize, sortBy, sortType);
+            this.ok(res, result ? result.asObject() : new back_lib_common_contracts_1.PagedArray());
+        }
+        catch (err) {
+            this.internalError(res, err);
+        }
     }
     doPage(req, res, pageIndex, pageSize, sortBy, sortType) {
         return this.repo.page(pageIndex, pageSize, {
@@ -232,44 +209,40 @@ let RestCRUDControllerBase = class RestCRUDControllerBase extends RestController
     }
     //#endregion page
     //#region patch
-    patch(req, res) {
-        return __awaiter(this, void 0, void 0, function* () {
-            let model = this.translator.partial(req.body.model, {
-                errorCallback: err => this.validationError(res, err)
-            });
-            if (!model) {
-                return;
-            }
-            try {
-                let updatedProps = yield this.doPatch(req, res, model);
-                this.ok(res, updatedProps);
-            }
-            catch (err) {
-                this.internalError(res, err);
-            }
+    async patch(req, res) {
+        let model = this.translator.partial(req.body.model, {
+            errorCallback: err => this.validationError(res, err)
         });
+        if (!model) {
+            return;
+        }
+        try {
+            let updatedProps = await this.doPatch(req, res, model);
+            this.ok(res, updatedProps);
+        }
+        catch (err) {
+            this.internalError(res, err);
+        }
     }
     doPatch(req, res, model) {
         return this.repo.patch(model);
     }
     //#endregion patch
     //#region update
-    update(req, res) {
-        return __awaiter(this, void 0, void 0, function* () {
-            let model = this.translator.whole(req.body.model, {
-                errorCallback: err => this.validationError(res, err)
-            });
-            if (!model) {
-                return;
-            }
-            try {
-                let updatedModel = yield this.doUpdate(req, res, model);
-                this.ok(res, updatedModel);
-            }
-            catch (err) {
-                this.internalError(res, err);
-            }
+    async update(req, res) {
+        let model = this.translator.whole(req.body.model, {
+            errorCallback: err => this.validationError(res, err)
         });
+        if (!model) {
+            return;
+        }
+        try {
+            let updatedModel = await this.doUpdate(req, res, model);
+            this.ok(res, updatedModel);
+        }
+        catch (err) {
+            this.internalError(res, err);
+        }
     }
     doUpdate(req, res, dto) {
         return this.repo.update(dto);
@@ -339,6 +312,7 @@ RestCRUDControllerBase = __decorate([
     back_lib_common_util_1.injectable(),
     __param(0, back_lib_common_util_1.unmanaged()),
     __param(1, back_lib_common_util_1.unmanaged()),
-    __metadata("design:paramtypes", [TrailsApp, Object])
+    __metadata("design:paramtypes", [typeof (_a = typeof TrailsApp !== "undefined" && TrailsApp) === "function" && _a || Object, Object])
 ], RestCRUDControllerBase);
 exports.RestCRUDControllerBase = RestCRUDControllerBase;
+//# sourceMappingURL=RestCRUDControllerBase.js.map

@@ -1,7 +1,7 @@
 "use strict";
 /// <reference types="reflect-metadata" />
 Object.defineProperty(exports, "__esModule", { value: true });
-const back_lib_common_util_1 = require("back-lib-common-util");
+const common_1 = require("@micro-fleet/common");
 const MetaData_1 = require("../constants/MetaData");
 /**
  * Used to decorate action function of REST controller class.
@@ -13,7 +13,7 @@ const MetaData_1 = require("../constants/MetaData");
 function action(method = 'GET', path = '') {
     return function (proto, funcName) {
         if (Reflect.hasOwnMetadata(MetaData_1.MetaData.ACTION, proto.constructor, funcName)) {
-            throw new back_lib_common_util_1.CriticalException('Duplicate action decorator');
+            throw new common_1.CriticalException('Duplicate action decorator');
         }
         if (path == null) {
             path = '';
@@ -36,3 +36,4 @@ function action(method = 'GET', path = '') {
     };
 }
 exports.action = action;
+//# sourceMappingURL=action.js.map

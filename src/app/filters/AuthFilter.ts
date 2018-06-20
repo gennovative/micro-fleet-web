@@ -4,7 +4,7 @@ const { lazyInject } = decorators;
 
 import { AuthAddOn } from '../AuthAddOn';
 import { Types as aT } from '../Types';
-import { TokenType } from '../constants/AuthConstant';
+
 
 export class AuthFilter {
 

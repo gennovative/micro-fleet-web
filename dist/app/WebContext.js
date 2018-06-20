@@ -4,23 +4,17 @@ Object.defineProperty(exports, "__esModule", { value: true });
  * Serves as a global object for all web-related classes (controllers, policies...)
  * to use.
  */
-class ServerContext {
+class WebContext {
     /**
-     * Gets dependency container.
+     * Gets url prefix. Eg: /api/v1.
      */
-    get dependencyContainer() {
-        return this._depContainer;
+    get urlPrefix() {
+        return this._urlPrefix;
     }
     /**
-     * Gets path prefix. Eg: /api/v1.
+     * Sets prefix to all route url, eg: /api/v1. Must be set before add-ons initialization phase.
      */
-    get pathPrefix() {
-        return this._pathPrefix;
-    }
-    setDependencyContainer(container) {
-        this._depContainer = container;
-    }
-    setPathPrefix(prefix) {
+    setUrlPrefix(prefix) {
         if (prefix.length >= 1 && !prefix.startsWith('/')) {
             // Add heading slash
             prefix = '/' + prefix;
@@ -29,8 +23,9 @@ class ServerContext {
             // Remove trailing slash
             prefix = prefix.substr(0, prefix.length - 1);
         }
-        this._pathPrefix = prefix;
+        this._urlPrefix = prefix;
     }
 }
-exports.ServerContext = ServerContext;
-exports.serverContext = new ServerContext();
+exports.WebContext = WebContext;
+exports.webContext = new WebContext();
+//# sourceMappingURL=WebContext.js.map

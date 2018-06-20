@@ -1,31 +1,35 @@
 /// <reference types="reflect-metadata" />
 
-import * as acorn from 'acorn';
-import * as ESTree from 'estree';
-import { CriticalException, Guard, INewable } from 'back-lib-common-util';
+import { Guard } from '@micro-fleet/common';
 
 import { MetaData } from '../constants/MetaData';
 
 
+/**
+ * Provides operations to intercept HTTP requests to a controller.
+ */
+export interface IActionFilter {
+	execute(request: any, response: any, next: Function): void;
+}
+
 export type FilterDecorator = <T>(
 		FilterClass: new (...param: any[]) => T,
-		filterFunc: (filter: T) => Function,
 		priority?: number
 	) => Function;
 
+export type FilterArray<T extends IActionFilter = IActionFilter> = Newable<T>[];
+export type PrioritizedFilterArray = FilterArray[];
+	
 
 /**
  * Used to add filter to controller class and controller action.
  * @param {class} FilterClass Filter class whose name must end with "Filter".
- * @param {ExpressionStatement} filterFunc An arrow function that returns filter's function.
- * 		This array function won't be executed, but is used to extract filter function name.
  * @param {number} priority A number from 0 to 10, filters with greater priority run before ones with less priority.
  */
-export function filter<T>(FilterClass: INewable<T>, filterFunc: (filter: T) => Function,
-		priority?: number): Function {
+export function filter<T extends IActionFilter>(FilterClass: Newable<T>, priority: number = 5): Function {
 
-	return function (TargetClass: INewable<T>, key: string): Function {
-		return addFilterToTarget(FilterClass, filterFunc, TargetClass, key, priority);
+	return function (TargetClass: Newable<T>, key: string): Function {
+		return addFilterToTarget(FilterClass, TargetClass, key, priority);
 	};
 }
 
@@ -33,61 +37,46 @@ export function filter<T>(FilterClass: INewable<T>, filterFunc: (filter: T) => F
  * Adds a filter to `TargetClass`. `TargetClass` can be a class or class prototype,
  * depending on whether the filter is meant to apply on class or class method.
  * @param FilterClass The filter class.
- * @param filterFunc The filter method to execute.
- * @param TargetClass A class or class prototype.
- * @param targetFunc Method name, if `TargetClass` is class prototype,
+ * @param TargetClassOrPrototype A class or class prototype.
+ * @param targetFunc Method name, if `TargetClass` is prototype object,
  * @param {number} priority A number from 0 to 10, filters with greater priority run before ones with less priority.
  */
-export function addFilterToTarget<T>(FilterClass: INewable<T>, filterFunc: (filter: T) => Function,
-		TargetClass: INewable<T>, targetFunc?: string, priority?: number): Function {
+export function addFilterToTarget<T extends IActionFilter>(FilterClass: Newable<T>,
+		TargetClassOrPrototype: Newable<T>, targetFunc?: string, priority: number = 5): Function {
 
 	let metaKey: string,
-		isCtrlScope = (!targetFunc); // If `key` has value, `targetClass` is "prototype" object, otherwise it's a class.
-	if (isCtrlScope) {
+		isClassScope = (!targetFunc); // If `targetFunc` has value, `targetClass` is "prototype" object, otherwise it's a class.
+	if (isClassScope) {
 		metaKey = MetaData.CONTROLLER_FILTER;
 	} else {
 		// If @filter is applied to class method, the given `TargetClass` is actually the class's prototype.
-		TargetClass = <any>TargetClass.constructor;
+		TargetClassOrPrototype = <any>TargetClassOrPrototype.constructor;
 		metaKey = MetaData.ACTION_FILTER;
 	}
 
-	let filters: any[][] = isCtrlScope
-		? Reflect.getOwnMetadata(metaKey, TargetClass)
-		: Reflect.getMetadata(metaKey, TargetClass, targetFunc);
-	// let filters: any[][] = Reflect.getMetadata(metaKey, TargetClass, key);
+	let filters: PrioritizedFilterArray = isClassScope
+		? Reflect.getOwnMetadata(metaKey, TargetClassOrPrototype)
+		: Reflect.getMetadata(metaKey, TargetClassOrPrototype, targetFunc);
 	filters = filters || [];
 
-	pushFilterToArray(filters, FilterClass, filterFunc, priority);
-	Reflect.defineMetadata(metaKey, filters, TargetClass, targetFunc);
-	return TargetClass;
+	pushFilterToArray(filters, FilterClass, priority);
+	Reflect.defineMetadata(metaKey, filters, TargetClassOrPrototype, targetFunc);
+	return TargetClassOrPrototype;
 }
 
 /**
  * Prepares a filter then push it to given array.
  */
-export function pushFilterToArray<T>(filters: any[], FilterClass: INewable<T>, filterFunc: (filter: T) => Function, priority?: number): void {
-	priority = priority || 5;
+export function pushFilterToArray<T extends IActionFilter>(filters: PrioritizedFilterArray, FilterClass: Newable<T>, priority: number = 5): void {
 	Guard.assertIsTruthy(priority >= 1 && priority <= 10, 'Filter priority must be between 1 and 10.');
-	Guard.assertIsTruthy(FilterClass.name.endsWith('Filter'), 'Filter class name must end with "Filter".');
 
-	let filterFuncName: string;
-	if (filterFunc != null) {
-		let func: ESTree.Program = acorn.parse(filterFunc.toString()),
-			body = func.body[0] as ESTree.ExpressionStatement,
-			expression = body.expression as ESTree.ArrowFunctionExpression,
-			isArrowFunc = expression.type == 'ArrowFunctionExpression';
 
-		Guard.assertIsTruthy(isArrowFunc, '`filterFunc` must be an arrow statement.');
-		filterFuncName = expression.body['property']['name'];
-	} else {
-		filterFuncName = 'execute';
-	}
-
-	// `filters` is a 3-dimensioned matrix:
+	// `filters` is a 2-dimensioned matrix, with indexes are priority value,
+	//   values are array of Filter classes. Eg:
 	// filters = [
-	//		1: [ [FilterClass, funcName], [FilterClass, funcName] ]
-	//		5: [ [FilterClass, funcName], [FilterClass, funcName] ]
+	//		1: [ FilterClass, FilterClass ]
+	//		5: [ FilterClass, FilterClass ]
 	// ]
 	filters[priority] = filters[priority] || [];
-	filters[priority].push([FilterClass, filterFuncName]);
+	filters[priority].push(FilterClass);
 }

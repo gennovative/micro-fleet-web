@@ -1,31 +1,31 @@
 /// <reference types="reflect-metadata" />
 
-import { IDependencyContainer } from 'back-lib-common-util';
-
-import { MetaData } from '../constants/MetaData';
-import { serverContext } from '../ServerContext';
+import { serviceContext } from '@micro-fleet/common';
 
 
 const INJECTION = Symbol();
 
 function proxyGetter(proto: any, key: string, resolve: () => any) {
-	function getter() {
+	function getter(this: any) {
 		if (!Reflect.hasMetadata(INJECTION, this, key)) {
 			Reflect.defineMetadata(INJECTION, resolve(), this, key);
 		}
 		return Reflect.getMetadata(INJECTION, this, key);
 	}
 
-	function setter(newVal: any) {
+	function setter(this: any, newVal: any) {
 		Reflect.defineMetadata(INJECTION, newVal, this, key);
 	}
 
-	Object.defineProperty(proto, key, {
+	const desc = Object.getOwnPropertyDescriptor(proto, key) || {
 		configurable: true,
 		enumerable: true,
-		get: getter,
-		set: setter
-	});
+	};
+
+	desc.get = getter;
+	desc.set = setter;
+
+	Object.defineProperty(proto, key, desc);
 }
 
 export type LazyInjectDecorator = (depIdentifier: symbol | string) => Function;
@@ -36,7 +36,7 @@ export type LazyInjectDecorator = (depIdentifier: symbol | string) => Function;
  */
 export function lazyInject(depIdentifier: symbol | string): Function {
 	return function (proto: any, key: string): void {
-		let resolve = () => serverContext.dependencyContainer.resolve(depIdentifier);
+		const resolve = () => serviceContext.dependencyContainer.resolve(depIdentifier);
 		proxyGetter(proto, key, resolve);
 	};
 }

@@ -1,12 +1,5 @@
 import * as express from 'express';
-import TrailsApp = require('trails');
-import TrailsController = require('trails/controller');
-
-import { injectable, decorate, unmanaged, HandlerContainer } from 'back-lib-common-util';
-import {
-	SettingItem, SettingItemDataType, ISoftDelRepository,
-	ModelAutoMapper, JoiModelValidator, PagedArray
-} from 'back-lib-common-contracts';
+import { injectable } from '@micro-fleet/common';
 
 
 export type TrailsRouteConfigItem = {
@@ -16,14 +9,11 @@ export type TrailsRouteConfigItem = {
 	config?: any
 };
 
-decorate(injectable(), TrailsController);
-decorate(unmanaged(), TrailsController, 0);
 
 @injectable()
-export abstract class RestControllerBase extends TrailsController {
+export abstract class RestControllerBase {
 
-	constructor(@unmanaged() trailsApp: TrailsApp) {
-		super(trailsApp);
+	constructor() {
 	}
 
 
@@ -68,7 +58,8 @@ export abstract class RestControllerBase extends TrailsController {
 	 * @param shouldLogErr Whether to write error to server log (eg: Illegal attempt to read/write resource...). Default to false.
 	 */
 	protected clientError(res: express.Response, returnErr: any, statusCode: number = 400, shouldLogErr: boolean = false): void {
-		shouldLogErr && super.log.error(returnErr);
+		// TODO: Implement Logging library
+		// shouldLogErr && super.log.error(returnErr);
 		statusCode = (400 <= statusCode && statusCode <= 499) ? statusCode : 400;
 		if (typeof returnErr == 'number') {
 			returnErr += <any>'';
@@ -123,7 +114,8 @@ export abstract class RestControllerBase extends TrailsController {
 	 * @param logErr Error to dump to server log, but not returned to client.
 	 */
 	protected internalError(res: express.Response, logErr: any): void {
-		super.log.error(logErr);
+		// TODO: Implement Logging library
+		// super.log.error(logErr);
 		res.status(500).send('server.error.internal');
 	}
 

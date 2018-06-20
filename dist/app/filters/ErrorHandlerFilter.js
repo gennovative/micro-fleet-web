@@ -11,20 +11,21 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const back_lib_common_util_1 = require("back-lib-common-util");
-const back_lib_common_contracts_1 = require("back-lib-common-contracts");
+const common_1 = require("@micro-fleet/common");
 /**
  * Provides method to look up tenant ID from tenant slug.
  */
 let ErrorHandlerFilter = class ErrorHandlerFilter {
-    constructor() {
+    constructor(
+    // @inject() private logProvider: ILogProvider
+    ) {
     }
-    handle(req, res, next) {
+    execute(req, res, next) {
         try {
             next();
         }
         catch (err) {
-            if (err instanceof back_lib_common_contracts_1.ValidationError) {
+            if (err instanceof common_1.ValidationError) {
                 res.status(412).send(err);
             }
             else {
@@ -35,7 +36,8 @@ let ErrorHandlerFilter = class ErrorHandlerFilter {
     }
 };
 ErrorHandlerFilter = __decorate([
-    back_lib_common_util_1.injectable(),
+    common_1.injectable(),
     __metadata("design:paramtypes", [])
 ], ErrorHandlerFilter);
 exports.ErrorHandlerFilter = ErrorHandlerFilter;
+//# sourceMappingURL=ErrorHandlerFilter.js.map

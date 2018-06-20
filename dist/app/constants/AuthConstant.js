@@ -6,3 +6,4 @@ var TokenType;
     TokenType["REFRESH"] = "jwt-refresh";
 })(TokenType || (TokenType = {}));
 exports.TokenType = TokenType;
+//# sourceMappingURL=AuthConstant.js.map

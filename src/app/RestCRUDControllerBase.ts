@@ -1,18 +1,13 @@
 import * as express from 'express';
 import * as joi from 'joi';
-import { decorate } from 'inversify';
-import * as TrailsApp from 'trails';
-import TrailsController = require('trails-controller');
 
-import { injectable, unmanaged, Guard, HandlerContainer } from 'back-lib-common-util';
-import {
-	SettingItem, SettingItemDataType, ISoftDelRepository,
-	ModelAutoMapper, JoiModelValidator, PagedArray, ValidationError
-} from 'back-lib-common-contracts';
+import { injectable, unmanaged, Guard, JoiModelValidator, PagedArray, 
+	ValidationError, ModelAutoMapper } from '@micro-fleet/common';
+import { ISoftDelRepository } from '@micro-fleet/persistence';
 
-import { RestControllerBase, TrailsRouteConfigItem } from './RestControllerBase';
+import { RestControllerBase } from './RestControllerBase';
 import { decorators } from './decorators';
-const { controller, action } = decorators;
+const { action } = decorators;
 
 
 @injectable()
@@ -24,10 +19,9 @@ export abstract class RestCRUDControllerBase<TModel extends IModelDTO>
 	private _repo: ISoftDelRepository<TModel, any, any>;
 	
 	constructor(
-		@unmanaged() trailsApp: TrailsApp,
-		@unmanaged() protected _ClassDTO?: { new(): TModel }
+		@unmanaged() protected _ClassDTO?: Newable<TModel>
 	) {
-		super(trailsApp);
+		super();
 	}
 
 	protected get repo(): ISoftDelRepository<TModel, any, any> {
@@ -72,20 +66,20 @@ export abstract class RestCRUDControllerBase<TModel extends IModelDTO>
 
 	@action('POST')
 	public async create(req: express.Request, res: express.Response) {
-		let dto: TModel = this.translator.whole(req.body.model, {
+		const newObj = this.translator.whole(req.body.model, {
 				errorCallback: details => this.validationError(res, details)
-			});
-		if (!dto) { return; }
+			}) as TModel;
+		if (!newObj) { return; }
 
 		try {
-			dto = await this.doCreate(req, res, dto);
+			const dto = await this.doCreate(req, res, newObj);
 			this.created(res, dto);
 		} catch (err) {
 			this.internalError(res, err);
 		}
 	}
 
-	protected doCreate(req: express.Request, res: express.Response, dto: TModel): Promise<TModel & TModel[]> {
+	protected doCreate(req: express.Request, res: express.Response, dto: TModel): Promise<TModel | TModel[]> {
 		return this.repo.create(dto);
 	}
 
@@ -263,18 +257,18 @@ export abstract class RestCRUDControllerBase<TModel extends IModelDTO>
 	public async patch(req: express.Request, res: express.Response) {
 		let model = this.translator.partial(req.body.model, {
 				errorCallback: err => this.validationError(res, err)
-			});
+			}) as Partial<TModel>;
 		if (!model) { return; }
 
 		try {
-			let updatedProps: Partial<TModel> = await this.doPatch(req, res, model);
+			let updatedProps = await this.doPatch(req, res, model) as Partial<TModel>;
 			this.ok(res, updatedProps);
 		} catch (err) {
 			this.internalError(res, err);
 		}
 	}
 
-	protected doPatch(req: express.Request, res: express.Response, model: Partial<TModel> & Partial<TModel>[]): Promise<Partial<TModel> & Partial<TModel>[]> {
+	protected doPatch(req: express.Request, res: express.Response, model: Partial<TModel> | Partial<TModel>[]): Promise<Partial<TModel> | Partial<TModel>[]> {
 		return this.repo.patch(model);
 	}
 
@@ -285,20 +279,20 @@ export abstract class RestCRUDControllerBase<TModel extends IModelDTO>
 
 	@action('PUT', '')
 	public async update(req: express.Request, res: express.Response) {
-		let model: TModel = this.translator.whole(req.body.model, {
+		let model = this.translator.whole(req.body.model, {
 				errorCallback: err => this.validationError(res, err)
-			});
+			}) as TModel;
 		if (!model) { return; }
 
 		try {
-			let updatedModel: TModel = await this.doUpdate(req, res, model);
+			let updatedModel = await this.doUpdate(req, res, model) as TModel;
 			this.ok(res, updatedModel);
 		} catch (err) {
 			this.internalError(res, err);
 		}
 	}
 
-	protected doUpdate(req: express.Request, res: express.Response, dto: TModel | TModel[]): Promise<TModel & TModel[]> {
+	protected doUpdate(req: express.Request, res: express.Response, dto: TModel | TModel[]): Promise<TModel | TModel[]> {
 		return this.repo.update(dto);
 	}
 
