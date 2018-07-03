@@ -14,21 +14,25 @@
 		"watch": "npm run clean && npm run tslint && tsc --watch --pretty"
 	},
 	"dependencies": {
+		"body-parser": "~1.18",
+		"cors": "^2.8.4",
 		"express": "~4.15",
 		"inversify-inject-decorators": "~3.0",
-		"jsonwebtoken": "^8.3.0",
+		"jsonwebtoken": "~8.3",
 		"jwt-simple": "~0.5",
-		"passport": "^0.4.0",
-		"passport-jwt": "^4.0.0",
+		"passport": "~0.4",
+		"passport-jwt": "~4.0",
 		"reflect-metadata": "~0.1",
 		"winston": "~2.3"
 	},
 	"devDependencies": {
-		"@types/express": "~4.0",
-		"@types/jsonwebtoken": "^7.2.7",
-		"@types/passport": "^0.4.5",
-		"@types/passport-jwt": "^3.0.1",
-		"@types/winston": "~2.3"
+		"@types/cors": "^2.8.4",
+		"@types/express": "~4.16",
+		"@types/jsonwebtoken": "~7.2",
+		"@types/passport": "~0.4",
+		"@types/passport-jwt": "~3.0",
+		"@types/winston": "~2.3",
+		"request-promise": "~4.2"
 	},
 	"peerDependencies": {
 		"@micro-fleet/common": "~1.2"

@@ -9,28 +9,35 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const decorators_1 = require("../decorators");
-const { lazyInject } = decorators_1.decorators;
 const AuthAddOn_1 = require("../AuthAddOn");
+const lazyInject_1 = require("../decorators/lazyInject");
 const Types_1 = require("../Types");
 class AuthFilter {
-    async guard(request, response, next) {
+    async execute(request, response, next) {
         try {
             const authResult = await this._authAddon.authenticate(request, response, next);
-            if (!authResult || !authResult.payload) {
-                return response.status(401).json({ message: authResult.info.message, name: authResult.info.name });
+            if (!authResult) {
+                return response.sendStatus(401);
+            }
+            else if (!authResult.payload) {
+                if (authResult.info) {
+                    return response.status(401).json({ message: authResult.info.message, name: authResult.info.name });
+                }
+                return response.sendStatus(401);
             }
             request.params['accountId'] = authResult.payload.accountId;
             request.params['username'] = authResult.payload.username;
             next();
         }
-        catch (error) {
+        catch (err) {
+            console.error(err);
+            response.sendStatus(401);
             // response status 401 Unthorized
         }
     }
 }
 __decorate([
-    lazyInject(Types_1.Types.AUTH_ADDON),
+    lazyInject_1.lazyInject(Types_1.Types.AUTH_ADDON),
     __metadata("design:type", AuthAddOn_1.AuthAddOn)
 ], AuthFilter.prototype, "_authAddon", void 0);
 exports.AuthFilter = AuthFilter;

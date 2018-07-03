@@ -1,9 +1,8 @@
 /// <reference types="reflect-metadata" />
 
-import { IDependencyContainer, CriticalException } from '@micro-fleet/common';
+import { CriticalException } from '@micro-fleet/common';
 
 import { MetaData } from '../constants/MetaData';
-import { webContext } from '../WebContext';
 
 
 export type ActionDecorator = (method?: string, path?: string) => Function;
@@ -21,12 +20,10 @@ export function action(method: string = 'GET', path: string = ''): Function {
 			throw new CriticalException('Duplicate action decorator');
 		}
 
-		if (path == null) {
-			path = '';
-		} else if (path == '_') {
+		if (!path) {
 			path = funcName;
-		} else {
-			if (path.length >= 1 && !path.startsWith('/')) {
+		} else if (path.length > 1) {
+			if (!path.startsWith('/')) {
 				// Add heading slash
 				path = '/' + path;
 			}

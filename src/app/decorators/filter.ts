@@ -12,8 +12,8 @@ export interface IActionFilter {
 	execute(request: any, response: any, next: Function): void;
 }
 
-export type FilterDecorator = <T>(
-		FilterClass: new (...param: any[]) => T,
+export type FilterDecorator = <T extends IActionFilter>(
+		FilterClass: Newable<T>,
 		priority?: number
 	) => Function;
 

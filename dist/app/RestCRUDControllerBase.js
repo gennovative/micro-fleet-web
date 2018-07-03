@@ -12,22 +12,19 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-var _a;
-"use strict";
 const express = require("express");
 const joi = require("joi");
-const back_lib_common_util_1 = require("back-lib-common-util");
-const back_lib_common_contracts_1 = require("back-lib-common-contracts");
+const common_1 = require("@micro-fleet/common");
 const RestControllerBase_1 = require("./RestControllerBase");
 const decorators_1 = require("./decorators");
-const { controller, action } = decorators_1.decorators;
+const { action } = decorators_1.decorators;
 let RestCRUDControllerBase = class RestCRUDControllerBase extends RestControllerBase_1.RestControllerBase {
-    constructor(trailsApp, _ClassDTO) {
-        super(trailsApp);
+    constructor(_ClassDTO) {
+        super();
         this._ClassDTO = _ClassDTO;
     }
     get repo() {
-        back_lib_common_util_1.Guard.assertIsDefined(this._repo, '`this._repo` is not defined. It should be overriden by derived class with: @lazyInject(IDENTIFIER) private _repo: ISomethingRepository;');
+        common_1.Guard.assertIsDefined(this._repo, '`this._repo` is not defined. It should be overriden by derived class with: @lazyInject(IDENTIFIER) private _repo: ISomethingRepository;');
         return this._repo;
     }
     get validator() {
@@ -35,9 +32,6 @@ let RestCRUDControllerBase = class RestCRUDControllerBase extends RestController
     }
     get translator() {
         return this._ClassDTO ? this._ClassDTO['translator'] : null;
-    }
-    resolveTenant(tenantSlug) {
-        // this._cache.
     }
     //#region countAll
     async countAll(req, res) {
@@ -57,14 +51,14 @@ let RestCRUDControllerBase = class RestCRUDControllerBase extends RestController
     //#endregion countAll
     //#region create
     async create(req, res) {
-        let dto = this.translator.whole(req.body.model, {
+        const newObj = this.translator.whole(req.body.model, {
             errorCallback: details => this.validationError(res, details)
         });
-        if (!dto) {
+        if (!newObj) {
             return;
         }
         try {
-            dto = await this.doCreate(req, res, dto);
+            const dto = await this.doCreate(req, res, newObj);
             this.created(res, dto);
         }
         catch (err) {
@@ -190,12 +184,12 @@ let RestCRUDControllerBase = class RestCRUDControllerBase extends RestController
             }
         }
         catch (err) {
-            this.validationError(res, new back_lib_common_contracts_1.ValidationError(err.detail));
+            this.validationError(res, new common_1.ValidationError(err.detail));
             return;
         }
         try {
             let result = await this.doPage(req, res, pageIndex - 1, pageSize, sortBy, sortType);
-            this.ok(res, result ? result.asObject() : new back_lib_common_contracts_1.PagedArray());
+            this.ok(res, result ? result.asObject() : new common_1.PagedArray());
         }
         catch (err) {
             this.internalError(res, err);
@@ -309,10 +303,9 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], RestCRUDControllerBase.prototype, "update", null);
 RestCRUDControllerBase = __decorate([
-    back_lib_common_util_1.injectable(),
-    __param(0, back_lib_common_util_1.unmanaged()),
-    __param(1, back_lib_common_util_1.unmanaged()),
-    __metadata("design:paramtypes", [typeof (_a = typeof TrailsApp !== "undefined" && TrailsApp) === "function" && _a || Object, Object])
+    common_1.injectable(),
+    __param(0, common_1.unmanaged()),
+    __metadata("design:paramtypes", [Object])
 ], RestCRUDControllerBase);
 exports.RestCRUDControllerBase = RestCRUDControllerBase;
 //# sourceMappingURL=RestCRUDControllerBase.js.map

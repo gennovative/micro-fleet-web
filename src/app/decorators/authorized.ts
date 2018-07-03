@@ -3,19 +3,12 @@
 
 /// <reference types="reflect-metadata" />
 
-import * as acorn from 'acorn';
-import * as ESTree from 'estree';
-import { ModuleNames, ActionNames } from 'back-lib-common-constants';
-import { CriticalException, Guard, INewable } from 'back-lib-common-util';
-
-import { MetaData } from '../constants/MetaData';
 import { AuthorizeFilter } from '../filters/AuthorizeFilter';
 import { addFilterToTarget } from './filter';
 
 
-export type AuthorizedDecorator = <T>(
-	FilterClass: new (...param: any[]) => T,
-	filterFunc: (filter: T) => Function,
+export type AuthorizedDecorator = (
+	FilterClass: Newable,
 	priority?: number
 ) => Function;
 
@@ -29,11 +22,11 @@ export type AuthorizedDecorator = <T>(
  */
 export function authorized(): Function {
 
-	return function (TargetClass: INewable<any>, key: string): Function {
-		let isActionScope = !!key; // If `key` has value, `targetClass` is "prototype" object, otherwise it's a class.
-		if (isActionScope) {
-		}
-		TargetClass = addFilterToTarget<AuthorizeFilter>(AuthorizeFilter, f => f.authenticate, TargetClass, key, 9) as INewable<any>;
+	return function (TargetClass: Newable, key: string): Function {
+		// const isMethodScope: boolean = !!key; // If `key` has value, `TargetClass` is "prototype" object, otherwise it's a class.
+		// if (isMethodScope) {
+		// }
+		TargetClass = addFilterToTarget<AuthorizeFilter>(AuthorizeFilter, TargetClass, key, 9) as Newable;
 		return TargetClass;
 	};
 }

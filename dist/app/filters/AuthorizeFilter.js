@@ -11,7 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const back_lib_common_util_1 = require("back-lib-common-util");
+const common_1 = require("@micro-fleet/common");
 /**
  * Provides method to look up tenant ID from tenant slug.
  */
@@ -20,18 +20,18 @@ let AuthorizeFilter = class AuthorizeFilter {
     // @inject() private logProvider: ILogProvider
     ) {
     }
-    authenticate(req, res, next) {
+    execute(req, res, next) {
         if (!req.header('Authorization')) {
             return res.status(401).send();
         }
-        // Decode token to get user ID
+        // TODO: Decode token to get user ID
         // Look up user role based on user ID
         // Check if
         next();
     }
 };
 AuthorizeFilter = __decorate([
-    back_lib_common_util_1.injectable(),
+    common_1.injectable(),
     __metadata("design:paramtypes", [])
 ], AuthorizeFilter);
 exports.AuthorizeFilter = AuthorizeFilter;

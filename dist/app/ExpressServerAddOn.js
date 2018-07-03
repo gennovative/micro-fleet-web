@@ -8,33 +8,61 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const path = require("path");
 const express = require("express");
+const cors = require("cors");
+const bodyParser = require("body-parser");
 const common_1 = require("@micro-fleet/common");
+const { WebSettingKeys: W } = common_1.constants;
 const MetaData_1 = require("./constants/MetaData");
 const filter_1 = require("./decorators/filter");
 const WebContext_1 = require("./WebContext");
 const INVERSIFY_INJECTABLE = 'inversify:paramtypes';
+const DEFAULT_PORT = 80;
+const DEFAULT_URL_PREFIX = '';
 let ExpressServerAddOn = class ExpressServerAddOn {
     //#endregion Getters / Setters
-    constructor() {
+    constructor(_cfgProvider, _depContainer) {
+        this._cfgProvider = _cfgProvider;
+        this._depContainer = _depContainer;
         this.name = 'ExpressServerAddOn';
         this._globalFilters = [];
         this._isAlive = false;
+        this._urlPrefix = '';
+        this._port = 0;
+        this._express = express();
     }
     //#region Getters / Setters
+    /**
+     * Gets or sets path to controller classes.
+     */
+    get controllerPath() {
+        return this._controllerPath;
+    }
+    set controllerPath(value) {
+        this._controllerPath = value;
+    }
+    /**
+     * Gets express instance.
+     */
+    get express() {
+        return this._express;
+    }
+    /**
+     * Gets HTTP port number.
+     */
     get port() {
         return this._port;
     }
-    set port(value) {
-        this._port = value;
-    }
+    /**
+     * Gets URL prefix.
+     */
     get urlPrefix() {
         return this._urlPrefix;
-    }
-    set urlPrefix(value) {
-        this._urlPrefix = value;
     }
     //#region General public methods
     /**
@@ -67,6 +95,8 @@ let ExpressServerAddOn = class ExpressServerAddOn {
      * @memberOf IServiceAddOn
      */
     init() {
+        this._port = this._cfgProvider.get(W.WEB_PORT).TryGetValue(DEFAULT_PORT);
+        this._urlPrefix = this._cfgProvider.get(W.WEB_URL_PREFIX).TryGetValue(DEFAULT_URL_PREFIX);
         return Promise.all([
             // Loading controllers from file takes time,
             // so we call createServer in parallel.
@@ -74,21 +104,31 @@ let ExpressServerAddOn = class ExpressServerAddOn {
             this._createServer(),
         ]).then(([controllers, app]) => {
             this._initControllers(controllers, app);
-            this._startServer(app);
+            return this._startServer(app);
         });
     }
     _createServer() {
-        const app = express();
+        const app = this._express;
         // When `deadLetter()` is called, prevent all new requests.
-        app.use((req, res) => {
+        app.use((req, res, next) => {
             if (!this._isAlive) {
-                res.sendStatus(410); // Gone, https://httpstatuses.com/410
+                return res.sendStatus(410); // Gone, https://httpstatuses.com/410
             }
+            return next();
         });
-        app.use(express.urlencoded({ extended: true })); // Parse Form values in POST requests
-        app.use(express.json()); // Parse requests with JSON payloads
         // Binds global filters as application-level middlewares to specified Express instance.
-        this._useFilterMiddleware(this._globalFilters, app);
+        // Binds filters with priority from 1 to 4
+        this._useFilterMiddleware(this._globalFilters.filter((f, i) => i < 5), app);
+        const corsOptions = {
+            origin: this._cfgProvider.get(W.WEB_CORS).TryGetValue(false),
+            optionsSuccessStatus: 200,
+        };
+        app.use(cors(corsOptions));
+        app.use(bodyParser.urlencoded({ extended: true })); // Parse Form values in POST requests
+        app.use(bodyParser.json()); // Parse requests with JSON payloads
+        // Binds filters with priority from 5 to 10
+        // All 3rd party middlewares have priority 5.
+        this._useFilterMiddleware(this._globalFilters.filter((f, i) => i >= 5), app);
         return app;
     }
     _startServer(app) {
@@ -96,6 +136,7 @@ let ExpressServerAddOn = class ExpressServerAddOn {
             this._server = app.listen(this._port, () => {
                 this._isAlive = true;
                 WebContext_1.webContext.setUrlPrefix(this._urlPrefix);
+                console.log('Listening on: ', this._port);
                 resolve();
             });
             this._server.on('error', reject);
@@ -117,7 +158,7 @@ let ExpressServerAddOn = class ExpressServerAddOn {
         }
     }
     _buildControllerRoutes(CtrlClass, app) {
-        const [path] = this._popMetadata(MetaData_1.MetaData.CONTROLLER, CtrlClass);
+        const [path] = this._getMetadata(MetaData_1.MetaData.CONTROLLER, CtrlClass);
         const router = express.Router({ mergeParams: true });
         app.use(`${this._urlPrefix}${path}`, router);
         return router;
@@ -150,16 +191,16 @@ let ExpressServerAddOn = class ExpressServerAddOn {
         }
     }
     _buildActionRoutesAndFilters(actionFunc, CtrlClass, router) {
-        const [method, path] = this._popMetadata(MetaData_1.MetaData.ACTION, CtrlClass, actionFunc.name);
+        const [method, path] = this._getMetadata(MetaData_1.MetaData.ACTION, CtrlClass, actionFunc.name);
         const routerMethod = router[method.toLowerCase()];
-        if (!(typeof routerMethod !== 'function')) {
+        if (typeof routerMethod !== 'function') {
             throw new common_1.CriticalException(`Express Router doesn't support method "${method}"`);
         }
         const filters = this._getActionFilters(CtrlClass, actionFunc.name);
-        const args = [path];
+        const args = [path, ...filters, actionFunc];
         // This is equivalent to:
         // router.METHOD(path, filter_1, filter_2, actionFunc);
-        routerMethod.apply(router, args.concat(filters).push(actionFunc));
+        routerMethod.apply(router, args);
     }
     _getActionFilters(CtrlClass, actionName) {
         const metaFilters = this._popMetadata(MetaData_1.MetaData.ACTION_FILTER, CtrlClass, actionName);
@@ -219,7 +260,8 @@ let ExpressServerAddOn = class ExpressServerAddOn {
         return instance;
     }
     _instantiateClassFromContainer(TargetClass, isSingleton) {
-        const container = common_1.serviceContext.dependencyContainer;
+        const container = this._depContainer;
+        // const container: IDependencyContainer = serviceContext.dependencyContainer;
         if (!container.isBound(TargetClass.name)) {
             const bindResult = container.bind(TargetClass.name, TargetClass);
             isSingleton && bindResult.asSingleton();
@@ -233,11 +275,14 @@ let ExpressServerAddOn = class ExpressServerAddOn {
         return new TargetClass(arg1, arg2, arg3, arg4, arg5);
     }
     _popMetadata(metaKey, classOrProto, propName) {
-        const metadata = (propName)
-            ? Reflect.getMetadata(metaKey, classOrProto, propName)
-            : Reflect.getOwnMetadata(metaKey, classOrProto);
+        const metadata = this._getMetadata(metaKey, classOrProto, propName);
         Reflect.deleteMetadata(metaKey, classOrProto, propName);
         return metadata;
+    }
+    _getMetadata(metaKey, classOrProto, propName) {
+        return (propName)
+            ? Reflect.getMetadata(metaKey, classOrProto, propName)
+            : Reflect.getOwnMetadata(metaKey, classOrProto);
     }
     //#endregion Filter
     //#region Validation
@@ -249,7 +294,9 @@ let ExpressServerAddOn = class ExpressServerAddOn {
 };
 ExpressServerAddOn = __decorate([
     common_1.injectable(),
-    __metadata("design:paramtypes", [])
+    __param(0, common_1.inject(common_1.Types.CONFIG_PROVIDER)),
+    __param(1, common_1.inject(common_1.Types.DEPENDENCY_CONTAINER)),
+    __metadata("design:paramtypes", [Object, Object])
 ], ExpressServerAddOn);
 exports.ExpressServerAddOn = ExpressServerAddOn;
 //# sourceMappingURL=ExpressServerAddOn.js.map

@@ -2,25 +2,26 @@
 // Handle server internal errors
 
 import * as express from 'express';
+import { injectable } from '@micro-fleet/common';
 
-import { injectable, inject } from '@micro-fleet/common';
+import { IActionFilter } from '../decorators/filter';
 
 /**
  * Provides method to look up tenant ID from tenant slug.
  */
 @injectable()
-export class AuthorizeFilter {
+export class AuthorizeFilter implements IActionFilter {
 
 	constructor(
 		// @inject() private logProvider: ILogProvider
 	) {
 	}
 
-	public authenticate(req: express.Request, res: express.Response, next: Function): any {
+	public execute(req: express.Request, res: express.Response, next: Function): any {
 		if (!req.header('Authorization')) {
 			return res.status(401).send();
 		}
-		// Decode token to get user ID
+		// TODO: Decode token to get user ID
 		// Look up user role based on user ID
 		// Check if
 		next();

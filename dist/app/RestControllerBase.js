@@ -8,20 +8,10 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-var __param = (this && this.__param) || function (paramIndex, decorator) {
-    return function (target, key) { decorator(target, key, paramIndex); }
-};
 Object.defineProperty(exports, "__esModule", { value: true });
-var _a;
-"use strict";
-const TrailsApp = require("trails");
-const TrailsController = require("trails/controller");
-const back_lib_common_util_1 = require("back-lib-common-util");
-back_lib_common_util_1.decorate(back_lib_common_util_1.injectable(), TrailsController);
-back_lib_common_util_1.decorate(back_lib_common_util_1.unmanaged(), TrailsController, 0);
-let RestControllerBase = class RestControllerBase extends TrailsController {
-    constructor(trailsApp) {
-        super(trailsApp);
+const common_1 = require("@micro-fleet/common");
+let RestControllerBase = class RestControllerBase {
+    constructor() {
     }
     /*** SUCCESS ***/
     /**
@@ -58,7 +48,8 @@ let RestControllerBase = class RestControllerBase extends TrailsController {
      * @param shouldLogErr Whether to write error to server log (eg: Illegal attempt to read/write resource...). Default to false.
      */
     clientError(res, returnErr, statusCode = 400, shouldLogErr = false) {
-        shouldLogErr && super.log.error(returnErr);
+        // TODO: Implement Logging library
+        // shouldLogErr && super.log.error(returnErr);
         statusCode = (400 <= statusCode && statusCode <= 499) ? statusCode : 400;
         if (typeof returnErr == 'number') {
             returnErr += '';
@@ -106,7 +97,8 @@ let RestControllerBase = class RestControllerBase extends TrailsController {
      * @param logErr Error to dump to server log, but not returned to client.
      */
     internalError(res, logErr) {
-        super.log.error(logErr);
+        // TODO: Implement Logging library
+        // super.log.error(logErr);
         res.status(500).send('server.error.internal');
     }
     /**
@@ -123,9 +115,8 @@ let RestControllerBase = class RestControllerBase extends TrailsController {
     }
 };
 RestControllerBase = __decorate([
-    back_lib_common_util_1.injectable(),
-    __param(0, back_lib_common_util_1.unmanaged()),
-    __metadata("design:paramtypes", [typeof (_a = typeof TrailsApp !== "undefined" && TrailsApp) === "function" && _a || Object])
+    common_1.injectable(),
+    __metadata("design:paramtypes", [])
 ], RestControllerBase);
 exports.RestControllerBase = RestControllerBase;
 //# sourceMappingURL=RestControllerBase.js.map

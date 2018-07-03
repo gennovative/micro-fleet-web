@@ -2,6 +2,7 @@
 // Empty operation name => must login
 // Non-empty op name => check op's conditions => must or no need to login
 Object.defineProperty(exports, "__esModule", { value: true });
+/// <reference types="reflect-metadata" />
 const AuthorizeFilter_1 = require("../filters/AuthorizeFilter");
 const filter_1 = require("./filter");
 /**
@@ -13,10 +14,10 @@ const filter_1 = require("./filter");
  */
 function authorized() {
     return function (TargetClass, key) {
-        let isActionScope = !!key; // If `key` has value, `targetClass` is "prototype" object, otherwise it's a class.
-        if (isActionScope) {
-        }
-        TargetClass = filter_1.addFilterToTarget(AuthorizeFilter_1.AuthorizeFilter, f => f.authenticate, TargetClass, key, 9);
+        // const isMethodScope: boolean = !!key; // If `key` has value, `TargetClass` is "prototype" object, otherwise it's a class.
+        // if (isMethodScope) {
+        // }
+        TargetClass = filter_1.addFilterToTarget(AuthorizeFilter_1.AuthorizeFilter, TargetClass, key, 9);
         return TargetClass;
     };
 }

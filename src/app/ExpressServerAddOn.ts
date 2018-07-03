@@ -1,8 +1,11 @@
 import * as path from 'path';
 import * as http from 'http';
 import * as express from 'express';
-import { injectable, CriticalException, IDependencyContainer, Guard, serviceContext,
-	Maybe } from '@micro-fleet/common';
+import * as cors from 'cors';
+import * as bodyParser from 'body-parser';
+import { injectable, inject, CriticalException, IDependencyContainer, Guard, 
+	Maybe, IConfigurationProvider, Types as T, constants } from '@micro-fleet/common';
+const { WebSettingKeys: W } = constants;
 
 import { MetaData } from './constants/MetaData';
 import { IActionFilter, PrioritizedFilterArray, FilterArray, 
@@ -11,6 +14,8 @@ import { webContext } from './WebContext';
 
 
 const INVERSIFY_INJECTABLE = 'inversify:paramtypes';
+const DEFAULT_PORT = 80;
+const DEFAULT_URL_PREFIX = '';
 
 type ControllerExports = { [name: string]: Newable };
 
@@ -20,47 +25,61 @@ export class ExpressServerAddOn implements IServiceAddOn {
 	public readonly name: string = 'ExpressServerAddOn';
 
 	protected _server: http.Server;
-	protected _controllerPath: string;
 	protected _globalFilters: PrioritizedFilterArray;
 	protected _isAlive: boolean;
-
-	private _urlPrefix: string;
-	private _port: string;
+	
+	private _controllerPath: string;
 	private _express: express.Express;
+	private _port: number;
+	private _urlPrefix: string;
 	
 	
 	//#region Getters / Setters
 
+	/**
+	 * Gets or sets path to controller classes.
+	 */
+	public get controllerPath(): string {
+		return this._controllerPath;
+	}
+
+	public set controllerPath(value: string) {
+		this._controllerPath = value;
+	}
+
+	/**
+	 * Gets express instance.
+	 */
 	public get express(): express.Express {
 		return this._express;
 	}
 
-	public set express(value: express.Express) {
-		this._express = value;
-	}
-
-	public get port(): string {
+	/**
+	 * Gets HTTP port number.
+	 */
+	public get port(): number {
 		return this._port;
 	}
 
-	public set port(value: string) {
-		this._port = value;
-	}
-
+	/**
+	 * Gets URL prefix.
+	 */
 	public get urlPrefix(): string {
 		return this._urlPrefix;
-	}
-
-	public set urlPrefix(value: string) {
-		this._urlPrefix = value;
 	}
 
 	//#endregion Getters / Setters
 
 
-	constructor() {
+	constructor(
+			@inject(T.CONFIG_PROVIDER) private _cfgProvider: IConfigurationProvider,
+			@inject(T.DEPENDENCY_CONTAINER) private _depContainer: IDependencyContainer
+		) {
 		this._globalFilters = [];
 		this._isAlive = false;
+		this._urlPrefix = '';
+		this._port = 0;
+		this._express = express();
 	}
 
 
@@ -102,6 +121,9 @@ export class ExpressServerAddOn implements IServiceAddOn {
 	 * @memberOf IServiceAddOn
 	 */
 	public init(): Promise<void> {
+		this._port = this._cfgProvider.get(W.WEB_PORT).TryGetValue(DEFAULT_PORT) as number;
+		this._urlPrefix = this._cfgProvider.get(W.WEB_URL_PREFIX).TryGetValue(DEFAULT_URL_PREFIX) as string;
+
 		return <any>Promise.all([
 			// Loading controllers from file takes time,
 			// so we call createServer in parallel.
@@ -109,36 +131,50 @@ export class ExpressServerAddOn implements IServiceAddOn {
 			this._createServer(),
 		]).then(([controllers, app]: [ControllerExports, express.Express]) => {
 			this._initControllers(controllers, app);
-			this._startServer(app);
+			return this._startServer(app);
 		});
 	}
 
 	protected _createServer(): express.Express {
-		const app = this._express = express();
+		const app = this._express;
 
 		// When `deadLetter()` is called, prevent all new requests.
-		app.use((req, res) => {
+		app.use((req, res, next) => {
 			if (!this._isAlive) {
-				res.sendStatus(410); // Gone, https://httpstatuses.com/410
+				return res.sendStatus(410); // Gone, https://httpstatuses.com/410
 			}
+			return next();
 		});
-		app.use(express.urlencoded({extended: true})); // Parse Form values in POST requests
-		app.use(express.json()); // Parse requests with JSON payloads
 
 		// Binds global filters as application-level middlewares to specified Express instance.
-		this._useFilterMiddleware(this._globalFilters, app);
+		// Binds filters with priority from 1 to 4
+		this._useFilterMiddleware(this._globalFilters.filter((f, i) => i < 5), app);
+
+		const corsOptions: cors.CorsOptions = {
+			origin: this._cfgProvider.get(W.WEB_CORS).TryGetValue(false) as string | boolean,
+			optionsSuccessStatus: 200,
+		};
+		app.use(cors(corsOptions));
+		app.use(bodyParser.urlencoded({extended: true})); // Parse Form values in POST requests
+		app.use(bodyParser.json()); // Parse requests with JSON payloads
+
+		// Binds filters with priority from 5 to 10
+		// All 3rd party middlewares have priority 5.
+		this._useFilterMiddleware(this._globalFilters.filter((f, i) => i >= 5), app);
 
 		return app;
 	}
 
-	protected _startServer(app: express.Express): any {
+	protected _startServer(app: express.Express): Promise<any> {
 		return new Promise((resolve, reject) => {
 			this._server = app.listen(this._port, () => {
 				this._isAlive = true;
 				webContext.setUrlPrefix(this._urlPrefix);
+				console.log('Listening on: ', this._port);
 				resolve();
 			});
 			this._server.on('error', reject);
+
 		});
 	}
 
@@ -163,7 +199,7 @@ export class ExpressServerAddOn implements IServiceAddOn {
 	}
 
 	protected _buildControllerRoutes(CtrlClass: Newable, app: express.Express): express.Router {
-		const [path]: [string] = this._popMetadata(MetaData.CONTROLLER, CtrlClass);
+		const [path]: [string] = this._getMetadata(MetaData.CONTROLLER, CtrlClass);
 		const router = express.Router({ mergeParams: true });
 		app.use(`${this._urlPrefix}${path}`, router);
 		return router;
@@ -201,18 +237,18 @@ export class ExpressServerAddOn implements IServiceAddOn {
 	}
 
 	protected _buildActionRoutesAndFilters(actionFunc: Function, CtrlClass: Newable, router: express.Router): void {
-		const [method, path]: [string, string] = this._popMetadata(MetaData.ACTION, CtrlClass, actionFunc.name);
+		const [method, path]: [string, string] = this._getMetadata(MetaData.ACTION, CtrlClass, actionFunc.name);
 		const routerMethod: Function = router[method.toLowerCase()];
-		if (! (typeof routerMethod !== 'function')) {
+		if (typeof routerMethod !== 'function') {
 			throw new CriticalException(`Express Router doesn't support method "${method}"`);
 		}
 
 		const filters = this._getActionFilters(CtrlClass, actionFunc.name);
-		const args: any[] = [path];
+		const args: any[] = [path, ...filters, actionFunc];
 
 		// This is equivalent to:
 		// router.METHOD(path, filter_1, filter_2, actionFunc);
-		(routerMethod as Function).apply(router, args.concat(filters).push(actionFunc));
+		(routerMethod as Function).apply(router, args);
 	}
 
 	protected _getActionFilters(CtrlClass: Function, actionName: string): FilterArray {
@@ -280,7 +316,8 @@ export class ExpressServerAddOn implements IServiceAddOn {
 	}
 
 	protected _instantiateClassFromContainer(TargetClass: Newable, isSingleton: boolean): any {
-		const container: IDependencyContainer = serviceContext.dependencyContainer;
+		const container: IDependencyContainer = this._depContainer;
+		// const container: IDependencyContainer = serviceContext.dependencyContainer;
 		if (!container.isBound(TargetClass.name)) {
 			const bindResult = container.bind(TargetClass.name, TargetClass);
 			isSingleton && bindResult.asSingleton();
@@ -296,11 +333,15 @@ export class ExpressServerAddOn implements IServiceAddOn {
 	}
 
 	protected _popMetadata(metaKey: string, classOrProto: any, propName?: string): any {
-		const metadata = (propName)
-			? Reflect.getMetadata(metaKey, classOrProto, propName)
-			: Reflect.getOwnMetadata(metaKey, classOrProto);
+		const metadata = this._getMetadata(metaKey, classOrProto, propName);
 		Reflect.deleteMetadata(metaKey, classOrProto, propName);
 		return metadata;
+	}
+
+	protected _getMetadata(metaKey: string, classOrProto: any, propName?: string): any {
+		return (propName)
+			? Reflect.getMetadata(metaKey, classOrProto, propName)
+			: Reflect.getOwnMetadata(metaKey, classOrProto);
 	}
 
 	//#endregion Filter

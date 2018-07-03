@@ -1,25 +1,32 @@
 import * as express from 'express';
-import { decorators } from '../decorators';
-const { lazyInject } = decorators;
 
 import { AuthAddOn } from '../AuthAddOn';
-import { Types as aT } from '../Types';
+import { IActionFilter } from '../decorators/filter';
+import { lazyInject } from '../decorators/lazyInject';
+import { Types as T } from '../Types';
 
 
-export class AuthFilter {
+export class AuthFilter implements IActionFilter {
 
-	@lazyInject(aT.AUTH_ADDON) private _authAddon: AuthAddOn;
+	@lazyInject(T.AUTH_ADDON) private _authAddon: AuthAddOn;
 
-	public async guard(request: express.Request, response: express.Response, next: Function): Promise<any> {
+	public async execute(request: express.Request, response: express.Response, next: Function): Promise<any> {
 		try {
 			const authResult = await this._authAddon.authenticate(request, response, next);
-			if (!authResult || !authResult.payload) {
-				return response.status(401).json({message: authResult.info.message, name: authResult.info.name});
+			if (!authResult) {
+				return response.sendStatus(401);
+			} else if (!authResult.payload) {
+				if (authResult.info) {
+					return response.status(401).json({message: authResult.info.message, name: authResult.info.name});
+				}
+				return response.sendStatus(401);
 			}
 			request.params['accountId'] = authResult.payload.accountId;
 			request.params['username'] = authResult.payload.username;
 			next();
-		} catch (error) {
+		} catch (err) {
+			console.error(err);
+			response.sendStatus(401);
 			// response status 401 Unthorized
 		}
 	}

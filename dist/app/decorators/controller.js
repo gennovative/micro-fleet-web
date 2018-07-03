@@ -9,23 +9,20 @@ const MetaData_1 = require("../constants/MetaData");
  * 		If '_' is given, it is extract from controller class name: {path}Controller.
  * 		If not specified, it is default to be empty string.
  */
-function controller(path = '') {
+function controller(path) {
     return function (targetClass) {
         if (Reflect.hasOwnMetadata(MetaData_1.MetaData.CONTROLLER, targetClass)) {
             throw new common_1.CriticalException('Duplicate controller decorator');
         }
-        if (path == null) {
-            path = '';
-        }
-        else if (path == '_') {
+        if (!path) {
             // Extract path from controller name.
             // Only if controller name is in format {xxx}Controller.
             path = targetClass.name.match(/(.+)Controller$/)[1];
             path = path[0].toLowerCase() + path.substring(1); // to camel case
             common_1.Guard.assertIsDefined(path, 'Cannot extract path from controller name');
         }
-        else {
-            if (path.length >= 1 && !path.startsWith('/')) {
+        else if (path.length > 1) {
+            if (!path.startsWith('/')) {
                 // Add heading slash
                 path = '/' + path;
             }

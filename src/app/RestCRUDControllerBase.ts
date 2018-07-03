@@ -37,9 +37,6 @@ export abstract class RestCRUDControllerBase<TModel extends IModelDTO>
 		return this._ClassDTO ? this._ClassDTO['translator'] : null;
 	}
 
-	private resolveTenant(tenantSlug: string) {
-		// this._cache.
-	}
 
 	//#region countAll
 

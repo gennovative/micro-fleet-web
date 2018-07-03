@@ -15,14 +15,11 @@ function action(method = 'GET', path = '') {
         if (Reflect.hasOwnMetadata(MetaData_1.MetaData.ACTION, proto.constructor, funcName)) {
             throw new common_1.CriticalException('Duplicate action decorator');
         }
-        if (path == null) {
-            path = '';
-        }
-        else if (path == '_') {
+        if (!path) {
             path = funcName;
         }
-        else {
-            if (path.length >= 1 && !path.startsWith('/')) {
+        else if (path.length > 1) {
+            if (!path.startsWith('/')) {
                 // Add heading slash
                 path = '/' + path;
             }

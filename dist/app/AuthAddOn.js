@@ -16,10 +16,11 @@ const jwt = require("jsonwebtoken");
 const passport = require("passport");
 const passportJwt = require("passport-jwt");
 const common_1 = require("@micro-fleet/common");
-const TrailsServerAddOn_1 = require("./TrailsServerAddOn");
+const ExpressServerAddOn_1 = require("./ExpressServerAddOn");
 const Types_1 = require("./Types");
 const ExtractJwt = passportJwt.ExtractJwt;
 const JwtStrategy = passportJwt.Strategy;
+const { AuthSettingKeys: S } = common_1.constants;
 let AuthAddOn = class AuthAddOn {
     constructor(_serverAddOn, _configProvider) {
         this._serverAddOn = _serverAddOn;
@@ -28,15 +29,15 @@ let AuthAddOn = class AuthAddOn {
     }
     //#region Init
     /**
-     * @see IServiceAddOn.init
+     * @memberOf IServiceAddOn.init
      */
     init() {
-        this._serverAddOn.server['config'].web.middlewares.passportInit = passport.initialize();
+        this._serverAddOn.express.use(passport.initialize());
         const opts = {
             algorithms: ['HS256'],
-            secretOrKey: this._configProvider.get('jwtSecret').value,
+            secretOrKey: this._configProvider.get(S.AUTH_SECRET).value,
             jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-            issuer: this._configProvider.get('jwtIssuer').value,
+            issuer: this._configProvider.get(S.AUTH_ISSUER).value,
         };
         this.initToken(opts);
         return Promise.resolve();
@@ -62,7 +63,9 @@ let AuthAddOn = class AuthAddOn {
         });
     }
     async createToken(payload, isRefresh) {
-        let sign = new Promise((resolve, reject) => {
+        const refreshExpr = (this._configProvider.get(S.AUTH_EXPIRE_REFRESH).value || '30d');
+        const accessExpr = (this._configProvider.get(S.AUTH_EXPIRE_ACCESS).value || 60 * 30);
+        const sign = new Promise((resolve, reject) => {
             jwt.sign(
             // Data
             {
@@ -70,30 +73,31 @@ let AuthAddOn = class AuthAddOn {
                 username: payload.username
             }, 
             // Secret
-            this._configProvider.get('jwtSecret').value, 
+            this._configProvider.get(S.AUTH_ISSUER).value, 
             // Config
             {
-                expiresIn: isRefresh ? '30d' : 60 * 30,
-                issuer: this._configProvider.get('jwtIssuer').value,
+                expiresIn: isRefresh ? refreshExpr : accessExpr,
+                issuer: this._configProvider.get(S.AUTH_ISSUER).value,
             }, 
             // Callback
             (err, token) => {
                 if (token) {
                     resolve(token);
                 }
+                reject('Failed to create auth token');
             });
         });
-        let token = await sign;
+        const token = await sign;
         return token;
     }
     /**
-     * @see IServiceAddOn.deadLetter
+     * @memberOf IServiceAddOn.deadLetter
      */
     deadLetter() {
         return Promise.resolve();
     }
     /**
-     * @see IServiceAddOn.dispose
+     * @memberOf IServiceAddOn.dispose
      */
     dispose() {
         return Promise.resolve();
@@ -101,9 +105,9 @@ let AuthAddOn = class AuthAddOn {
 };
 AuthAddOn = __decorate([
     common_1.injectable(),
-    __param(0, common_1.inject(Types_1.Types.TRAILS_ADDON)),
+    __param(0, common_1.inject(Types_1.Types.WEBSERVER_ADDON)),
     __param(1, common_1.inject(common_1.Types.CONFIG_PROVIDER)),
-    __metadata("design:paramtypes", [TrailsServerAddOn_1.TrailsServerAddOn, Object])
+    __metadata("design:paramtypes", [ExpressServerAddOn_1.ExpressServerAddOn, Object])
 ], AuthAddOn);
 exports.AuthAddOn = AuthAddOn;
 //# sourceMappingURL=AuthAddOn.js.map

@@ -17,6 +17,13 @@ export const decorators: {
 	action: ActionDecorator,
 
 	/**
+	 * Used to decorate REST controller class.
+	 * @param {string} path Segment of URL pointing to this controller,
+	 * 		if not specified, it is extract from controller class name: {path}Controller.
+	 */
+	controller: ControllerDecorator,
+
+	/**
 	 * Used to add filter to controller class and controller action.
 	 * @param {class} FilterClass Filter class.
 	 * @param {ExpressionStatement} filterFunc An arrow function that returns filter's function.
@@ -25,12 +32,6 @@ export const decorators: {
 	 */
 	filter: FilterDecorator,
 
-	/**
-	 * Used to decorate REST controller class.
-	 * @param {string} path Segment of URL pointing to this controller,
-	 * 		if not specified, it is extract from controller class name: {path}Controller.
-	 */
-	controller: ControllerDecorator,
 	/**
 	 * Injects value to the decorated property. 
 	 * Used to decorate properties of a class that's cannot be resolved by dependency container.
