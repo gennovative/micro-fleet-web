@@ -206,7 +206,7 @@ export class ExpressServerAddOn implements IServiceAddOn {
 	}
 
 	protected _buildControllerFilters(CtrlClass: Function, router: express.Router): void {
-		let metaFilters: PrioritizedFilterArray = this._popMetadata(MetaData.CONTROLLER_FILTER, CtrlClass);
+		let metaFilters: PrioritizedFilterArray = this._getMetadata(MetaData.CONTROLLER_FILTER, CtrlClass);
 		this._useFilterMiddleware(metaFilters, router);
 	}
 
@@ -244,7 +244,8 @@ export class ExpressServerAddOn implements IServiceAddOn {
 		}
 
 		const filters = this._getActionFilters(CtrlClass, actionFunc.name);
-		const args: any[] = [path, ...filters, actionFunc];
+		const filterFuncs = filters.map(f => this._extractFilterExecuteFunc(f));
+		const args: any[] = [path, ...filterFuncs, actionFunc];
 
 		// This is equivalent to:
 		// router.METHOD(path, filter_1, filter_2, actionFunc);
@@ -252,7 +253,7 @@ export class ExpressServerAddOn implements IServiceAddOn {
 	}
 
 	protected _getActionFilters(CtrlClass: Function, actionName: string): FilterArray {
-		const metaFilters: PrioritizedFilterArray = this._popMetadata(MetaData.ACTION_FILTER, CtrlClass, actionName);
+		const metaFilters: PrioritizedFilterArray = this._getMetadata(MetaData.ACTION_FILTER, CtrlClass, actionName);
 		if (!metaFilters || !metaFilters.length) { return []; }
 
 		// Flatten PrioritizedFilterArray structure
@@ -330,12 +331,6 @@ export class ExpressServerAddOn implements IServiceAddOn {
 			return TargetClass['__instance'] ? TargetClass['__instance'] : (TargetClass['__instance'] = new TargetClass(arg1, arg2, arg3, arg4, arg5));
 		}
 		return new TargetClass(arg1, arg2, arg3, arg4, arg5);
-	}
-
-	protected _popMetadata(metaKey: string, classOrProto: any, propName?: string): any {
-		const metadata = this._getMetadata(metaKey, classOrProto, propName);
-		Reflect.deleteMetadata(metaKey, classOrProto, propName);
-		return metadata;
 	}
 
 	protected _getMetadata(metaKey: string, classOrProto: any, propName?: string): any {

@@ -23,9 +23,6 @@ export type AuthorizedDecorator = (
 export function authorized(): Function {
 
 	return function (TargetClass: Newable, key: string): Function {
-		// const isMethodScope: boolean = !!key; // If `key` has value, `TargetClass` is "prototype" object, otherwise it's a class.
-		// if (isMethodScope) {
-		// }
 		TargetClass = addFilterToTarget<AuthorizeFilter>(AuthorizeFilter, TargetClass, key, 9) as Newable;
 		return TargetClass;
 	};

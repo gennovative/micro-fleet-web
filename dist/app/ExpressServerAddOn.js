@@ -164,7 +164,7 @@ let ExpressServerAddOn = class ExpressServerAddOn {
         return router;
     }
     _buildControllerFilters(CtrlClass, router) {
-        let metaFilters = this._popMetadata(MetaData_1.MetaData.CONTROLLER_FILTER, CtrlClass);
+        let metaFilters = this._getMetadata(MetaData_1.MetaData.CONTROLLER_FILTER, CtrlClass);
         this._useFilterMiddleware(metaFilters, router);
     }
     //#endregion Controller
@@ -197,13 +197,14 @@ let ExpressServerAddOn = class ExpressServerAddOn {
             throw new common_1.CriticalException(`Express Router doesn't support method "${method}"`);
         }
         const filters = this._getActionFilters(CtrlClass, actionFunc.name);
-        const args = [path, ...filters, actionFunc];
+        const filterFuncs = filters.map(f => this._extractFilterExecuteFunc(f));
+        const args = [path, ...filterFuncs, actionFunc];
         // This is equivalent to:
         // router.METHOD(path, filter_1, filter_2, actionFunc);
         routerMethod.apply(router, args);
     }
     _getActionFilters(CtrlClass, actionName) {
-        const metaFilters = this._popMetadata(MetaData_1.MetaData.ACTION_FILTER, CtrlClass, actionName);
+        const metaFilters = this._getMetadata(MetaData_1.MetaData.ACTION_FILTER, CtrlClass, actionName);
         if (!metaFilters || !metaFilters.length) {
             return [];
         }
@@ -273,11 +274,6 @@ let ExpressServerAddOn = class ExpressServerAddOn {
             return TargetClass['__instance'] ? TargetClass['__instance'] : (TargetClass['__instance'] = new TargetClass(arg1, arg2, arg3, arg4, arg5));
         }
         return new TargetClass(arg1, arg2, arg3, arg4, arg5);
-    }
-    _popMetadata(metaKey, classOrProto, propName) {
-        const metadata = this._getMetadata(metaKey, classOrProto, propName);
-        Reflect.deleteMetadata(metaKey, classOrProto, propName);
-        return metadata;
     }
     _getMetadata(metaKey, classOrProto, propName) {
         return (propName)

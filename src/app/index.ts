@@ -5,7 +5,6 @@ export * from './decorators/authorized';
 export * from './decorators/controller';
 export * from './decorators/filter';
 export * from './decorators/lazyInject';
-export * from './filters/AuthFilter';
 export * from './filters/AuthorizeFilter';
 export * from './filters/ErrorHandlerFilter';
 export * from './filters/TenantResolverFilter';

@@ -14,9 +14,6 @@ const filter_1 = require("./filter");
  */
 function authorized() {
     return function (TargetClass, key) {
-        // const isMethodScope: boolean = !!key; // If `key` has value, `TargetClass` is "prototype" object, otherwise it's a class.
-        // if (isMethodScope) {
-        // }
         TargetClass = filter_1.addFilterToTarget(AuthorizeFilter_1.AuthorizeFilter, TargetClass, key, 9);
         return TargetClass;
     };

@@ -10,7 +10,6 @@ __export(require("./decorators/authorized"));
 __export(require("./decorators/controller"));
 __export(require("./decorators/filter"));
 __export(require("./decorators/lazyInject"));
-__export(require("./filters/AuthFilter"));
 __export(require("./filters/AuthorizeFilter"));
 __export(require("./filters/ErrorHandlerFilter"));
 __export(require("./filters/TenantResolverFilter"));

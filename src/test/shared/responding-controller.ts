@@ -1,9 +1,9 @@
 import * as express from 'express';
-import { controller, action } from '../../app';
+import { controller, GET } from '../../app';
 
 @controller('/')
 class SampleController {
-	@action('get', '/')
+	@GET('/')
 	public getSample(req: express.Request, res: express.Response): void {
 		res.send('SampleController.getSample');
 	}
