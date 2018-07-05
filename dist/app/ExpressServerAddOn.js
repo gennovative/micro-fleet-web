@@ -24,6 +24,11 @@ const WebContext_1 = require("./WebContext");
 const INVERSIFY_INJECTABLE = 'inversify:paramtypes';
 const DEFAULT_PORT = 80;
 const DEFAULT_URL_PREFIX = '';
+var ControllerCreationStrategy;
+(function (ControllerCreationStrategy) {
+    ControllerCreationStrategy[ControllerCreationStrategy["SINGLETON"] = 0] = "SINGLETON";
+    ControllerCreationStrategy[ControllerCreationStrategy["TRANSIENT"] = 1] = "TRANSIENT";
+})(ControllerCreationStrategy = exports.ControllerCreationStrategy || (exports.ControllerCreationStrategy = {}));
 let ExpressServerAddOn = class ExpressServerAddOn {
     //#endregion Getters / Setters
     constructor(_cfgProvider, _depContainer) {
@@ -35,8 +40,19 @@ let ExpressServerAddOn = class ExpressServerAddOn {
         this._urlPrefix = '';
         this._port = 0;
         this._express = express();
+        this._creationStrategy = ControllerCreationStrategy.TRANSIENT;
+        common_1.HandlerContainer.instance.dependencyContainer = _depContainer;
     }
     //#region Getters / Setters
+    /**
+     * Gets or sets strategy when creating controller instance.
+     */
+    get createStrategy() {
+        return this._creationStrategy;
+    }
+    set createStrategy(value) {
+        this._creationStrategy = value;
+    }
     /**
      * Gets or sets path to controller classes.
      */
@@ -171,7 +187,7 @@ let ExpressServerAddOn = class ExpressServerAddOn {
     //#region Action
     _initActions(CtrlClass, router) {
         let allFunctions = new Map(), actionFunc;
-        // Iterates over all function in prototype chain, except root Object.prototype
+        // Iterates over all function backwards prototype chain, except root Object.prototype
         for (let proto = CtrlClass.prototype; proto !== Object.prototype; proto = Object.getPrototypeOf(proto)) {
             for (let actionName of Object.getOwnPropertyNames(proto)) {
                 // Make sure function in super class never overides function in derives class.
@@ -187,21 +203,38 @@ let ExpressServerAddOn = class ExpressServerAddOn {
         }
         // Destructuring to get second element (expected: [key, value])
         for ([, actionFunc] of allFunctions) {
-            this._buildActionRoutesAndFilters(actionFunc, CtrlClass, router);
+            const proxyFn = this._proxyActionFunc(actionFunc, CtrlClass);
+            this._buildActionRoutesAndFilters(proxyFn, actionFunc.name, CtrlClass, router);
         }
     }
-    _buildActionRoutesAndFilters(actionFunc, CtrlClass, router) {
-        const [method, path] = this._getMetadata(MetaData_1.MetaData.ACTION, CtrlClass, actionFunc.name);
-        const routerMethod = router[method.toLowerCase()];
-        if (typeof routerMethod !== 'function') {
-            throw new common_1.CriticalException(`Express Router doesn't support method "${method}"`);
+    _proxyActionFunc(actionFunc, CtrlClass) {
+        let bound = this._depContainer.bind(CtrlClass.name, CtrlClass);
+        if (this._creationStrategy == ControllerCreationStrategy.SINGLETON) {
+            bound.asSingleton();
         }
-        const filters = this._getActionFilters(CtrlClass, actionFunc.name);
+        // Returns a proxy function that resolves the actual action function in EVERY incomming request.
+        // If Controller Creation Strategy is SINGLETON, then the same controller instance will handle all requests.
+        // Otherwise, a new controller instance will be created for each request.
+        return common_1.HandlerContainer.instance.register(actionFunc.name, CtrlClass.name, (ctrlInstance, actionName) => {
+            return (actionName === actionFunc.name) && actionFunc;
+        });
+    }
+    _buildActionRoutesAndFilters(actionFunc, actionName, CtrlClass, router) {
+        const actionDesc = this._getMetadata(MetaData_1.MetaData.ACTION, CtrlClass, actionName);
+        const filters = this._getActionFilters(CtrlClass, actionName);
         const filterFuncs = filters.map(f => this._extractFilterExecuteFunc(f));
-        const args = [path, ...filterFuncs, actionFunc];
-        // This is equivalent to:
-        // router.METHOD(path, filter_1, filter_2, actionFunc);
-        routerMethod.apply(router, args);
+        // In case one action supports multiple methods (GET, POST etc.)
+        for (let method of Object.getOwnPropertyNames(actionDesc)) {
+            const routerMethod = router[method];
+            if (typeof routerMethod !== 'function') {
+                throw new common_1.CriticalException(`Express Router doesn't support method "${method}"`);
+            }
+            const routePath = actionDesc[method];
+            const args = [routePath, ...filterFuncs, actionFunc];
+            // This is equivalent to:
+            // router.METHOD(path, filter_1, filter_2, actionFunc);
+            routerMethod.apply(router, args);
+        }
     }
     _getActionFilters(CtrlClass, actionName) {
         const metaFilters = this._getMetadata(MetaData_1.MetaData.ACTION_FILTER, CtrlClass, actionName);

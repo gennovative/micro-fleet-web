@@ -14,12 +14,14 @@ function controller(path) {
         if (Reflect.hasOwnMetadata(MetaData_1.MetaData.CONTROLLER, targetClass)) {
             throw new common_1.CriticalException('Duplicate controller decorator');
         }
+        common_1.decorate(common_1.injectable(), targetClass);
         if (!path) {
             // Extract path from controller name.
             // Only if controller name is in format {xxx}Controller.
             path = targetClass.name.match(/(.+)Controller$/)[1];
             path = path[0].toLowerCase() + path.substring(1); // to camel case
-            common_1.Guard.assertIsDefined(path, 'Cannot extract path from controller name');
+            path = `/${path}`;
+            common_1.Guard.assertIsDefined(path, 'Cannot automatically extract path, make sure controller name has "Controller" suffix!');
         }
         else if (path.length > 1) {
             if (!path.startsWith('/')) {

@@ -1,11 +1,12 @@
 /// <reference types="reflect-metadata" />
 
-import { CriticalException } from '@micro-fleet/common';
-
 import { MetaData } from '../constants/MetaData';
 
 
 export type ActionDecorator = (method?: string, path?: string) => Function;
+export type ActionDescriptor = {
+	[method: string]: string
+};
 
 /**
  * Used to decorate action function of REST controller class.
@@ -15,12 +16,8 @@ export type ActionDecorator = (method?: string, path?: string) => Function;
  */
 export function action(method: string = 'get', path?: string): Function {
 	return function (proto: any, funcName: string): Function {
-		if (Reflect.hasOwnMetadata(MetaData.ACTION, proto.constructor, funcName)) {
-			throw new CriticalException('Duplicate action decorator');
-		}
-
 		if (!path) {
-			path = funcName;
+			path = `/${funcName}`;
 		} else if (path.length > 1) {
 			if (!path.startsWith('/')) {
 				// Add heading slash
@@ -32,7 +29,16 @@ export function action(method: string = 'get', path?: string): Function {
 			}
 		}
 
-		Reflect.defineMetadata(MetaData.ACTION, [method.toLowerCase(), path], proto.constructor, funcName);
+		let actionDesc: ActionDescriptor;
+		if (Reflect.hasOwnMetadata(MetaData.ACTION, proto.constructor, funcName)) {
+			actionDesc = Reflect.getOwnMetadata(MetaData.ACTION, proto.constructor, funcName);
+			actionDesc[method.toLowerCase()] = path;
+		} else {
+			actionDesc = {
+				[method.toLowerCase()]: path
+			};
+		}
+		Reflect.defineMetadata(MetaData.ACTION, actionDesc, proto.constructor, funcName);
 		return proto;
 	};
 }

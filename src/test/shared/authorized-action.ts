@@ -2,7 +2,7 @@ import * as express from 'express';
 import { controller, GET, DELETE, authorized } from '../../app';
 
 @controller('/')
-class AuthorizedController {
+class AuthorizedActionController {
 	@GET('/')
 	@authorized()
 	public getRestricted(req: express.Request, res: express.Response): void {
@@ -16,5 +16,5 @@ class AuthorizedController {
 }
 
 module.exports = {
-	AuthorizedController
+	AuthorizedActionController
 };

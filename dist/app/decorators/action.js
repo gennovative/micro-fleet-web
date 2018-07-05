@@ -1,7 +1,6 @@
 "use strict";
 /// <reference types="reflect-metadata" />
 Object.defineProperty(exports, "__esModule", { value: true });
-const common_1 = require("@micro-fleet/common");
 const MetaData_1 = require("../constants/MetaData");
 /**
  * Used to decorate action function of REST controller class.
@@ -11,11 +10,8 @@ const MetaData_1 = require("../constants/MetaData");
  */
 function action(method = 'get', path) {
     return function (proto, funcName) {
-        if (Reflect.hasOwnMetadata(MetaData_1.MetaData.ACTION, proto.constructor, funcName)) {
-            throw new common_1.CriticalException('Duplicate action decorator');
-        }
         if (!path) {
-            path = funcName;
+            path = `/${funcName}`;
         }
         else if (path.length > 1) {
             if (!path.startsWith('/')) {
@@ -27,7 +23,17 @@ function action(method = 'get', path) {
                 path = path.substr(0, path.length - 1);
             }
         }
-        Reflect.defineMetadata(MetaData_1.MetaData.ACTION, [method.toLowerCase(), path], proto.constructor, funcName);
+        let actionDesc;
+        if (Reflect.hasOwnMetadata(MetaData_1.MetaData.ACTION, proto.constructor, funcName)) {
+            actionDesc = Reflect.getOwnMetadata(MetaData_1.MetaData.ACTION, proto.constructor, funcName);
+            actionDesc[method.toLowerCase()] = path;
+        }
+        else {
+            actionDesc = {
+                [method.toLowerCase()]: path
+            };
+        }
+        Reflect.defineMetadata(MetaData_1.MetaData.ACTION, actionDesc, proto.constructor, funcName);
         return proto;
     };
 }

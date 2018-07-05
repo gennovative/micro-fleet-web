@@ -4,10 +4,11 @@ import * as express from 'express';
 import * as cors from 'cors';
 import * as bodyParser from 'body-parser';
 import { injectable, inject, CriticalException, IDependencyContainer, Guard, 
-	Maybe, IConfigurationProvider, Types as T, constants } from '@micro-fleet/common';
+	Maybe, IConfigurationProvider, Types as T, constants, HandlerContainer } from '@micro-fleet/common';
 const { WebSettingKeys: W } = constants;
 
 import { MetaData } from './constants/MetaData';
+import { ActionDescriptor } from './decorators/action';
 import { IActionFilter, PrioritizedFilterArray, FilterArray, 
 	pushFilterToArray } from './decorators/filter';
 import { webContext } from './WebContext';
@@ -19,6 +20,8 @@ const DEFAULT_URL_PREFIX = '';
 
 type ControllerExports = { [name: string]: Newable };
 
+export enum ControllerCreationStrategy { SINGLETON, TRANSIENT }
+
 @injectable()
 export class ExpressServerAddOn implements IServiceAddOn {
 
@@ -28,13 +31,25 @@ export class ExpressServerAddOn implements IServiceAddOn {
 	protected _globalFilters: PrioritizedFilterArray;
 	protected _isAlive: boolean;
 	
+	private _creationStrategy: ControllerCreationStrategy;
 	private _controllerPath: string;
 	private _express: express.Express;
 	private _port: number;
 	private _urlPrefix: string;
-	
-	
+
+
 	//#region Getters / Setters
+
+	/**
+	 * Gets or sets strategy when creating controller instance.
+	 */
+	public get createStrategy(): ControllerCreationStrategy {
+		return this._creationStrategy;
+	}
+
+	public set createStrategy(value: ControllerCreationStrategy) {
+		this._creationStrategy = value;
+	}
 
 	/**
 	 * Gets or sets path to controller classes.
@@ -80,6 +95,8 @@ export class ExpressServerAddOn implements IServiceAddOn {
 		this._urlPrefix = '';
 		this._port = 0;
 		this._express = express();
+		this._creationStrategy = ControllerCreationStrategy.TRANSIENT;
+		HandlerContainer.instance.dependencyContainer = _depContainer;
 	}
 
 
@@ -218,7 +235,7 @@ export class ExpressServerAddOn implements IServiceAddOn {
 	protected _initActions(CtrlClass: Newable, router: express.Router): void {
 		let allFunctions = new Map<string, Function>(),
 			actionFunc;
-		// Iterates over all function in prototype chain, except root Object.prototype
+		// Iterates over all function backwards prototype chain, except root Object.prototype
 		for (let proto = CtrlClass.prototype; proto !== Object.prototype; proto = Object.getPrototypeOf(proto)) {
 			for (let actionName of Object.getOwnPropertyNames(proto)) {
 				// Make sure function in super class never overides function in derives class.
@@ -232,24 +249,43 @@ export class ExpressServerAddOn implements IServiceAddOn {
 		}
 		// Destructuring to get second element (expected: [key, value])
 		for ([, actionFunc] of allFunctions) {
-			this._buildActionRoutesAndFilters(actionFunc, CtrlClass, router);
+			const proxyFn = this._proxyActionFunc(actionFunc, CtrlClass);
+			this._buildActionRoutesAndFilters(proxyFn, actionFunc.name, CtrlClass, router);
 		}
 	}
 
-	protected _buildActionRoutesAndFilters(actionFunc: Function, CtrlClass: Newable, router: express.Router): void {
-		const [method, path]: [string, string] = this._getMetadata(MetaData.ACTION, CtrlClass, actionFunc.name);
-		const routerMethod: Function = router[method.toLowerCase()];
-		if (typeof routerMethod !== 'function') {
-			throw new CriticalException(`Express Router doesn't support method "${method}"`);
+	protected _proxyActionFunc(actionFunc: Function, CtrlClass: Newable): Function {
+		let bound = this._depContainer.bind(CtrlClass.name, CtrlClass);
+		if (this._creationStrategy == ControllerCreationStrategy.SINGLETON) {
+			bound.asSingleton();
 		}
 
-		const filters = this._getActionFilters(CtrlClass, actionFunc.name);
-		const filterFuncs = filters.map(f => this._extractFilterExecuteFunc(f));
-		const args: any[] = [path, ...filterFuncs, actionFunc];
+		// Returns a proxy function that resolves the actual action function in EVERY incomming request.
+		// If Controller Creation Strategy is SINGLETON, then the same controller instance will handle all requests.
+		// Otherwise, a new controller instance will be created for each request.
+		return HandlerContainer.instance.register(actionFunc.name, CtrlClass.name, 
+			(ctrlInstance, actionName) => {
+				return (actionName === actionFunc.name) && actionFunc;
+			});
+	}
 
-		// This is equivalent to:
-		// router.METHOD(path, filter_1, filter_2, actionFunc);
-		(routerMethod as Function).apply(router, args);
+	protected _buildActionRoutesAndFilters(actionFunc: Function, actionName: string, CtrlClass: Newable, router: express.Router): void {
+		const actionDesc: ActionDescriptor = this._getMetadata(MetaData.ACTION, CtrlClass, actionName);
+		const filters = this._getActionFilters(CtrlClass, actionName);
+		const filterFuncs = filters.map(f => this._extractFilterExecuteFunc(f));
+		
+		// In case one action supports multiple methods (GET, POST etc.)
+		for (let method of Object.getOwnPropertyNames(actionDesc)) {
+			const routerMethod: Function = router[method];
+			if (typeof routerMethod !== 'function') {
+				throw new CriticalException(`Express Router doesn't support method "${method}"`);
+			}
+			const routePath = actionDesc[method];
+			const args: any[] = [routePath, ...filterFuncs, actionFunc];
+			// This is equivalent to:
+			// router.METHOD(path, filter_1, filter_2, actionFunc);
+			(routerMethod as Function).apply(router, args);
+		}
 	}
 
 	protected _getActionFilters(CtrlClass: Function, actionName: string): FilterArray {
