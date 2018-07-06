@@ -47,10 +47,10 @@ let ExpressServerAddOn = class ExpressServerAddOn {
     /**
      * Gets or sets strategy when creating controller instance.
      */
-    get createStrategy() {
+    get controllerCreation() {
         return this._creationStrategy;
     }
-    set createStrategy(value) {
+    set controllerCreation(value) {
         this._creationStrategy = value;
     }
     /**
@@ -84,7 +84,7 @@ let ExpressServerAddOn = class ExpressServerAddOn {
     /**
      * Registers a global-scoped filter which is called on every coming request.
      * @param FilterClass The filter class.
-     * @param {number} priority A number from 0 to 10, filters with greater priority run before ones with less priority.
+     * @param {FilterPriority} priority Filters with greater priority run before ones with less priority.
      */
     addGlobalFilter(FilterClass, priority) {
         filter_1.pushFilterToArray(this._globalFilters, FilterClass, priority);
@@ -133,8 +133,8 @@ let ExpressServerAddOn = class ExpressServerAddOn {
             return next();
         });
         // Binds global filters as application-level middlewares to specified Express instance.
-        // Binds filters with priority from 1 to 4
-        this._useFilterMiddleware(this._globalFilters.filter((f, i) => i < 5), app);
+        // Binds filters with priority HIGH
+        this._useFilterMiddleware(this._globalFilters.filter((f, i) => i == filter_1.FilterPriority.HIGH), app);
         const corsOptions = {
             origin: this._cfgProvider.get(W.WEB_CORS).TryGetValue(false),
             optionsSuccessStatus: 200,
@@ -142,9 +142,9 @@ let ExpressServerAddOn = class ExpressServerAddOn {
         app.use(cors(corsOptions));
         app.use(bodyParser.urlencoded({ extended: true })); // Parse Form values in POST requests
         app.use(bodyParser.json()); // Parse requests with JSON payloads
-        // Binds filters with priority from 5 to 10
-        // All 3rd party middlewares have priority 5.
-        this._useFilterMiddleware(this._globalFilters.filter((f, i) => i >= 5), app);
+        // Binds filters with priority from MEDIUM to LOW
+        // All 3rd party middlewares have priority MEDIUM.
+        this._useFilterMiddleware(this._globalFilters.filter((f, i) => i == filter_1.FilterPriority.MEDIUM || i == filter_1.FilterPriority.LOW), app);
         return app;
     }
     _startServer(app) {
@@ -216,7 +216,19 @@ let ExpressServerAddOn = class ExpressServerAddOn {
         // If Controller Creation Strategy is SINGLETON, then the same controller instance will handle all requests.
         // Otherwise, a new controller instance will be created for each request.
         return common_1.HandlerContainer.instance.register(actionFunc.name, CtrlClass.name, (ctrlInstance, actionName) => {
-            return (actionName === actionFunc.name) && actionFunc;
+            if (actionName !== actionFunc.name) {
+                return null;
+            }
+            // Wrapper function that handles uncaught errors,
+            // so that controller actions don't need to call `next(error)` like said by https://expressjs.com/en/guide/error-handling.html
+            return function (req, res, next) {
+                try {
+                    actionFunc.call(this, req, res);
+                }
+                catch (err) {
+                    next(err);
+                }
+            };
         });
     }
     _buildActionRoutesAndFilters(actionFunc, actionName, CtrlClass, router) {
@@ -266,13 +278,18 @@ let ExpressServerAddOn = class ExpressServerAddOn {
         if (!filters || !filters.length) {
             return;
         }
+        // Must make a clone to avoid mutating the original filter array in Reflect metadata.
+        const cloned = Array.from(filters);
         // `reverse()`: Policies with priority of greater number should run before ones with less priority.
         // Expected format:
         // filters = [
         //		1: [ FilterClass, FilterClass ],
         //		5: [ FilterClass, FilterClass ],
         // ]
-        filters.reverse().forEach(samePriorityFilters => {
+        cloned.reverse().forEach(samePriorityFilters => {
+            if (!samePriorityFilters || !samePriorityFilters.length) {
+                return;
+            }
             for (let FilterClass of samePriorityFilters) { // 1: [ FilterClass, FilterClass ]
                 appOrRouter.use(this._extractFilterExecuteFunc(FilterClass));
             }

@@ -20,19 +20,13 @@ let ErrorHandlerFilter = class ErrorHandlerFilter {
     // @inject() private logProvider: ILogProvider
     ) {
     }
-    execute(req, res, next) {
-        try {
-            next();
+    execute(error, req, res, next) {
+        if (res.headersSent || !(error instanceof common_1.ValidationError)) {
+            // Delegate to Express default error handler
+            return next(error);
         }
-        catch (err) {
-            if (err instanceof common_1.ValidationError) {
-                res.status(412).send(err);
-            }
-            else {
-                // logProvider.error(err);
-                res.status(500).send('server.error.internal');
-            }
-        }
+        // TODO: Write error to file or logging service.
+        res.status(412).send(error);
     }
 };
 ErrorHandlerFilter = __decorate([

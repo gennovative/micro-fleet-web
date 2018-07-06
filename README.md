@@ -1,4 +1,4 @@
-# Gennova backend common web library
+## Micro Fleet - Web library
 
 Contains classes used by web and rest services.
 
@@ -6,31 +6,18 @@ See more examples and usage guide in unit test.
 
 ## INSTALLATION
 
-`npm i`: To install dependencies.
-`gulp` to transpile TypeScript.
+- Stable version: `npm i @micro-fleet/web`
+- Edge (development) version: `npm i git@github.com:gennovative/micro-fleet-web.git`
 
 ## DEVELOPMENT
 
-`gulp watch`: To transpile and watch for edit.
+- Install packages in `peerDependencies` section with command `npm i --no-save {package name}@{version}`
+- `npm run build` to transpile TypeScript then run unit tests (if any) (equiv. `npm run compile` + `npm run test` (if any)).
+- `npm run compile`: To transpile TypeScript into JavaScript.
+- `npm run watch`: To transpile without running unit tests, then watch for changes in *.ts files and re-transpile on save.
+- `npm run test`: To run unit tests.
 
 ## RELEASE
 
-`gulp release`: To transpile and create `app.d.ts` definition file.
-
----
-## VERSIONS
-
-### 0.2.1
-- Improved controller and action filter pre-binding process.
-- Improved automatic route generation process.
-- Fixed some bugs in `RestCRUDControllerBase`.
-- Removed `api` property from TrailsOpts.
-
-### 0.2.0
-- Split **RestControllerBase** into **RestCRUDControllerBase** (inherits **RestControllerBase**).
-- **RestControllerBase** provides basic response actions.
-- **RestCRUDControllerBase** provides CRUD actions and function `CreateRouteConfigs` to generate route configs.
-
-### 0.1.0
-- **TrailsServerAddOn**: Service addon for igniting Trails server.
-- **RestControllerBase**: Base controller classes that handles REST CRUD endpoints.
+- `npm run release`: To transpile and create `app.d.ts` definition file.
+- **Note:** Please commit transpiled code in folder `dist` and definition file `app.d.ts` relevant to the TypeScript version.

@@ -4,11 +4,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const MetaData_1 = require("../constants/MetaData");
 /**
  * Used to decorate action function of REST controller class.
- * @param {string} method Case-insensitive HTTP verb such as GET, POST, DELETE...
+ * @param {string} method Case-insensitive HTTP verb supported by Express
+     * 		(see full list at https://expressjs.com/en/4x/api.html#routing-methods)
  * @param {string} path Segment of URL pointing to this action.
  * 		If not specified, it is default to be the action's function name.
  */
-function action(method = 'get', path) {
+function action(method, path) {
     return function (proto, funcName) {
         if (!path) {
             path = `/${funcName}`;
@@ -38,6 +39,15 @@ function action(method = 'get', path) {
     };
 }
 exports.action = action;
+/**
+ * Used to decorate an action that accepts request of ALL verbs.
+ * @param {string} path Segment of URL pointing to this action.
+ * 		If not specified, it is default to be the action's function name.
+ */
+function ALL(path) {
+    return action('all', path);
+}
+exports.ALL = ALL;
 /**
  * Used to decorate an action that accepts GET request.
  * @param {string} path Segment of URL pointing to this action.
@@ -83,4 +93,22 @@ function DELETE(path) {
     return action('delete', path);
 }
 exports.DELETE = DELETE;
+/**
+ * Used to decorate an action that accepts HEAD request.
+ * @param {string} path Segment of URL pointing to this action.
+ * 		If not specified, it is default to be the action's function name.
+ */
+function HEAD(path) {
+    return action('head', path);
+}
+exports.HEAD = HEAD;
+/**
+ * Used to decorate an action that accepts OPTIONS request.
+ * @param {string} path Segment of URL pointing to this action.
+ * 		If not specified, it is default to be the action's function name.
+ */
+function OPTIONS(path) {
+    return action('options', path);
+}
+exports.OPTIONS = OPTIONS;
 //# sourceMappingURL=action.js.map

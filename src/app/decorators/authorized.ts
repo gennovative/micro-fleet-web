@@ -4,26 +4,18 @@
 /// <reference types="reflect-metadata" />
 
 import { AuthorizeFilter } from '../filters/AuthorizeFilter';
-import { addFilterToTarget } from './filter';
+import { addFilterToTarget, FilterPriority } from './filter';
 
 
-export type AuthorizedDecorator = (
-	FilterClass: Newable,
-	priority?: number
-) => Function;
+export type AuthorizedDecorator = () => Function;
 
 
 /**
- * Used to add filter to controller class and controller action.
- * @param {class} FilterClass Filter class whose name must end with "Filter".
- * @param {ExpressionStatement} filterFunc An arrow function that returns filter's function.
- * 		This array function won't be executed, but is used to extract filter function name.
- * @param {number} priority A number from 0 to 10, filters with greater priority run before ones with less priority.
+ * Marks a controller or action to require auth token to be accessible.
  */
 export function authorized(): Function {
-
 	return function (TargetClass: Newable, key: string): Function {
-		TargetClass = addFilterToTarget<AuthorizeFilter>(AuthorizeFilter, TargetClass, key, 9) as Newable;
+		TargetClass = addFilterToTarget<AuthorizeFilter>(AuthorizeFilter, TargetClass, key, FilterPriority.HIGH) as Newable;
 		return TargetClass;
 	};
 }

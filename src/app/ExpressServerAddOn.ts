@@ -9,8 +9,8 @@ const { WebSettingKeys: W } = constants;
 
 import { MetaData } from './constants/MetaData';
 import { ActionDescriptor } from './decorators/action';
-import { IActionFilter, PrioritizedFilterArray, FilterArray, 
-	pushFilterToArray } from './decorators/filter';
+import { IActionErrorHandler, ActionInterceptor, PrioritizedFilterArray,
+	FilterArray, FilterPriority, pushFilterToArray } from './decorators/filter';
 import { webContext } from './WebContext';
 
 
@@ -43,11 +43,11 @@ export class ExpressServerAddOn implements IServiceAddOn {
 	/**
 	 * Gets or sets strategy when creating controller instance.
 	 */
-	public get createStrategy(): ControllerCreationStrategy {
+	public get controllerCreation(): ControllerCreationStrategy {
 		return this._creationStrategy;
 	}
 
-	public set createStrategy(value: ControllerCreationStrategy) {
+	public set controllerCreation(value: ControllerCreationStrategy) {
 		this._creationStrategy = value;
 	}
 
@@ -105,9 +105,9 @@ export class ExpressServerAddOn implements IServiceAddOn {
 	/**
 	 * Registers a global-scoped filter which is called on every coming request.
 	 * @param FilterClass The filter class.
-	 * @param {number} priority A number from 0 to 10, filters with greater priority run before ones with less priority.
+	 * @param {FilterPriority} priority Filters with greater priority run before ones with less priority.
 	 */
-	public addGlobalFilter<T extends IActionFilter>(FilterClass: Newable<T>, priority?: number): void {
+	public addGlobalFilter<T extends ActionInterceptor | IActionErrorHandler>(FilterClass: Newable<T>, priority?: FilterPriority): void {
 		pushFilterToArray(this._globalFilters, FilterClass, priority);
 	}
 
@@ -164,8 +164,8 @@ export class ExpressServerAddOn implements IServiceAddOn {
 		});
 
 		// Binds global filters as application-level middlewares to specified Express instance.
-		// Binds filters with priority from 1 to 4
-		this._useFilterMiddleware(this._globalFilters.filter((f, i) => i < 5), app);
+		// Binds filters with priority HIGH
+		this._useFilterMiddleware(this._globalFilters.filter((f, i) => i == FilterPriority.HIGH), app);
 
 		const corsOptions: cors.CorsOptions = {
 			origin: this._cfgProvider.get(W.WEB_CORS).TryGetValue(false) as string | boolean,
@@ -175,9 +175,9 @@ export class ExpressServerAddOn implements IServiceAddOn {
 		app.use(bodyParser.urlencoded({extended: true})); // Parse Form values in POST requests
 		app.use(bodyParser.json()); // Parse requests with JSON payloads
 
-		// Binds filters with priority from 5 to 10
-		// All 3rd party middlewares have priority 5.
-		this._useFilterMiddleware(this._globalFilters.filter((f, i) => i >= 5), app);
+		// Binds filters with priority from MEDIUM to LOW
+		// All 3rd party middlewares have priority MEDIUM.
+		this._useFilterMiddleware(this._globalFilters.filter((f, i) => i == FilterPriority.MEDIUM || i == FilterPriority.LOW), app);
 
 		return app;
 	}
@@ -265,8 +265,18 @@ export class ExpressServerAddOn implements IServiceAddOn {
 		// Otherwise, a new controller instance will be created for each request.
 		return HandlerContainer.instance.register(actionFunc.name, CtrlClass.name, 
 			(ctrlInstance, actionName) => {
-				return (actionName === actionFunc.name) && actionFunc;
-			});
+				if (actionName !== actionFunc.name) { return null; }
+
+				// Wrapper function that handles uncaught errors,
+				// so that controller actions don't need to call `next(error)` like said by https://expressjs.com/en/guide/error-handling.html
+				return function (this: any, req: express.Request, res: express.Response, next: express.NextFunction) {
+					try {
+						actionFunc.call(this, req, res);
+					} catch (err) {
+						next(err);
+					}
+				};
+			}) as Function;
 	}
 
 	protected _buildActionRoutesAndFilters(actionFunc: Function, actionName: string, CtrlClass: Newable, router: express.Router): void {
@@ -321,25 +331,32 @@ export class ExpressServerAddOn implements IServiceAddOn {
 
 	private _useFilterMiddleware(filters: PrioritizedFilterArray, appOrRouter: express.Express | express.Router): void {
 		if (!filters || !filters.length) { return; }
+
+		// Must make a clone to avoid mutating the original filter array in Reflect metadata.
+		const cloned = Array.from(filters);
+
 		// `reverse()`: Policies with priority of greater number should run before ones with less priority.
 		// Expected format:
 		// filters = [
 		//		1: [ FilterClass, FilterClass ],
 		//		5: [ FilterClass, FilterClass ],
 		// ]
-		filters.reverse().forEach(samePriorityFilters => {
+		cloned.reverse().forEach(samePriorityFilters => {
+			if (!samePriorityFilters || !samePriorityFilters.length) {
+				return;
+			}
 			for (let FilterClass of samePriorityFilters) { // 1: [ FilterClass, FilterClass ]
 				appOrRouter.use(this._extractFilterExecuteFunc(FilterClass) as express.RequestHandler);
 			}
 		});
 	}
 
-	protected _extractFilterExecuteFunc<T extends IActionFilter>(FilterClass: Newable<T>): Function {
-		const filter: IActionFilter = this._instantiateClass(FilterClass, true);
+	protected _extractFilterExecuteFunc<T extends ActionInterceptor>(FilterClass: Newable<T>): Function {
+		const filter: ActionInterceptor = this._instantiateClass(FilterClass, true);
 		return filter.execute.bind(filter);
 	}
 
-	protected _instantiateClass<T extends IActionFilter>(TargetClass: Newable<T>, isSingleton: boolean, arg1?: any, arg2?: any, arg3?: any, arg4?: any, arg5?: any): IActionFilter {
+	protected _instantiateClass<T extends ActionInterceptor>(TargetClass: Newable<T>, isSingleton: boolean, arg1?: any, arg2?: any, arg3?: any, arg4?: any, arg5?: any): ActionInterceptor {
 		// Create an instance either from dependency container or with normay way.
 		// Make sure this instance is singleton.
 		if (!Reflect.hasOwnMetadata(INVERSIFY_INJECTABLE, TargetClass)) {

@@ -1,20 +1,96 @@
+/* istanbul ignore next */
 if (!Reflect || typeof Reflect['hasOwnMetadata'] !== 'function') {
 	require('reflect-metadata');
 }
 
+import { authorized, AuthorizedDecorator } from './authorized';
 import { lazyInject, LazyInjectDecorator } from './lazyInject';
 import { controller, ControllerDecorator } from './controller';
-import { filter, FilterDecorator } from './filter';
-import { action, ActionDecorator } from './action';
+import { filter, FilterDecorator, IActionFilter as AF, IActionErrorHandler as EH,
+	FilterPriority as FP } from './filter';
+import * as act from './action';
 
+/**
+ * Provides operations to intercept HTTP requests to a controller.
+ */
+export interface IActionFilter extends AF {}
+
+/**
+ * Provides operations to handle errors thrown from controller actions.
+ */
+export interface IActionErrorHandler extends EH {}
+
+/**
+ * Represents the order in which filters are invoked.
+ */
+export const FilterPriority = FP;
 
 export const decorators: {
+
+	/**
+	 * Used to decorate an action that accepts request of ALL verbs.
+	 * @param {string} path Segment of URL pointing to this action.
+	 * 		If not specified, it is default to be the action's function name.
+	 */
+	ALL: act.ActionVerbDecorator,
+
+	/**
+	 * Used to decorate an action that accepts DELETE request.
+	 * @param {string} path Segment of URL pointing to this action.
+	 * 		If not specified, it is default to be the action's function name.
+	 */
+	DELETE: act.ActionVerbDecorator,
+
+	/**
+	 * Used to decorate an action that accepts GET request.
+	 * @param {string} path Segment of URL pointing to this action.
+	 * 		If not specified, it is default to be the action's function name.
+	 */
+	GET: act.ActionVerbDecorator,
+
+	/**
+	 * Used to decorate an action that accepts POST request.
+	 * @param {string} path Segment of URL pointing to this action.
+	 * 		If not specified, it is default to be the action's function name.
+	 */
+	POST: act.ActionVerbDecorator,
+
+	/**
+	 * Used to decorate an action that accepts PATCH request.
+	 * @param {string} path Segment of URL pointing to this action.
+	 * 		If not specified, it is default to be the action's function name.
+	 */
+	PATCH: act.ActionVerbDecorator,
+
+	/**
+	 * Used to decorate an action that accepts PUT request.
+	 * @param {string} path Segment of URL pointing to this action.
+	 * 		If not specified, it is default to be the action's function name.
+	 */
+	PUT: act.ActionVerbDecorator,
+
+	/**
+	 * Used to decorate an action that accepts HEAD request.
+	 * @param {string} path Segment of URL pointing to this action.
+	 * 		If not specified, it is default to be the action's function name.
+	 */
+	HEAD: act.ActionVerbDecorator,
+
+	/**
+	 * Used to decorate an action that accepts OPTIONS request.
+	 * @param {string} path Segment of URL pointing to this action.
+	 * 		If not specified, it is default to be the action's function name.
+	 */
+	OPTIONS: act.ActionVerbDecorator,
+
 	/**
 	 * Used to decorate action function of REST controller class.
-	 * @param {string} path Segment of URL pointing to this controller.
-	 * 		If not specified, it is default to be empty tring.
+	 * @param {string} method Case-insensitive HTTP verb supported by Express 
+	 * 		(see full list at https://expressjs.com/en/4x/api.html#routing-methods)
+	 * @param {string} path Segment of URL pointing to this action.
+	 * 		If not specified, it is default to be the action's function name.
 	 */
-	action: ActionDecorator,
+	action: act.ActionDecorator,
 
 	/**
 	 * Used to decorate REST controller class.
@@ -22,6 +98,11 @@ export const decorators: {
 	 * 		if not specified, it is extract from controller class name: {path}Controller.
 	 */
 	controller: ControllerDecorator,
+
+	/**
+	 * Marks a controller or action to require auth token to be accessible.
+	 */
+	authorized: AuthorizedDecorator,
 
 	/**
 	 * Used to add filter to controller class and controller action.
@@ -36,10 +117,19 @@ export const decorators: {
 	 * Injects value to the decorated property. 
 	 * Used to decorate properties of a class that's cannot be resolved by dependency container.
 	 */
-	lazyInject: LazyInjectDecorator
+	lazyInject: LazyInjectDecorator,
 } = {
-	action,
+	ALL: act.ALL,
+	DELETE: act.DELETE,
+	GET: act.GET,
+	POST: act.POST,
+	PATCH: act.PATCH,
+	PUT: act.PUT,
+	HEAD: act.HEAD,
+	OPTIONS: act.OPTIONS,
+	action: act.action,
 	controller,
+	authorized,
 	filter,
-	lazyInject
+	lazyInject,
 };

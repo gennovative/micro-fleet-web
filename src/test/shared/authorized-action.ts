@@ -1,15 +1,15 @@
 import * as express from 'express';
-import { controller, GET, DELETE, authorized } from '../../app';
+import { decorators as dec } from '../../app';
 
-@controller('/')
+@dec.controller('/')
 class AuthorizedActionController {
-	@GET('/')
-	@authorized()
+	@dec.GET('/')
+	@dec.authorized()
 	public getRestricted(req: express.Request, res: express.Response): void {
 		res.send('AuthorizedController.getRestricted');
 	}
 
-	@DELETE('/')
+	@dec.DELETE('/')
 	public deleteAtWill(req: express.Request, res: express.Response): void {
 		res.send('AuthorizedController.deleteAtWill');
 	}

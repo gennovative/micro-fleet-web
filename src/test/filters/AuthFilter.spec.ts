@@ -1,4 +1,3 @@
-import * as express from 'express';
 import * as path from 'path';
 import { describe, it } from 'mocha';
 import * as chai from 'chai';
@@ -11,7 +10,8 @@ import jwt = require('jsonwebtoken');
 import { injectable, DependencyContainer, serviceContext,
 	IConfigurationProvider, Maybe, Types as CmT, constants } from '@micro-fleet/common';
 
-import { AuthorizeFilter, ExpressServerAddOn, AuthAddOn, Types as T } from '../../app';
+import { AuthorizeFilter, ExpressServerAddOn, ControllerCreationStrategy,
+	AuthAddOn, Types as T } from '../../app';
 
 // For typing only
 import * as Bluebird from 'bluebird';
@@ -93,6 +93,7 @@ describe('AuthFilter', function() {
 				.then((token: string) => {
 					authToken = token;
 					server.controllerPath = path.join(process.cwd(), 'dist', 'test', 'shared', 'passthrough-controller');
+					server.controllerCreation = ControllerCreationStrategy.SINGLETON;
 					server.addGlobalFilter(AuthorizeFilter);
 					return server.init();
 				})
@@ -101,11 +102,6 @@ describe('AuthFilter', function() {
 					return authAddon.init();
 				})
 				.then(() => {
-					server.express.get('/', (req: express.Request, res: express.Response) => {
-						expect(req['auth'].accountId).to.equal(payload.accountId);
-						expect(req['auth'].username).to.equal(payload.username);
-						res.status(200).send('Test passed');
-					});
 					// Act
 					return request(URL, {
 						headers: {
@@ -114,7 +110,10 @@ describe('AuthFilter', function() {
 					});
 				})
 				.then((res) => {
-					expect(res).to.equal('Test passed');
+					const controller: any = container.resolve('PassthroughController');
+					// Assert: req['auth'].accountId == payload.accountId
+					// and req['auth'].username == payload.username
+					expect(controller['spyFn']).to.be.called.with(payload.accountId, payload.username);
 				})
 				.catch(error => {
 					console.error(error);

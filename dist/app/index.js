@@ -5,11 +5,7 @@ function __export(m) {
 Object.defineProperty(exports, "__esModule", { value: true });
 __export(require("./constants/AuthConstant"));
 __export(require("./constants/MetaData"));
-__export(require("./decorators/action"));
-__export(require("./decorators/authorized"));
-__export(require("./decorators/controller"));
-__export(require("./decorators/filter"));
-__export(require("./decorators/lazyInject"));
+__export(require("./decorators"));
 __export(require("./filters/AuthorizeFilter"));
 __export(require("./filters/ErrorHandlerFilter"));
 __export(require("./filters/TenantResolverFilter"));

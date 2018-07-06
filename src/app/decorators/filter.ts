@@ -12,21 +12,35 @@ export interface IActionFilter {
 	execute(request: any, response: any, next: Function): void;
 }
 
-export type FilterDecorator = <T extends IActionFilter>(
+/**
+ * Provides operations to handle errors thrown from controller actions.
+ */
+export interface IActionErrorHandler {
+	execute(error: any, request: any, response: any, next: Function): void;
+}
+
+export type ActionInterceptor = IActionFilter | IActionErrorHandler;
+
+/**
+ * Represents the order in which filters are invoked.
+ */
+export enum FilterPriority { LOW, MEDIUM, HIGH }
+
+export type FilterDecorator = <T extends ActionInterceptor>(
 		FilterClass: Newable<T>,
-		priority?: number
+		priority?: FilterPriority
 	) => Function;
 
-export type FilterArray<T extends IActionFilter = IActionFilter> = Newable<T>[];
+export type FilterArray<T extends ActionInterceptor = ActionInterceptor> = Newable<T>[];
 export type PrioritizedFilterArray = FilterArray[];
-	
+
 
 /**
  * Used to add filter to controller class and controller action.
  * @param {class} FilterClass Filter class whose name must end with "Filter".
- * @param {number} priority A number from 0 to 10, filters with greater priority run before ones with less priority.
+ * @param {FilterPriority} priority Filters with greater priority run before ones with less priority.
  */
-export function filter<T extends IActionFilter>(FilterClass: Newable<T>, priority: number = 5): Function {
+export function filter<T extends ActionInterceptor>(FilterClass: Newable<T>, priority: FilterPriority = FilterPriority.MEDIUM): Function {
 
 	return function (TargetClass: Newable<T>, key: string): Function {
 		return addFilterToTarget(FilterClass, TargetClass, key, priority);
@@ -39,10 +53,10 @@ export function filter<T extends IActionFilter>(FilterClass: Newable<T>, priorit
  * @param FilterClass The filter class.
  * @param TargetClassOrPrototype A class or class prototype.
  * @param targetFunc Method name, if `TargetClass` is prototype object,
- * @param {number} priority A number from 0 to 10, filters with greater priority run before ones with less priority.
+ * @param {FilterPriority} priority Filters with greater priority run before ones with less priority.
  */
-export function addFilterToTarget<T extends IActionFilter>(FilterClass: Newable<T>,
-		TargetClassOrPrototype: Newable<T>, targetFunc?: string, priority: number = 5): Function {
+export function addFilterToTarget<T extends ActionInterceptor>(FilterClass: Newable<T>,
+		TargetClassOrPrototype: Newable<T>, targetFunc?: string, priority: FilterPriority = FilterPriority.MEDIUM): Function {
 
 	let metaKey: string,
 		isClassScope = (!targetFunc); // If `targetFunc` has value, `targetClass` is "prototype" object, otherwise it's a class.
@@ -67,15 +81,15 @@ export function addFilterToTarget<T extends IActionFilter>(FilterClass: Newable<
 /**
  * Prepares a filter then push it to given array.
  */
-export function pushFilterToArray<T extends IActionFilter>(filters: PrioritizedFilterArray, FilterClass: Newable<T>, priority: number = 5): void {
-	Guard.assertIsTruthy(priority >= 1 && priority <= 10, 'Filter priority must be between 1 and 10.');
+export function pushFilterToArray<T extends ActionInterceptor>(filters: PrioritizedFilterArray, FilterClass: Newable<T>, priority: FilterPriority = FilterPriority.MEDIUM): void {
+	Guard.assertIsTruthy(priority >= FilterPriority.LOW && priority <= FilterPriority.HIGH, 'Invalid filter priority.');
 
 
 	// `filters` is a 2-dimensioned matrix, with indexes are priority value,
 	//   values are array of Filter classes. Eg:
 	// filters = [
 	//		1: [ FilterClass, FilterClass ]
-	//		5: [ FilterClass, FilterClass ]
+	//		3: [ FilterClass, FilterClass ]
 	// ]
 	filters[priority] = filters[priority] || [];
 	filters[priority].push(FilterClass);

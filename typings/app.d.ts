@@ -1,18 +1,265 @@
 /// <reference path="./global.d.ts" />
+declare module '@micro-fleet/web/dist/app/constants/MetaData' {
+	export class MetaData {
+	    static readonly CONTROLLER: string;
+	    static readonly CONTROLLER_FILTER: string;
+	    static readonly ACTION: string;
+	    static readonly ACTION_FILTER: string;
+	    static readonly AUTHORIZED_FILTER: string;
+	}
 
-declare module 'back-lib-common-web/dist/app/RestControllerBase' {
-	/// <reference types="express" />
+}
+declare module '@micro-fleet/web/dist/app/decorators/action' {
+	export type ActionDecorator = (method: string, path?: string) => Function;
+	export type ActionVerbDecorator = (path?: string) => Function;
+	export type ActionDescriptor = {
+	    [method: string]: string;
+	};
+	/**
+	 * Used to decorate action function of REST controller class.
+	 * @param {string} method Case-insensitive HTTP verb supported by Express
+	     * 		(see full list at https://expressjs.com/en/4x/api.html#routing-methods)
+	 * @param {string} path Segment of URL pointing to this action.
+	 * 		If not specified, it is default to be the action's function name.
+	 */
+	export function action(method: string, path?: string): Function;
+	/**
+	 * Used to decorate an action that accepts request of ALL verbs.
+	 * @param {string} path Segment of URL pointing to this action.
+	 * 		If not specified, it is default to be the action's function name.
+	 */
+	export function ALL(path?: string): Function;
+	/**
+	 * Used to decorate an action that accepts GET request.
+	 * @param {string} path Segment of URL pointing to this action.
+	 * 		If not specified, it is default to be the action's function name.
+	 */
+	export function GET(path?: string): Function;
+	/**
+	 * Used to decorate an action that accepts POST request.
+	 * @param {string} path Segment of URL pointing to this action.
+	 * 		If not specified, it is default to be the action's function name.
+	 */
+	export function POST(path?: string): Function;
+	/**
+	 * Used to decorate an action that accepts PUT request.
+	 * @param {string} path Segment of URL pointing to this action.
+	 * 		If not specified, it is default to be the action's function name.
+	 */
+	export function PUT(path?: string): Function;
+	/**
+	 * Used to decorate an action that accepts PATCH request.
+	 * @param {string} path Segment of URL pointing to this action.
+	 * 		If not specified, it is default to be the action's function name.
+	 */
+	export function PATCH(path?: string): Function;
+	/**
+	 * Used to decorate an action that accepts DELETE request.
+	 * @param {string} path Segment of URL pointing to this action.
+	 * 		If not specified, it is default to be the action's function name.
+	 */
+	export function DELETE(path?: string): Function;
+	/**
+	 * Used to decorate an action that accepts HEAD request.
+	 * @param {string} path Segment of URL pointing to this action.
+	 * 		If not specified, it is default to be the action's function name.
+	 */
+	export function HEAD(path?: string): Function;
+	/**
+	 * Used to decorate an action that accepts OPTIONS request.
+	 * @param {string} path Segment of URL pointing to this action.
+	 * 		If not specified, it is default to be the action's function name.
+	 */
+	export function OPTIONS(path?: string): Function;
+
+}
+declare module '@micro-fleet/web/dist/app/decorators/filter' {
+	/**
+	 * Provides operations to intercept HTTP requests to a controller.
+	 */
+	export interface IActionFilter {
+	    execute(request: any, response: any, next: Function): void;
+	}
+	/**
+	 * Provides operations to handle errors thrown from controller actions.
+	 */
+	export interface IActionErrorHandler {
+	    execute(error: any, request: any, response: any, next: Function): void;
+	}
+	export type ActionInterceptor = IActionFilter | IActionErrorHandler;
+	/**
+	 * Represents the order in which filters are invoked.
+	 */
+	export enum FilterPriority {
+	    LOW = 0,
+	    MEDIUM = 1,
+	    HIGH = 2
+	}
+	export type FilterDecorator = <T extends ActionInterceptor>(FilterClass: Newable<T>, priority?: FilterPriority) => Function;
+	export type FilterArray<T extends ActionInterceptor = ActionInterceptor> = Newable<T>[];
+	export type PrioritizedFilterArray = FilterArray[];
+	/**
+	 * Used to add filter to controller class and controller action.
+	 * @param {class} FilterClass Filter class whose name must end with "Filter".
+	 * @param {FilterPriority} priority Filters with greater priority run before ones with less priority.
+	 */
+	export function filter<T extends ActionInterceptor>(FilterClass: Newable<T>, priority?: FilterPriority): Function;
+	/**
+	 * Adds a filter to `TargetClass`. `TargetClass` can be a class or class prototype,
+	 * depending on whether the filter is meant to apply on class or class method.
+	 * @param FilterClass The filter class.
+	 * @param TargetClassOrPrototype A class or class prototype.
+	 * @param targetFunc Method name, if `TargetClass` is prototype object,
+	 * @param {FilterPriority} priority Filters with greater priority run before ones with less priority.
+	 */
+	export function addFilterToTarget<T extends ActionInterceptor>(FilterClass: Newable<T>, TargetClassOrPrototype: Newable<T>, targetFunc?: string, priority?: FilterPriority): Function;
+	/**
+	 * Prepares a filter then push it to given array.
+	 */
+	export function pushFilterToArray<T extends ActionInterceptor>(filters: PrioritizedFilterArray, FilterClass: Newable<T>, priority?: FilterPriority): void;
+
+}
+declare module '@micro-fleet/web/dist/app/WebContext' {
+	/**
+	 * Serves as a global object for all web-related classes (controllers, policies...)
+	 * to use.
+	 */
+	export class WebContext {
+	    	    /**
+	     * Gets url prefix. Eg: /api/v1.
+	     */
+	    readonly urlPrefix: string;
+	    /**
+	     * Sets prefix to all route url, eg: /api/v1. Must be set before add-ons initialization phase.
+	     */
+	    setUrlPrefix(prefix: string): void;
+	}
+	export const webContext: WebContext;
+
+}
+declare module '@micro-fleet/web/dist/app/ExpressServerAddOn' {
+	/// <reference types="node" />
+	import * as http from 'http';
 	import * as express from 'express';
-	import TrailsApp = require('trails');
-	import TrailsController = require('trails/controller');
+	import { IDependencyContainer, Maybe, IConfigurationProvider } from '@micro-fleet/common';
+	import { IActionErrorHandler, ActionInterceptor, PrioritizedFilterArray, FilterArray, FilterPriority } from '@micro-fleet/web/dist/app/decorators/filter'; type ControllerExports = {
+	    [name: string]: Newable;
+	};
+	export enum ControllerCreationStrategy {
+	    SINGLETON = 0,
+	    TRANSIENT = 1
+	}
+	export class ExpressServerAddOn implements IServiceAddOn {
+	    	    	    readonly name: string;
+	    protected _server: http.Server;
+	    protected _globalFilters: PrioritizedFilterArray;
+	    protected _isAlive: boolean;
+	    	    	    	    	    	    /**
+	     * Gets or sets strategy when creating controller instance.
+	     */
+	    controllerCreation: ControllerCreationStrategy;
+	    /**
+	     * Gets or sets path to controller classes.
+	     */
+	    controllerPath: string;
+	    /**
+	     * Gets express instance.
+	     */
+	    readonly express: express.Express;
+	    /**
+	     * Gets HTTP port number.
+	     */
+	    readonly port: number;
+	    /**
+	     * Gets URL prefix.
+	     */
+	    readonly urlPrefix: string;
+	    constructor(_cfgProvider: IConfigurationProvider, _depContainer: IDependencyContainer);
+	    /**
+	     * Registers a global-scoped filter which is called on every coming request.
+	     * @param FilterClass The filter class.
+	     * @param {FilterPriority} priority Filters with greater priority run before ones with less priority.
+	     */
+	    addGlobalFilter<T extends ActionInterceptor | IActionErrorHandler>(FilterClass: Newable<T>, priority?: FilterPriority): void;
+	    /**
+	     * @memberOf IServiceAddOn
+	     */
+	    deadLetter(): Promise<void>;
+	    /**
+	     * @memberOf IServiceAddOn
+	     */
+	    dispose(): Promise<void>;
+	    /**
+	     * @memberOf IServiceAddOn
+	     */
+	    init(): Promise<void>;
+	    protected _createServer(): express.Express;
+	    protected _startServer(app: express.Express): Promise<any>;
+	    protected _loadControllers(): Promise<ControllerExports>;
+	    protected _initControllers(controllers: ControllerExports, app: express.Express): void;
+	    protected _buildControllerRoutes(CtrlClass: Newable, app: express.Express): express.Router;
+	    protected _buildControllerFilters(CtrlClass: Function, router: express.Router): void;
+	    protected _initActions(CtrlClass: Newable, router: express.Router): void;
+	    protected _proxyActionFunc(actionFunc: Function, CtrlClass: Newable): Function;
+	    protected _buildActionRoutesAndFilters(actionFunc: Function, actionName: string, CtrlClass: Newable, router: express.Router): void;
+	    protected _getActionFilters(CtrlClass: Function, actionName: string): FilterArray;
+	    protected _extractActionFromPrototype(prototype: any, name: string): Maybe<Function>;
+	    	    protected _extractFilterExecuteFunc<T extends ActionInterceptor>(FilterClass: Newable<T>): Function;
+	    protected _instantiateClass<T extends ActionInterceptor>(TargetClass: Newable<T>, isSingleton: boolean, arg1?: any, arg2?: any, arg3?: any, arg4?: any, arg5?: any): ActionInterceptor;
+	    protected _instantiateClassFromContainer(TargetClass: Newable, isSingleton: boolean): any;
+	    protected _instantiateClassTraditionally(TargetClass: Newable, isSingleton: boolean, arg1?: any, arg2?: any, arg3?: any, arg4?: any, arg5?: any): any;
+	    protected _getMetadata(metaKey: string, classOrProto: any, propName?: string): any;
+	    protected _assertValidController(ctrlName: string, CtrlClass: Newable): void;
+	}
+	export {};
+
+}
+declare module '@micro-fleet/web/dist/app/Types' {
+	export class Types {
+	    static readonly TENANT_RESOLVER: string;
+	    static readonly WEBSERVER_ADDON: string;
+	    static readonly AUTH_ADDON: string;
+	}
+
+}
+declare module '@micro-fleet/web/dist/app/AuthAddOn' {
+	import { IConfigurationProvider } from '@micro-fleet/common';
+	import { ExpressServerAddOn } from '@micro-fleet/web/dist/app/ExpressServerAddOn';
+	export type AuthResult = {
+	    payload: any;
+	    info: any;
+	    status: any;
+	};
+	export class AuthAddOn implements IServiceAddOn {
+	    	    	    readonly name: string;
+	    constructor(_serverAddOn: ExpressServerAddOn, _configProvider: IConfigurationProvider);
+	    /**
+	     * @memberOf IServiceAddOn.init
+	     */
+	    init(): Promise<void>;
+	    	    authenticate(request: any, response: any, next: Function): Promise<AuthResult>;
+	    createToken(payload: any, isRefresh: Boolean): Promise<string>;
+	    /**
+	     * @memberOf IServiceAddOn.deadLetter
+	     */
+	    deadLetter(): Promise<void>;
+	    /**
+	     * @memberOf IServiceAddOn.dispose
+	     */
+	    dispose(): Promise<void>;
+	}
+
+}
+declare module '@micro-fleet/web/dist/app/RestControllerBase' {
+	import * as express from 'express';
 	export type TrailsRouteConfigItem = {
 	    method: string | string[];
 	    path: string;
 	    handler: string | Function;
 	    config?: any;
 	};
-	export abstract class RestControllerBase extends TrailsController {
-	    constructor(trailsApp: TrailsApp);
+	export abstract class RestControllerBase {
+	    constructor();
 	    /*** SUCCESS ***/
 	    /**
 	     * Responds as Accepted with status code 202 and optional data.
@@ -85,38 +332,7 @@ declare module 'back-lib-common-web/dist/app/RestControllerBase' {
 	}
 
 }
-declare module 'back-lib-common-web/dist/app/constants/MetaData' {
-	export class MetaData {
-	    static readonly CONTROLLER: string;
-	    static readonly CONTROLLER_FILTER: string;
-	    static readonly ACTION: string;
-	    static readonly ACTION_FILTER: string;
-	    static readonly AUTHORIZED_FILTER: string;
-	}
-
-}
-declare module 'back-lib-common-web/dist/app/ServerContext' {
-	import { IDependencyContainer } from 'back-lib-common-util';
-	/**
-	 * Serves as a global object for all web-related classes (controllers, policies...)
-	 * to use.
-	 */
-	export class ServerContext {
-	    	    	    /**
-	     * Gets dependency container.
-	     */
-	    readonly dependencyContainer: IDependencyContainer;
-	    /**
-	     * Gets path prefix. Eg: /api/v1.
-	     */
-	    readonly pathPrefix: string;
-	    setDependencyContainer(container: IDependencyContainer): void;
-	    setPathPrefix(prefix: string): void;
-	}
-	export const serverContext: ServerContext;
-
-}
-declare module 'back-lib-common-web/dist/app/decorators/lazyInject' {
+declare module '@micro-fleet/web/dist/app/decorators/lazyInject' {
 	export type LazyInjectDecorator = (depIdentifier: symbol | string) => Function;
 	/**
 	 * Injects value to the decorated property.
@@ -125,7 +341,23 @@ declare module 'back-lib-common-web/dist/app/decorators/lazyInject' {
 	export function lazyInject(depIdentifier: symbol | string): Function;
 
 }
-declare module 'back-lib-common-web/dist/app/decorators/controller' {
+declare module '@micro-fleet/web/dist/app/filters/AuthorizeFilter' {
+	import * as express from 'express';
+	import { IActionFilter } from '@micro-fleet/web/dist/app/decorators/filter';
+	export class AuthorizeFilter implements IActionFilter {
+	    	    execute(request: express.Request, response: express.Response, next: Function): Promise<any>;
+	    	}
+
+}
+declare module '@micro-fleet/web/dist/app/decorators/authorized' {
+	export type AuthorizedDecorator = () => Function;
+	/**
+	 * Marks a controller or action to require auth token to be accessible.
+	 */
+	export function authorized(): Function;
+
+}
+declare module '@micro-fleet/web/dist/app/decorators/controller' {
 	export type ControllerDecorator = (path?: string) => Function;
 	/**
 	 * Used to decorate REST controller class.
@@ -136,57 +368,93 @@ declare module 'back-lib-common-web/dist/app/decorators/controller' {
 	export function controller(path?: string): Function;
 
 }
-declare module 'back-lib-common-web/dist/app/decorators/filter' {
-	import { INewable } from 'back-lib-common-util';
-	export type FilterDecorator = <T>(FilterClass: new (...param: any[]) => T, filterFunc: (filter: T) => Function, priority?: number) => Function;
+declare module '@micro-fleet/web/dist/app/decorators/index' {
+	import { AuthorizedDecorator } from '@micro-fleet/web/dist/app/decorators/authorized';
+	import { LazyInjectDecorator } from '@micro-fleet/web/dist/app/decorators/lazyInject';
+	import { ControllerDecorator } from '@micro-fleet/web/dist/app/decorators/controller';
+	import { FilterDecorator, IActionFilter as AF, IActionErrorHandler as EH, FilterPriority as FP } from '@micro-fleet/web/dist/app/decorators/filter';
+	import * as act from '@micro-fleet/web/dist/app/decorators/action';
 	/**
-	 * Used to add filter to controller class and controller action.
-	 * @param {class} FilterClass Filter class whose name must end with "Filter".
-	 * @param {ExpressionStatement} filterFunc An arrow function that returns filter's function.
-	 * 		This array function won't be executed, but is used to extract filter function name.
-	 * @param {number} priority A number from 0 to 10, filters with greater priority run before ones with less priority.
+	 * Provides operations to intercept HTTP requests to a controller.
 	 */
-	export function filter<T>(FilterClass: INewable<T>, filterFunc: (filter: T) => Function, priority?: number): Function;
+	export interface IActionFilter extends AF {
+	}
 	/**
-	 * Adds a filter to `TargetClass`. `TargetClass` can be a class or class prototype,
-	 * depending on whether the filter is meant to apply on class or class method.
-	 * @param FilterClass The filter class.
-	 * @param filterFunc The filter method to execute.
-	 * @param TargetClass A class or class prototype.
-	 * @param targetFunc Method name, if `TargetClass` is class prototype,
-	 * @param {number} priority A number from 0 to 10, filters with greater priority run before ones with less priority.
+	 * Provides operations to handle errors thrown from controller actions.
 	 */
-	export function addFilterToTarget<T>(FilterClass: INewable<T>, filterFunc: (filter: T) => Function, TargetClass: INewable<T>, targetFunc?: string, priority?: number): Function;
+	export interface IActionErrorHandler extends EH {
+	}
 	/**
-	 * Prepares a filter then push it to given array.
+	 * Represents the order in which filters are invoked.
 	 */
-	export function pushFilterToArray<T>(filters: any[], FilterClass: INewable<T>, filterFunc: (filter: T) => Function, priority?: number): void;
-
-}
-declare module 'back-lib-common-web/dist/app/decorators/action' {
-	export type ActionDecorator = (method?: string, path?: string) => Function;
-	/**
-	 * Used to decorate action function of REST controller class.
-	 * @param {string} method Case-insensitive HTTP verb such as GET, POST, DELETE...
-	 * @param {string} path Segment of URL pointing to this controller.
-	 * 		If '_' is given, uses target function name as path.
-	 * 		If not specified, it is default to be empty tring.
-	 */
-	export function action(method?: string, path?: string): Function;
-
-}
-declare module 'back-lib-common-web/dist/app/decorators' {
-	import { LazyInjectDecorator } from 'back-lib-common-web/dist/app/decorators/lazyInject';
-	import { ControllerDecorator } from 'back-lib-common-web/dist/app/decorators/controller';
-	import { FilterDecorator } from 'back-lib-common-web/dist/app/decorators/filter';
-	import { ActionDecorator } from 'back-lib-common-web/dist/app/decorators/action';
+	export const FilterPriority: typeof FP;
 	export const decorators: {
 	    /**
-	     * Used to decorate action function of REST controller class.
-	     * @param {string} path Segment of URL pointing to this controller.
-	     * 		If not specified, it is default to be empty tring.
+	     * Used to decorate an action that accepts request of ALL verbs.
+	     * @param {string} path Segment of URL pointing to this action.
+	     * 		If not specified, it is default to be the action's function name.
 	     */
-	    action: ActionDecorator;
+	    ALL: act.ActionVerbDecorator;
+	    /**
+	     * Used to decorate an action that accepts DELETE request.
+	     * @param {string} path Segment of URL pointing to this action.
+	     * 		If not specified, it is default to be the action's function name.
+	     */
+	    DELETE: act.ActionVerbDecorator;
+	    /**
+	     * Used to decorate an action that accepts GET request.
+	     * @param {string} path Segment of URL pointing to this action.
+	     * 		If not specified, it is default to be the action's function name.
+	     */
+	    GET: act.ActionVerbDecorator;
+	    /**
+	     * Used to decorate an action that accepts POST request.
+	     * @param {string} path Segment of URL pointing to this action.
+	     * 		If not specified, it is default to be the action's function name.
+	     */
+	    POST: act.ActionVerbDecorator;
+	    /**
+	     * Used to decorate an action that accepts PATCH request.
+	     * @param {string} path Segment of URL pointing to this action.
+	     * 		If not specified, it is default to be the action's function name.
+	     */
+	    PATCH: act.ActionVerbDecorator;
+	    /**
+	     * Used to decorate an action that accepts PUT request.
+	     * @param {string} path Segment of URL pointing to this action.
+	     * 		If not specified, it is default to be the action's function name.
+	     */
+	    PUT: act.ActionVerbDecorator;
+	    /**
+	     * Used to decorate an action that accepts HEAD request.
+	     * @param {string} path Segment of URL pointing to this action.
+	     * 		If not specified, it is default to be the action's function name.
+	     */
+	    HEAD: act.ActionVerbDecorator;
+	    /**
+	     * Used to decorate an action that accepts OPTIONS request.
+	     * @param {string} path Segment of URL pointing to this action.
+	     * 		If not specified, it is default to be the action's function name.
+	     */
+	    OPTIONS: act.ActionVerbDecorator;
+	    /**
+	     * Used to decorate action function of REST controller class.
+	     * @param {string} method Case-insensitive HTTP verb supported by Express
+	     * 		(see full list at https://expressjs.com/en/4x/api.html#routing-methods)
+	     * @param {string} path Segment of URL pointing to this action.
+	     * 		If not specified, it is default to be the action's function name.
+	     */
+	    action: act.ActionDecorator;
+	    /**
+	     * Used to decorate REST controller class.
+	     * @param {string} path Segment of URL pointing to this controller,
+	     * 		if not specified, it is extract from controller class name: {path}Controller.
+	     */
+	    controller: ControllerDecorator;
+	    /**
+	     * Marks a controller or action to require auth token to be accessible.
+	     */
+	    authorized: AuthorizedDecorator;
 	    /**
 	     * Used to add filter to controller class and controller action.
 	     * @param {class} FilterClass Filter class.
@@ -196,12 +464,6 @@ declare module 'back-lib-common-web/dist/app/decorators' {
 	     */
 	    filter: FilterDecorator;
 	    /**
-	     * Used to decorate REST controller class.
-	     * @param {string} path Segment of URL pointing to this controller,
-	     * 		if not specified, it is extract from controller class name: {path}Controller.
-	     */
-	    controller: ControllerDecorator;
-	    /**
 	     * Injects value to the decorated property.
 	     * Used to decorate properties of a class that's cannot be resolved by dependency container.
 	     */
@@ -209,26 +471,21 @@ declare module 'back-lib-common-web/dist/app/decorators' {
 	};
 
 }
-declare module 'back-lib-common-web/dist/app/RestCRUDControllerBase' {
-	/// <reference types="express" />
+declare module '@micro-fleet/web/dist/app/RestCRUDControllerBase' {
 	import * as express from 'express';
-	import * as TrailsApp from 'trails';
-	import { ISoftDelRepository, ModelAutoMapper, JoiModelValidator, PagedArray } from 'back-lib-common-contracts';
-	import { RestControllerBase } from 'back-lib-common-web/dist/app/RestControllerBase';
+	import { JoiModelValidator, PagedArray, ModelAutoMapper } from '@micro-fleet/common';
+	import { ISoftDelRepository } from '@micro-fleet/persistence';
+	import { RestControllerBase } from '@micro-fleet/web/dist/app/RestControllerBase';
 	export abstract class RestCRUDControllerBase<TModel extends IModelDTO> extends RestControllerBase {
-	    protected _ClassDTO: {
-	        new (): TModel;
-	    };
-	    	    constructor(trailsApp: TrailsApp, _ClassDTO?: {
-	        new (): TModel;
-	    });
+	    protected _ClassDTO?: Newable<TModel>;
+	    	    constructor(_ClassDTO?: Newable<TModel>);
 	    protected readonly repo: ISoftDelRepository<TModel, any, any>;
 	    protected readonly validator: JoiModelValidator<TModel>;
 	    protected readonly translator: ModelAutoMapper<TModel>;
-	    	    countAll(req: express.Request, res: express.Response): Promise<void>;
+	    countAll(req: express.Request, res: express.Response): Promise<void>;
 	    protected doCountAll(req: express.Request, res: express.Response): Promise<number>;
 	    create(req: express.Request, res: express.Response): Promise<void>;
-	    protected doCreate(req: express.Request, res: express.Response, dto: TModel): Promise<TModel & TModel[]>;
+	    protected doCreate(req: express.Request, res: express.Response, dto: TModel): Promise<TModel | TModel[]>;
 	    deleteHard(req: express.Request, res: express.Response): Promise<void>;
 	    protected doDeleteHard(req: express.Request, res: express.Response, pk: any): Promise<number>;
 	    deleteSoft(req: express.Request, res: express.Response): Promise<void>;
@@ -242,123 +499,58 @@ declare module 'back-lib-common-web/dist/app/RestCRUDControllerBase' {
 	    page(req: express.Request, res: express.Response): Promise<void>;
 	    protected doPage(req: express.Request, res: express.Response, pageIndex: number, pageSize: number, sortBy: string, sortType: 'asc' | 'desc'): Promise<PagedArray<TModel>>;
 	    patch(req: express.Request, res: express.Response): Promise<void>;
-	    protected doPatch(req: express.Request, res: express.Response, model: Partial<TModel> & Partial<TModel>[]): Promise<Partial<TModel> & Partial<TModel>[]>;
+	    protected doPatch(req: express.Request, res: express.Response, model: Partial<TModel> | Partial<TModel>[]): Promise<Partial<TModel> | Partial<TModel>[]>;
 	    update(req: express.Request, res: express.Response): Promise<void>;
-	    protected doUpdate(req: express.Request, res: express.Response, dto: TModel | TModel[]): Promise<TModel & TModel[]>;
+	    protected doUpdate(req: express.Request, res: express.Response, dto: TModel | TModel[]): Promise<TModel | TModel[]>;
 	}
 
 }
-declare module 'back-lib-common-web/dist/app/filters/TenantResolverFilter' {
-	/// <reference types="express" />
+declare module '@micro-fleet/web/dist/app/constants/AuthConstant' {
+	 enum TokenType {
+	    ACCESS = "jwt-access",
+	    REFRESH = "jwt-refresh"
+	}
+	export { TokenType };
+
+}
+declare module '@micro-fleet/web/dist/app/filters/ErrorHandlerFilter' {
 	import * as express from 'express';
-	import { CacheProvider } from 'back-lib-cache-provider';
+	import { IActionErrorHandler } from '@micro-fleet/web/dist/app/decorators/filter';
 	/**
 	 * Provides method to look up tenant ID from tenant slug.
 	 */
-	export class TenantResolverFilter {
+	export class ErrorHandlerFilter implements IActionErrorHandler {
+	    constructor();
+	    execute(error: Error, req: express.Request, res: express.Response, next: Function): void;
+	}
+
+}
+declare module '@micro-fleet/web/dist/app/filters/TenantResolverFilter' {
+	import * as express from 'express';
+	import { CacheProvider } from '@micro-fleet/cache';
+	import { IActionFilter } from '@micro-fleet/web/dist/app/decorators/filter';
+	/**
+	 * Provides method to look up tenant ID from tenant slug.
+	 */
+	export class TenantResolverFilter implements IActionFilter {
 	    protected _cache: CacheProvider;
-	    	    constructor(_cache: CacheProvider);
-	    resolve(req: express.Request, res: express.Response, next: Function): Promise<void>;
+	    constructor(_cache: CacheProvider);
+	    execute(req: express.Request, res: express.Response, next: Function): Promise<void>;
 	}
 
 }
-declare module 'back-lib-common-web/dist/app/filters/ErrorHandlerFilter' {
-	/// <reference types="express" />
-	import * as express from 'express';
-	/**
-	 * Provides method to look up tenant ID from tenant slug.
-	 */
-	export class ErrorHandlerFilter {
-	    constructor();
-	    handle(req: express.Request, res: express.Response, next: Function): void;
-	}
-
-}
-declare module 'back-lib-common-web/dist/app/Types' {
-	export class Types {
-	    static readonly TENANT_RESOLVER: string;
-	    static readonly TRAILS_ADDON: string;
-	    static readonly TRAILS_APP: string;
-	    static readonly TRAILS_OPTS: string;
-	}
-
-}
-declare module 'back-lib-common-web/dist/app/TrailsServerAddOn' {
-	import TrailsApp = require('trails');
-	import { IDependencyContainer, INewable } from 'back-lib-common-util';
-	export class TrailsServerAddOn implements IServiceAddOn {
-	    protected _trailsOpts: TrailsApp.TrailsAppOts;
-	    pathPrefix: string;
-	    protected _server: TrailsApp;
-	    protected _onError: Function;
-	    protected _globalFilters: any[][][];
-	    constructor(depContainer: IDependencyContainer, _trailsOpts: TrailsApp.TrailsAppOts);
-	    readonly server: TrailsApp;
-	    /**
-	     * @see IServiceAddOn.init
-	     */
-	    init(): Promise<void>;
-	    /**
-	     * @see IServiceAddOn.deadLetter
-	     */
-	    deadLetter(): Promise<void>;
-	    /**
-	     * @see IServiceAddOn.dispose
-	     */
-	    dispose(): Promise<void>;
-	    onError(cb: (err) => void): void;
-	    addErrorHandlerFilter(): void;
-	    addTenantResolverFilter(): void;
-	    /**
-	     * Registers a global-scoped filter which is called on every coming request.
-	     * @param FilterClass
-	     * @param filterFunc
-	     * @param priority
-	     */
-	    addGlobalFilter<T>(FilterClass: INewable<T>, filterFunc: (filter: T) => Function, priority?: number): void;
-	    protected buildConfig(): void;
-	    protected buildControllerConfigs(CtrlClass: Function, routes: TrailsRouteConfigItem[], ctrlFilters: Function[]): void;
-	    protected buildActionRoute(CtrlClass: any, actionFunc: Function, controllerPath: string): TrailsRouteConfigItem;
-	    protected buildGlobalScopeFilters(): void;
-	    protected buildControllerScopeFilters(CtrlClass: Function, ctrlFilters: Function[]): void;
-	    protected bindFuncWithFilterInstance(FilterClass: INewable<any>, funcName: string): Function;
-	    protected instantiateClass(TargetClass: INewable<any>, isSingleton: boolean, arg1?: any, arg2?: any, arg3?: any, arg4?: any, arg5?: any): any;
-	    protected instantiateClassFromContainer(TargetClass: INewable<any>, isSingleton: boolean): any;
-	    protected instantiateClassTraditionally(TargetClass: INewable<any>, isSingleton: boolean, arg1?: any, arg2?: any, arg3?: any, arg4?: any, arg5?: any): any;
-	    protected buildActionFilters(CtrlClass: Function, ctrlFilters: Function[], actionFunc: Function): void;
-	    protected popMetadata(metaKey: string, classOrProto: any, propName?: string): any;
-	    	}
-
-}
-declare module 'back-lib-common-web' {
-	export * from 'back-lib-common-web/dist/app/RestControllerBase';
-	export * from 'back-lib-common-web/dist/app/RestCRUDControllerBase';
-	export * from 'back-lib-common-web/dist/app/TrailsServerAddOn';
-	export * from 'back-lib-common-web/dist/app/Types';
-	export * from 'back-lib-common-web/dist/app/decorators';
-
-}
-declare module 'back-lib-common-web/dist/app/filters/AuthorizeFilter' {
-	/// <reference types="express" />
-	import * as express from 'express';
-	/**
-	 * Provides method to look up tenant ID from tenant slug.
-	 */
-	export class AuthorizeFilter {
-	    constructor();
-	    authenticate(req: express.Request, res: express.Response, next: Function): any;
-	}
-
-}
-declare module 'back-lib-common-web/dist/app/decorators/authorized' {
-	export type AuthorizedDecorator = <T>(FilterClass: new (...param: any[]) => T, filterFunc: (filter: T) => Function, priority?: number) => Function;
-	/**
-	 * Used to add filter to controller class and controller action.
-	 * @param {class} FilterClass Filter class whose name must end with "Filter".
-	 * @param {ExpressionStatement} filterFunc An arrow function that returns filter's function.
-	 * 		This array function won't be executed, but is used to extract filter function name.
-	 * @param {number} priority A number from 0 to 10, filters with greater priority run before ones with less priority.
-	 */
-	export function authorized(): Function;
+declare module '@micro-fleet/web' {
+	export * from '@micro-fleet/web/dist/app/constants/AuthConstant';
+	export * from '@micro-fleet/web/dist/app/constants/MetaData';
+	export * from '@micro-fleet/web/dist/app/decorators';
+	export * from '@micro-fleet/web/dist/app/filters/AuthorizeFilter';
+	export * from '@micro-fleet/web/dist/app/filters/ErrorHandlerFilter';
+	export * from '@micro-fleet/web/dist/app/filters/TenantResolverFilter';
+	export * from '@micro-fleet/web/dist/app/AuthAddOn';
+	export * from '@micro-fleet/web/dist/app/ExpressServerAddOn';
+	export * from '@micro-fleet/web/dist/app/RestControllerBase';
+	export * from '@micro-fleet/web/dist/app/RestCRUDControllerBase';
+	export * from '@micro-fleet/web/dist/app/Types';
+	export * from '@micro-fleet/web/dist/app/WebContext';
 
 }

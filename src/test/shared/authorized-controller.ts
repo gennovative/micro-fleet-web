@@ -1,10 +1,10 @@
 import * as express from 'express';
-import { controller, GET, authorized } from '../../app';
+import { decorators as dec } from '../../app';
 
-@controller('/')
-@authorized()
+@dec.controller('/')
+@dec.authorized()
 class AuthorizedController {
-	@GET('/')
+	@dec.GET('/')
 	public getRestricted(req: express.Request, res: express.Response): void {
 		res.send('AuthorizedController.getRestricted');
 	}
