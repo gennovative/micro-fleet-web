@@ -1,6 +1,6 @@
 ## Micro Fleet - Web library
 
-Contains classes used by web and rest services.
+Belongs to Micro Fleet framework, contains classes used by web and rest services. 
 
 See more examples and usage guide in unit test.
 
