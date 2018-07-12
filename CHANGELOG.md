@@ -3,6 +3,7 @@
 ### 1.0.0
 - Added unit tests.
 - Utilizes Express middleware for controller, action and filter.
+- Can parse request body to model class using @model() filter
 
 ### 0.2.1
 - Improved controller and action filter pre-binding process.

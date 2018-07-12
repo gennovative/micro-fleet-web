@@ -1,12 +1,15 @@
 import * as express from 'express';
+import { lazyInject } from '@micro-fleet/common';
 
 import { AuthAddOn } from '../AuthAddOn';
 import { IActionFilter } from '../decorators/filter';
-import { lazyInject } from '../decorators/lazyInject';
 import { Types as T } from '../Types';
+import { ActionFilterBase } from './ActionFilterBase';
 
 
-export class AuthorizeFilter implements IActionFilter {
+export class AuthorizeFilter 
+	extends ActionFilterBase
+	implements IActionFilter {
 
 	@lazyInject(T.AUTH_ADDON) private _authAddon: AuthAddOn;
 
@@ -27,16 +30,5 @@ export class AuthorizeFilter implements IActionFilter {
 			response.sendStatus(401);
 			// response status 401 Unthorized
 		}
-	}
-
-	private addReadonlyProp(obj: object, prop: string, value: any): void {
-		Object.defineProperty(obj, prop, 
-			{
-				writable: false,
-				enumerable: true,
-				configurable: false,
-				value
-			}
-		);
 	}
 }

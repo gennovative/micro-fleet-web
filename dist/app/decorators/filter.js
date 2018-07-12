@@ -17,9 +17,9 @@ var FilterPriority;
  * @param {class} FilterClass Filter class whose name must end with "Filter".
  * @param {FilterPriority} priority Filters with greater priority run before ones with less priority.
  */
-function filter(FilterClass, priority = FilterPriority.MEDIUM) {
+function filter(FilterClass, priority = FilterPriority.MEDIUM, ...filterParams) {
     return function (TargetClass, key) {
-        return addFilterToTarget(FilterClass, TargetClass, key, priority);
+        return addFilterToTarget(FilterClass, TargetClass, key, priority, ...filterParams);
     };
 }
 exports.filter = filter;
@@ -31,7 +31,7 @@ exports.filter = filter;
  * @param targetFunc Method name, if `TargetClass` is prototype object,
  * @param {FilterPriority} priority Filters with greater priority run before ones with less priority.
  */
-function addFilterToTarget(FilterClass, TargetClassOrPrototype, targetFunc, priority = FilterPriority.MEDIUM) {
+function addFilterToTarget(FilterClass, TargetClassOrPrototype, targetFunc, priority = FilterPriority.MEDIUM, ...filterParams) {
     let metaKey, isClassScope = (!targetFunc); // If `targetFunc` has value, `targetClass` is "prototype" object, otherwise it's a class.
     if (isClassScope) {
         metaKey = MetaData_1.MetaData.CONTROLLER_FILTER;
@@ -45,7 +45,7 @@ function addFilterToTarget(FilterClass, TargetClassOrPrototype, targetFunc, prio
         ? Reflect.getOwnMetadata(metaKey, TargetClassOrPrototype)
         : Reflect.getMetadata(metaKey, TargetClassOrPrototype, targetFunc);
     filters = filters || [];
-    pushFilterToArray(filters, FilterClass, priority);
+    pushFilterToArray(filters, FilterClass, priority, ...filterParams);
     Reflect.defineMetadata(metaKey, filters, TargetClassOrPrototype, targetFunc);
     return TargetClassOrPrototype;
 }
@@ -53,7 +53,7 @@ exports.addFilterToTarget = addFilterToTarget;
 /**
  * Prepares a filter then push it to given array.
  */
-function pushFilterToArray(filters, FilterClass, priority = FilterPriority.MEDIUM) {
+function pushFilterToArray(filters, FilterClass, priority = FilterPriority.MEDIUM, ...filterParams) {
     common_1.Guard.assertIsTruthy(priority >= FilterPriority.LOW && priority <= FilterPriority.HIGH, 'Invalid filter priority.');
     // `filters` is a 2-dimensioned matrix, with indexes are priority value,
     //   values are array of Filter classes. Eg:
@@ -62,7 +62,7 @@ function pushFilterToArray(filters, FilterClass, priority = FilterPriority.MEDIU
     //		3: [ FilterClass, FilterClass ]
     // ]
     filters[priority] = filters[priority] || [];
-    filters[priority].push(FilterClass);
+    filters[priority].push({ FilterClass, filterParams });
 }
 exports.pushFilterToArray = pushFilterToArray;
 //# sourceMappingURL=filter.js.map

@@ -4,9 +4,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 if (!Reflect || typeof Reflect['hasOwnMetadata'] !== 'function') {
     require('reflect-metadata');
 }
-const authorized_1 = require("./authorized");
-const lazyInject_1 = require("./lazyInject");
 const controller_1 = require("./controller");
+const authorized_1 = require("./authorized");
+const model_1 = require("./model");
 const filter_1 = require("./filter");
 const act = require("./action");
 /**
@@ -26,6 +26,6 @@ exports.decorators = {
     controller: controller_1.controller,
     authorized: authorized_1.authorized,
     filter: filter_1.filter,
-    lazyInject: lazyInject_1.lazyInject,
+    model: model_1.model,
 };
 //# sourceMappingURL=index.js.map

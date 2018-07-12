@@ -3,9 +3,9 @@ if (!Reflect || typeof Reflect['hasOwnMetadata'] !== 'function') {
 	require('reflect-metadata');
 }
 
-import { authorized, AuthorizedDecorator } from './authorized';
-import { lazyInject, LazyInjectDecorator } from './lazyInject';
 import { controller, ControllerDecorator } from './controller';
+import { authorized, AuthorizedDecorator } from './authorized';
+import { model, ModelDecorator } from './model';
 import { filter, FilterDecorator, IActionFilter as AF, IActionErrorHandler as EH,
 	FilterPriority as FP } from './filter';
 import * as act from './action';
@@ -113,11 +113,7 @@ export const decorators: {
 	 */
 	filter: FilterDecorator,
 
-	/**
-	 * Injects value to the decorated property. 
-	 * Used to decorate properties of a class that's cannot be resolved by dependency container.
-	 */
-	lazyInject: LazyInjectDecorator,
+	model: ModelDecorator,
 } = {
 	ALL: act.ALL,
 	DELETE: act.DELETE,
@@ -131,5 +127,5 @@ export const decorators: {
 	controller,
 	authorized,
 	filter,
-	lazyInject,
+	model,
 };

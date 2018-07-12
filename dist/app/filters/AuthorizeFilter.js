@@ -9,10 +9,11 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+const common_1 = require("@micro-fleet/common");
 const AuthAddOn_1 = require("../AuthAddOn");
-const lazyInject_1 = require("../decorators/lazyInject");
 const Types_1 = require("../Types");
-class AuthorizeFilter {
+const ActionFilterBase_1 = require("./ActionFilterBase");
+class AuthorizeFilter extends ActionFilterBase_1.ActionFilterBase {
     async execute(request, response, next) {
         try {
             const authResult = await this._authAddon.authenticate(request, response, next);
@@ -31,17 +32,9 @@ class AuthorizeFilter {
             // response status 401 Unthorized
         }
     }
-    addReadonlyProp(obj, prop, value) {
-        Object.defineProperty(obj, prop, {
-            writable: false,
-            enumerable: true,
-            configurable: false,
-            value
-        });
-    }
 }
 __decorate([
-    lazyInject_1.lazyInject(Types_1.Types.AUTH_ADDON),
+    common_1.lazyInject(Types_1.Types.AUTH_ADDON),
     __metadata("design:type", AuthAddOn_1.AuthAddOn)
 ], AuthorizeFilter.prototype, "_authAddon", void 0);
 exports.AuthorizeFilter = AuthorizeFilter;

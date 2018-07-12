@@ -1,8 +1,3 @@
-// Empty operation name => must login
-// Non-empty op name => check op's conditions => must or no need to login
-
-/// <reference types="reflect-metadata" />
-
 import { AuthorizeFilter } from '../filters/AuthorizeFilter';
 import { addFilterToTarget, FilterPriority } from './filter';
 

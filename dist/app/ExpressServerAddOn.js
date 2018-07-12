@@ -8,9 +8,6 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-var __param = (this && this.__param) || function (paramIndex, decorator) {
-    return function (target, key) { decorator(target, key, paramIndex); }
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 const path = require("path");
 const express = require("express");
@@ -31,17 +28,15 @@ var ControllerCreationStrategy;
 })(ControllerCreationStrategy = exports.ControllerCreationStrategy || (exports.ControllerCreationStrategy = {}));
 let ExpressServerAddOn = class ExpressServerAddOn {
     //#endregion Getters / Setters
-    constructor(_cfgProvider, _depContainer) {
-        this._cfgProvider = _cfgProvider;
-        this._depContainer = _depContainer;
+    constructor() {
         this.name = 'ExpressServerAddOn';
         this._globalFilters = [];
+        this._globalErrorHandlers = [];
         this._isAlive = false;
         this._urlPrefix = '';
         this._port = 0;
         this._express = express();
         this._creationStrategy = ControllerCreationStrategy.TRANSIENT;
-        common_1.HandlerContainer.instance.dependencyContainer = _depContainer;
     }
     //#region Getters / Setters
     /**
@@ -90,6 +85,13 @@ let ExpressServerAddOn = class ExpressServerAddOn {
         filter_1.pushFilterToArray(this._globalFilters, FilterClass, priority);
     }
     /**
+     * Registers a global-scoped error handler which catches error from filters and actions.
+     * @param HandlerClass The error handler class.
+     */
+    addGlobalErrorHandler(HandlerClass) {
+        this._globalErrorHandlers.push(HandlerClass);
+    }
+    /**
      * @memberOf IServiceAddOn
      */
     deadLetter() {
@@ -111,6 +113,7 @@ let ExpressServerAddOn = class ExpressServerAddOn {
      * @memberOf IServiceAddOn
      */
     init() {
+        WebContext_1.webContext.setUrlPrefix(this._urlPrefix);
         this._port = this._cfgProvider.get(W.WEB_PORT).TryGetValue(DEFAULT_PORT);
         this._urlPrefix = this._cfgProvider.get(W.WEB_URL_PREFIX).TryGetValue(DEFAULT_URL_PREFIX);
         return Promise.all([
@@ -120,6 +123,7 @@ let ExpressServerAddOn = class ExpressServerAddOn {
             this._createServer(),
         ]).then(([controllers, app]) => {
             this._initControllers(controllers, app);
+            this._useErrorHandlerMiddleware(this._globalErrorHandlers, app);
             return this._startServer(app);
         });
     }
@@ -151,7 +155,6 @@ let ExpressServerAddOn = class ExpressServerAddOn {
         return new Promise((resolve, reject) => {
             this._server = app.listen(this._port, () => {
                 this._isAlive = true;
-                WebContext_1.webContext.setUrlPrefix(this._urlPrefix);
                 console.log('Listening on: ', this._port);
                 resolve();
             });
@@ -234,7 +237,7 @@ let ExpressServerAddOn = class ExpressServerAddOn {
     _buildActionRoutesAndFilters(actionFunc, actionName, CtrlClass, router) {
         const actionDesc = this._getMetadata(MetaData_1.MetaData.ACTION, CtrlClass, actionName);
         const filters = this._getActionFilters(CtrlClass, actionName);
-        const filterFuncs = filters.map(f => this._extractFilterExecuteFunc(f));
+        const filterFuncs = filters.map(f => this._extractFilterExecuteFunc(f.FilterClass, f.filterParams));
         // In case one action supports multiple methods (GET, POST etc.)
         for (let method of Object.getOwnPropertyNames(actionDesc)) {
             const routerMethod = router[method];
@@ -290,14 +293,30 @@ let ExpressServerAddOn = class ExpressServerAddOn {
             if (!samePriorityFilters || !samePriorityFilters.length) {
                 return;
             }
-            for (let FilterClass of samePriorityFilters) { // 1: [ FilterClass, FilterClass ]
-                appOrRouter.use(this._extractFilterExecuteFunc(FilterClass));
+            for (let { FilterClass, filterParams } of samePriorityFilters) { // 1: [ FilterClass, FilterClass ]
+                appOrRouter.use(this._extractFilterExecuteFunc(FilterClass, filterParams));
             }
         });
     }
-    _extractFilterExecuteFunc(FilterClass) {
+    _useErrorHandlerMiddleware(handlers, appOrRouter) {
+        if (!handlers || !handlers.length) {
+            return;
+        }
+        for (let HandlerClass of handlers) {
+            appOrRouter.use(this._extractFilterExecuteFunc(HandlerClass, [], 4));
+        }
+    }
+    _extractFilterExecuteFunc(FilterClass, filterParams, paramLength = 3) {
         const filter = this._instantiateClass(FilterClass, true);
-        return filter.execute.bind(filter);
+        // This is the middleware function that Express will call
+        const filterFunc = function ( /* request, response, next */) {
+            return filter.execute.apply(filter, [...arguments, ...filterParams]);
+        };
+        // Express depends on number of parameters (aka Function.length)
+        // to determine whether a middleware is request handler or error handler.
+        // See more: https://expressjs.com/en/guide/error-handling.html
+        Object.defineProperty(filterFunc, 'length', { value: paramLength });
+        return filterFunc;
     }
     _instantiateClass(TargetClass, isSingleton, arg1, arg2, arg3, arg4, arg5) {
         // Create an instance either from dependency container or with normay way.
@@ -338,11 +357,17 @@ let ExpressServerAddOn = class ExpressServerAddOn {
         }
     }
 };
+__decorate([
+    common_1.lazyInject(common_1.Types.CONFIG_PROVIDER),
+    __metadata("design:type", Object)
+], ExpressServerAddOn.prototype, "_cfgProvider", void 0);
+__decorate([
+    common_1.lazyInject(common_1.Types.DEPENDENCY_CONTAINER),
+    __metadata("design:type", Object)
+], ExpressServerAddOn.prototype, "_depContainer", void 0);
 ExpressServerAddOn = __decorate([
     common_1.injectable(),
-    __param(0, common_1.inject(common_1.Types.CONFIG_PROVIDER)),
-    __param(1, common_1.inject(common_1.Types.DEPENDENCY_CONTAINER)),
-    __metadata("design:paramtypes", [Object, Object])
+    __metadata("design:paramtypes", [])
 ], ExpressServerAddOn);
 exports.ExpressServerAddOn = ExpressServerAddOn;
 //# sourceMappingURL=ExpressServerAddOn.js.map

@@ -78,7 +78,7 @@ declare module '@micro-fleet/web/dist/app/decorators/filter' {
 	 * Provides operations to intercept HTTP requests to a controller.
 	 */
 	export interface IActionFilter {
-	    execute(request: any, response: any, next: Function): void;
+	    execute(request: any, response: any, next: Function, ...params: any[]): void | Promise<void>;
 	}
 	/**
 	 * Provides operations to handle errors thrown from controller actions.
@@ -95,15 +95,18 @@ declare module '@micro-fleet/web/dist/app/decorators/filter' {
 	    MEDIUM = 1,
 	    HIGH = 2
 	}
-	export type FilterDecorator = <T extends ActionInterceptor>(FilterClass: Newable<T>, priority?: FilterPriority) => Function;
-	export type FilterArray<T extends ActionInterceptor = ActionInterceptor> = Newable<T>[];
+	export type FilterDecorator = <T extends ActionInterceptor>(FilterClass: Newable<T>, priority?: FilterPriority, ...filterParams: any[]) => Function;
+	export type FilterArray<T extends ActionInterceptor = ActionInterceptor> = {
+	    FilterClass: Newable<T>;
+	    filterParams: any[];
+	}[];
 	export type PrioritizedFilterArray = FilterArray[];
 	/**
 	 * Used to add filter to controller class and controller action.
 	 * @param {class} FilterClass Filter class whose name must end with "Filter".
 	 * @param {FilterPriority} priority Filters with greater priority run before ones with less priority.
 	 */
-	export function filter<T extends ActionInterceptor>(FilterClass: Newable<T>, priority?: FilterPriority): Function;
+	export function filter<T extends ActionInterceptor>(FilterClass: Newable<T>, priority?: FilterPriority, ...filterParams: any[]): Function;
 	/**
 	 * Adds a filter to `TargetClass`. `TargetClass` can be a class or class prototype,
 	 * depending on whether the filter is meant to apply on class or class method.
@@ -112,11 +115,11 @@ declare module '@micro-fleet/web/dist/app/decorators/filter' {
 	 * @param targetFunc Method name, if `TargetClass` is prototype object,
 	 * @param {FilterPriority} priority Filters with greater priority run before ones with less priority.
 	 */
-	export function addFilterToTarget<T extends ActionInterceptor>(FilterClass: Newable<T>, TargetClassOrPrototype: Newable<T>, targetFunc?: string, priority?: FilterPriority): Function;
+	export function addFilterToTarget<T extends ActionInterceptor>(FilterClass: Newable<T>, TargetClassOrPrototype: Newable<T>, targetFunc?: string, priority?: FilterPriority, ...filterParams: any[]): Function;
 	/**
 	 * Prepares a filter then push it to given array.
 	 */
-	export function pushFilterToArray<T extends ActionInterceptor>(filters: PrioritizedFilterArray, FilterClass: Newable<T>, priority?: FilterPriority): void;
+	export function pushFilterToArray<T extends ActionInterceptor>(filters: PrioritizedFilterArray, FilterClass: Newable<T>, priority?: FilterPriority, ...filterParams: any[]): void;
 
 }
 declare module '@micro-fleet/web/dist/app/WebContext' {
@@ -141,7 +144,7 @@ declare module '@micro-fleet/web/dist/app/ExpressServerAddOn' {
 	/// <reference types="node" />
 	import * as http from 'http';
 	import * as express from 'express';
-	import { IDependencyContainer, Maybe, IConfigurationProvider } from '@micro-fleet/common';
+	import { Maybe } from '@micro-fleet/common';
 	import { IActionErrorHandler, ActionInterceptor, PrioritizedFilterArray, FilterArray, FilterPriority } from '@micro-fleet/web/dist/app/decorators/filter'; type ControllerExports = {
 	    [name: string]: Newable;
 	};
@@ -150,11 +153,12 @@ declare module '@micro-fleet/web/dist/app/ExpressServerAddOn' {
 	    TRANSIENT = 1
 	}
 	export class ExpressServerAddOn implements IServiceAddOn {
-	    	    	    readonly name: string;
+	    readonly name: string;
 	    protected _server: http.Server;
 	    protected _globalFilters: PrioritizedFilterArray;
+	    protected _globalErrorHandlers: Newable[];
 	    protected _isAlive: boolean;
-	    	    	    	    	    	    /**
+	    	    	    	    	    	    	    	    /**
 	     * Gets or sets strategy when creating controller instance.
 	     */
 	    controllerCreation: ControllerCreationStrategy;
@@ -174,13 +178,18 @@ declare module '@micro-fleet/web/dist/app/ExpressServerAddOn' {
 	     * Gets URL prefix.
 	     */
 	    readonly urlPrefix: string;
-	    constructor(_cfgProvider: IConfigurationProvider, _depContainer: IDependencyContainer);
+	    constructor();
 	    /**
 	     * Registers a global-scoped filter which is called on every coming request.
 	     * @param FilterClass The filter class.
 	     * @param {FilterPriority} priority Filters with greater priority run before ones with less priority.
 	     */
-	    addGlobalFilter<T extends ActionInterceptor | IActionErrorHandler>(FilterClass: Newable<T>, priority?: FilterPriority): void;
+	    addGlobalFilter<T extends ActionInterceptor>(FilterClass: Newable<T>, priority?: FilterPriority): void;
+	    /**
+	     * Registers a global-scoped error handler which catches error from filters and actions.
+	     * @param HandlerClass The error handler class.
+	     */
+	    addGlobalErrorHandler<T extends IActionErrorHandler>(HandlerClass: Newable<T>): void;
 	    /**
 	     * @memberOf IServiceAddOn
 	     */
@@ -204,7 +213,7 @@ declare module '@micro-fleet/web/dist/app/ExpressServerAddOn' {
 	    protected _buildActionRoutesAndFilters(actionFunc: Function, actionName: string, CtrlClass: Newable, router: express.Router): void;
 	    protected _getActionFilters(CtrlClass: Function, actionName: string): FilterArray;
 	    protected _extractActionFromPrototype(prototype: any, name: string): Maybe<Function>;
-	    	    protected _extractFilterExecuteFunc<T extends ActionInterceptor>(FilterClass: Newable<T>): Function;
+	    	    	    protected _extractFilterExecuteFunc<T extends ActionInterceptor>(FilterClass: Newable<T>, filterParams: any[], paramLength?: number): Function;
 	    protected _instantiateClass<T extends ActionInterceptor>(TargetClass: Newable<T>, isSingleton: boolean, arg1?: any, arg2?: any, arg3?: any, arg4?: any, arg5?: any): ActionInterceptor;
 	    protected _instantiateClassFromContainer(TargetClass: Newable, isSingleton: boolean): any;
 	    protected _instantiateClassTraditionally(TargetClass: Newable, isSingleton: boolean, arg1?: any, arg2?: any, arg3?: any, arg4?: any, arg5?: any): any;
@@ -332,31 +341,6 @@ declare module '@micro-fleet/web/dist/app/RestControllerBase' {
 	}
 
 }
-declare module '@micro-fleet/web/dist/app/decorators/lazyInject' {
-	export type LazyInjectDecorator = (depIdentifier: symbol | string) => Function;
-	/**
-	 * Injects value to the decorated property.
-	 * Used to decorate properties of a class that's cannot be resolved by dependency container.
-	 */
-	export function lazyInject(depIdentifier: symbol | string): Function;
-
-}
-declare module '@micro-fleet/web/dist/app/filters/AuthorizeFilter' {
-	import * as express from 'express';
-	import { IActionFilter } from '@micro-fleet/web/dist/app/decorators/filter';
-	export class AuthorizeFilter implements IActionFilter {
-	    	    execute(request: express.Request, response: express.Response, next: Function): Promise<any>;
-	    	}
-
-}
-declare module '@micro-fleet/web/dist/app/decorators/authorized' {
-	export type AuthorizedDecorator = () => Function;
-	/**
-	 * Marks a controller or action to require auth token to be accessible.
-	 */
-	export function authorized(): Function;
-
-}
 declare module '@micro-fleet/web/dist/app/decorators/controller' {
 	export type ControllerDecorator = (path?: string) => Function;
 	/**
@@ -368,10 +352,68 @@ declare module '@micro-fleet/web/dist/app/decorators/controller' {
 	export function controller(path?: string): Function;
 
 }
+declare module '@micro-fleet/web/dist/app/filters/ActionFilterBase' {
+	export abstract class ActionFilterBase {
+	    protected addReadonlyProp(obj: object, prop: string, value: any): void;
+	}
+
+}
+declare module '@micro-fleet/web/dist/app/filters/AuthorizeFilter' {
+	import * as express from 'express';
+	import { IActionFilter } from '@micro-fleet/web/dist/app/decorators/filter';
+	import { ActionFilterBase } from '@micro-fleet/web/dist/app/filters/ActionFilterBase';
+	export class AuthorizeFilter extends ActionFilterBase implements IActionFilter {
+	    	    execute(request: express.Request, response: express.Response, next: Function): Promise<any>;
+	}
+
+}
+declare module '@micro-fleet/web/dist/app/decorators/authorized' {
+	export type AuthorizedDecorator = () => Function;
+	/**
+	 * Marks a controller or action to require auth token to be accessible.
+	 */
+	export function authorized(): Function;
+
+}
+declare module '@micro-fleet/web/dist/app/filters/ModelFilter' {
+	import * as express from 'express';
+	import { IActionFilter } from '@micro-fleet/web/dist/app/decorators/filter';
+	import { ActionFilterBase } from '@micro-fleet/web/dist/app/filters/ActionFilterBase';
+	export type ModelFilterOptions = {
+	    /**
+	     * The target model class.
+	     */
+	    ModelClass: Newable;
+	    /**
+	     * Whether this request contains all properties of model class,
+	     * or just some of them.
+	     * Default: false
+	     */
+	    isPartial?: boolean;
+	    /**
+	     * Function to extract model object from request body.
+	     * As default, model object is extracted from `request.body.model`.
+	     */
+	    modelPropFn?: (request: express.Request) => any;
+	};
+	export class ModelFilter extends ActionFilterBase implements IActionFilter {
+	    execute(request: express.Request, response: express.Response, next: Function, options: ModelFilterOptions): void;
+	}
+
+}
+declare module '@micro-fleet/web/dist/app/decorators/model' {
+	import { ModelFilterOptions } from '@micro-fleet/web/dist/app/filters/ModelFilter';
+	export type ModelDecorator = (opts: ModelFilterOptions) => Function;
+	/**
+	 * Marks a controller or action to require auth token to be accessible.
+	 */
+	export function model(opts: ModelFilterOptions): Function;
+
+}
 declare module '@micro-fleet/web/dist/app/decorators/index' {
-	import { AuthorizedDecorator } from '@micro-fleet/web/dist/app/decorators/authorized';
-	import { LazyInjectDecorator } from '@micro-fleet/web/dist/app/decorators/lazyInject';
 	import { ControllerDecorator } from '@micro-fleet/web/dist/app/decorators/controller';
+	import { AuthorizedDecorator } from '@micro-fleet/web/dist/app/decorators/authorized';
+	import { ModelDecorator } from '@micro-fleet/web/dist/app/decorators/model';
 	import { FilterDecorator, IActionFilter as AF, IActionErrorHandler as EH, FilterPriority as FP } from '@micro-fleet/web/dist/app/decorators/filter';
 	import * as act from '@micro-fleet/web/dist/app/decorators/action';
 	/**
@@ -463,11 +505,7 @@ declare module '@micro-fleet/web/dist/app/decorators/index' {
 	     * @param {number} priority A number from 0 to 10, filters with greater priority run before ones with less priority.
 	     */
 	    filter: FilterDecorator;
-	    /**
-	     * Injects value to the decorated property.
-	     * Used to decorate properties of a class that's cannot be resolved by dependency container.
-	     */
-	    lazyInject: LazyInjectDecorator;
+	    model: ModelDecorator;
 	};
 
 }
@@ -539,17 +577,24 @@ declare module '@micro-fleet/web/dist/app/filters/TenantResolverFilter' {
 	}
 
 }
+declare module '@micro-fleet/web/dist/app/register-addon' {
+	import { ExpressServerAddOn } from '@micro-fleet/web/dist/app/ExpressServerAddOn';
+	export function registerWebAddOn(): ExpressServerAddOn;
+
+}
 declare module '@micro-fleet/web' {
 	export * from '@micro-fleet/web/dist/app/constants/AuthConstant';
 	export * from '@micro-fleet/web/dist/app/constants/MetaData';
 	export * from '@micro-fleet/web/dist/app/decorators';
 	export * from '@micro-fleet/web/dist/app/filters/AuthorizeFilter';
 	export * from '@micro-fleet/web/dist/app/filters/ErrorHandlerFilter';
+	export * from '@micro-fleet/web/dist/app/filters/ModelFilter';
 	export * from '@micro-fleet/web/dist/app/filters/TenantResolverFilter';
 	export * from '@micro-fleet/web/dist/app/AuthAddOn';
 	export * from '@micro-fleet/web/dist/app/ExpressServerAddOn';
 	export * from '@micro-fleet/web/dist/app/RestControllerBase';
 	export * from '@micro-fleet/web/dist/app/RestCRUDControllerBase';
+	export * from '@micro-fleet/web/dist/app/register-addon';
 	export * from '@micro-fleet/web/dist/app/Types';
 	export * from '@micro-fleet/web/dist/app/WebContext';
 

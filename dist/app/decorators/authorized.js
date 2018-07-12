@@ -1,8 +1,5 @@
 "use strict";
-// Empty operation name => must login
-// Non-empty op name => check op's conditions => must or no need to login
 Object.defineProperty(exports, "__esModule", { value: true });
-/// <reference types="reflect-metadata" />
 const AuthorizeFilter_1 = require("../filters/AuthorizeFilter");
 const filter_1 = require("./filter");
 /**

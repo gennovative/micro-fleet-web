@@ -3,7 +3,7 @@ import * as http from 'http';
 import * as express from 'express';
 import * as cors from 'cors';
 import * as bodyParser from 'body-parser';
-import { injectable, inject, CriticalException, IDependencyContainer, Guard, 
+import { injectable, lazyInject, CriticalException, IDependencyContainer, Guard, 
 	Maybe, IConfigurationProvider, Types as T, constants, HandlerContainer } from '@micro-fleet/common';
 const { WebSettingKeys: W } = constants;
 
@@ -29,6 +29,7 @@ export class ExpressServerAddOn implements IServiceAddOn {
 
 	protected _server: http.Server;
 	protected _globalFilters: PrioritizedFilterArray;
+	protected _globalErrorHandlers: Newable[];
 	protected _isAlive: boolean;
 	
 	private _creationStrategy: ControllerCreationStrategy;
@@ -36,6 +37,13 @@ export class ExpressServerAddOn implements IServiceAddOn {
 	private _express: express.Express;
 	private _port: number;
 	private _urlPrefix: string;
+
+	
+	@lazyInject(T.CONFIG_PROVIDER) 
+	private _cfgProvider: IConfigurationProvider;
+
+	@lazyInject(T.DEPENDENCY_CONTAINER)
+	private _depContainer: IDependencyContainer;
 
 
 	//#region Getters / Setters
@@ -86,17 +94,14 @@ export class ExpressServerAddOn implements IServiceAddOn {
 	//#endregion Getters / Setters
 
 
-	constructor(
-			@inject(T.CONFIG_PROVIDER) private _cfgProvider: IConfigurationProvider,
-			@inject(T.DEPENDENCY_CONTAINER) private _depContainer: IDependencyContainer
-		) {
+	constructor() {
 		this._globalFilters = [];
+		this._globalErrorHandlers = [];
 		this._isAlive = false;
 		this._urlPrefix = '';
 		this._port = 0;
 		this._express = express();
 		this._creationStrategy = ControllerCreationStrategy.TRANSIENT;
-		HandlerContainer.instance.dependencyContainer = _depContainer;
 	}
 
 
@@ -107,8 +112,16 @@ export class ExpressServerAddOn implements IServiceAddOn {
 	 * @param FilterClass The filter class.
 	 * @param {FilterPriority} priority Filters with greater priority run before ones with less priority.
 	 */
-	public addGlobalFilter<T extends ActionInterceptor | IActionErrorHandler>(FilterClass: Newable<T>, priority?: FilterPriority): void {
+	public addGlobalFilter<T extends ActionInterceptor>(FilterClass: Newable<T>, priority?: FilterPriority): void {
 		pushFilterToArray(this._globalFilters, FilterClass, priority);
+	}
+
+	/**
+	 * Registers a global-scoped error handler which catches error from filters and actions.
+	 * @param HandlerClass The error handler class.
+	 */
+	public addGlobalErrorHandler<T extends IActionErrorHandler>(HandlerClass: Newable<T>): void {
+		this._globalErrorHandlers.push(HandlerClass);
 	}
 
 	/**
@@ -138,6 +151,8 @@ export class ExpressServerAddOn implements IServiceAddOn {
 	 * @memberOf IServiceAddOn
 	 */
 	public init(): Promise<void> {
+		webContext.setUrlPrefix(this._urlPrefix);
+
 		this._port = this._cfgProvider.get(W.WEB_PORT).TryGetValue(DEFAULT_PORT) as number;
 		this._urlPrefix = this._cfgProvider.get(W.WEB_URL_PREFIX).TryGetValue(DEFAULT_URL_PREFIX) as string;
 
@@ -148,6 +163,7 @@ export class ExpressServerAddOn implements IServiceAddOn {
 			this._createServer(),
 		]).then(([controllers, app]: [ControllerExports, express.Express]) => {
 			this._initControllers(controllers, app);
+			this._useErrorHandlerMiddleware(this._globalErrorHandlers, app);
 			return this._startServer(app);
 		});
 	}
@@ -186,7 +202,6 @@ export class ExpressServerAddOn implements IServiceAddOn {
 		return new Promise((resolve, reject) => {
 			this._server = app.listen(this._port, () => {
 				this._isAlive = true;
-				webContext.setUrlPrefix(this._urlPrefix);
 				console.log('Listening on: ', this._port);
 				resolve();
 			});
@@ -282,7 +297,7 @@ export class ExpressServerAddOn implements IServiceAddOn {
 	protected _buildActionRoutesAndFilters(actionFunc: Function, actionName: string, CtrlClass: Newable, router: express.Router): void {
 		const actionDesc: ActionDescriptor = this._getMetadata(MetaData.ACTION, CtrlClass, actionName);
 		const filters = this._getActionFilters(CtrlClass, actionName);
-		const filterFuncs = filters.map(f => this._extractFilterExecuteFunc(f));
+		const filterFuncs = filters.map(f => this._extractFilterExecuteFunc(f.FilterClass, f.filterParams));
 		
 		// In case one action supports multiple methods (GET, POST etc.)
 		for (let method of Object.getOwnPropertyNames(actionDesc)) {
@@ -345,15 +360,32 @@ export class ExpressServerAddOn implements IServiceAddOn {
 			if (!samePriorityFilters || !samePriorityFilters.length) {
 				return;
 			}
-			for (let FilterClass of samePriorityFilters) { // 1: [ FilterClass, FilterClass ]
-				appOrRouter.use(this._extractFilterExecuteFunc(FilterClass) as express.RequestHandler);
+			for (let { FilterClass, filterParams } of samePriorityFilters) { // 1: [ FilterClass, FilterClass ]
+				appOrRouter.use(this._extractFilterExecuteFunc(FilterClass, filterParams) as express.RequestHandler);
 			}
 		});
 	}
 
-	protected _extractFilterExecuteFunc<T extends ActionInterceptor>(FilterClass: Newable<T>): Function {
+	private _useErrorHandlerMiddleware(handlers: Newable[], appOrRouter: express.Express | express.Router): void {
+		if (!handlers || !handlers.length) { return; }
+		
+		for (let HandlerClass of handlers) {
+			appOrRouter.use(this._extractFilterExecuteFunc(HandlerClass, [], 4) as express.RequestHandler);
+		}
+	}
+
+	protected _extractFilterExecuteFunc<T extends ActionInterceptor>(FilterClass: Newable<T>, filterParams: any[], paramLength: number = 3): Function {
 		const filter: ActionInterceptor = this._instantiateClass(FilterClass, true);
-		return filter.execute.bind(filter);
+		// This is the middleware function that Express will call
+		const filterFunc = function (/* request, response, next */) {
+			return filter.execute.apply(filter, [...arguments, ...filterParams]);
+		};
+		
+		// Express depends on number of parameters (aka Function.length)
+		// to determine whether a middleware is request handler or error handler.
+		// See more: https://expressjs.com/en/guide/error-handling.html
+		Object.defineProperty(filterFunc, 'length', { value: paramLength });
+		return filterFunc;
 	}
 
 	protected _instantiateClass<T extends ActionInterceptor>(TargetClass: Newable<T>, isSingleton: boolean, arg1?: any, arg2?: any, arg3?: any, arg4?: any, arg5?: any): ActionInterceptor {

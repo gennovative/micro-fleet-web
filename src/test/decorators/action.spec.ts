@@ -1,5 +1,5 @@
 import * as path from 'path';
-import { describe, it } from 'mocha';
+
 import * as chai from 'chai';
 import * as spies from 'chai-spies';
 chai.use(spies);
@@ -8,7 +8,7 @@ import * as request from 'request-promise';
 import { injectable, DependencyContainer, serviceContext,
 	IConfigurationProvider, Maybe, Types as CmT, constants } from '@micro-fleet/common';
 
-import { ExpressServerAddOn, AuthAddOn, Types as T } from '../../app';
+import { ExpressServerAddOn, Types as T } from '../../app';
 
 // For typing only
 import * as Bluebird from 'bluebird';
@@ -54,7 +54,6 @@ describe('@action()', function() {
 		serviceContext.setDependencyContainer(container);
 		container.bindConstant(CmT.DEPENDENCY_CONTAINER, container);
 		container.bind(CmT.CONFIG_PROVIDER, MockConfigurationProvider).asSingleton();
-		container.bind(T.AUTH_ADDON, AuthAddOn).asSingleton();
 		container.bind(T.WEBSERVER_ADDON, ExpressServerAddOn).asSingleton();
 
 		server = container.resolve(T.WEBSERVER_ADDON);
