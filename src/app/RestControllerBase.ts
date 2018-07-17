@@ -17,7 +17,7 @@ export abstract class RestControllerBase {
 	}
 
 
-	/*** SUCCESS ***/
+	//#region Sucessful responses
 
 	/**
 	 * Responds as Accepted with status code 202 and optional data.
@@ -46,8 +46,10 @@ export abstract class RestControllerBase {
 		this.send(res, data, 200);
 	}
 
+	//#endregion Sucessful responses
 
-	/*** CLIENT ERRORS ***/
+
+	//#region Client error reponses
 
 	/**
 	 * Responds with error status code (default 400) and writes error to server log,
@@ -104,8 +106,10 @@ export abstract class RestControllerBase {
 		this.clientError(res, returnErr, 412);
 	}
 
+	//#endregion Client error reponses
 
-	/*** SERVER ERRORS ***/
+
+	//#region Server error reponses
 
 	/**
 	 * Responds as Internal Error with status code 500 and
@@ -118,6 +122,8 @@ export abstract class RestControllerBase {
 		// super.log.error(logErr);
 		res.status(500).send('server.error.internal');
 	}
+
+	//#endregion Server error reponses
 
 
 	/**

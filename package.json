@@ -37,9 +37,6 @@
 	"peerDependencies": {
 		"@micro-fleet/common": "~1.2"
 	},
-	"publishConfig": {
-		"access": "public"
-	},
 	"author": {
 		"name": "gennovative",
 		"url": "https://github.com/gennovative"
