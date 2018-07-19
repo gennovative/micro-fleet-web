@@ -13,7 +13,7 @@ const common_1 = require("@micro-fleet/common");
 let RestControllerBase = class RestControllerBase {
     constructor() {
     }
-    /*** SUCCESS ***/
+    //#region Sucessful responses
     /**
      * Responds as Accepted with status code 202 and optional data.
      * @param res Express response object.
@@ -38,7 +38,8 @@ let RestControllerBase = class RestControllerBase {
     ok(res, data) {
         this.send(res, data, 200);
     }
-    /*** CLIENT ERRORS ***/
+    //#endregion Sucessful responses
+    //#region Client error reponses
     /**
      * Responds with error status code (default 400) and writes error to server log,
      * then returned it to client.
@@ -89,7 +90,8 @@ let RestControllerBase = class RestControllerBase {
     validationError(res, returnErr) {
         this.clientError(res, returnErr, 412);
     }
-    /*** SERVER ERRORS ***/
+    //#endregion Client error reponses
+    //#region Server error reponses
     /**
      * Responds as Internal Error with status code 500 and
      * writes error to server log. The error is not returned to client.
@@ -101,6 +103,7 @@ let RestControllerBase = class RestControllerBase {
         // super.log.error(logErr);
         res.status(500).send('server.error.internal');
     }
+    //#endregion Server error reponses
     /**
      * Sends response to client.
      * @param res Express response object.

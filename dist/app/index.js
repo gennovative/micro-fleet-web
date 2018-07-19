@@ -13,7 +13,6 @@ __export(require("./filters/TenantResolverFilter"));
 __export(require("./AuthAddOn"));
 __export(require("./ExpressServerAddOn"));
 __export(require("./RestControllerBase"));
-__export(require("./RestCRUDControllerBase"));
 __export(require("./register-addon"));
 __export(require("./Types"));
 __export(require("./WebContext"));

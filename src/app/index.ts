@@ -8,7 +8,6 @@ export * from './filters/TenantResolverFilter';
 export * from './AuthAddOn';
 export * from './ExpressServerAddOn';
 export * from './RestControllerBase';
-export * from './RestCRUDControllerBase';
 export * from './register-addon';
 export * from './Types';
 export * from './WebContext';

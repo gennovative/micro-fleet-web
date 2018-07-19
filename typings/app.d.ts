@@ -269,7 +269,6 @@ declare module '@micro-fleet/web/dist/app/RestControllerBase' {
 	};
 	export abstract class RestControllerBase {
 	    constructor();
-	    /*** SUCCESS ***/
 	    /**
 	     * Responds as Accepted with status code 202 and optional data.
 	     * @param res Express response object.
@@ -288,7 +287,6 @@ declare module '@micro-fleet/web/dist/app/RestControllerBase' {
 	     * @param data Data to optionally return to client.
 	     */
 	    protected ok(res: express.Response, data?: any): void;
-	    /*** CLIENT ERRORS ***/
 	    /**
 	     * Responds with error status code (default 400) and writes error to server log,
 	     * then returned it to client.
@@ -323,7 +321,6 @@ declare module '@micro-fleet/web/dist/app/RestControllerBase' {
 	     * @param returnErr Error to returned to client.
 	     */
 	    protected validationError(res: express.Response, returnErr: any): void;
-	    /*** SERVER ERRORS ***/
 	    /**
 	     * Responds as Internal Error with status code 500 and
 	     * writes error to server log. The error is not returned to client.
@@ -339,6 +336,14 @@ declare module '@micro-fleet/web/dist/app/RestControllerBase' {
 	     */
 	    protected send(res: express.Response, data: any, statusCode: number): express.Response;
 	}
+
+}
+declare module '@micro-fleet/web/dist/app/constants/AuthConstant' {
+	 enum TokenType {
+	    ACCESS = "jwt-access",
+	    REFRESH = "jwt-refresh"
+	}
+	export { TokenType };
 
 }
 declare module '@micro-fleet/web/dist/app/decorators/controller' {
@@ -509,48 +514,6 @@ declare module '@micro-fleet/web/dist/app/decorators/index' {
 	};
 
 }
-declare module '@micro-fleet/web/dist/app/RestCRUDControllerBase' {
-	import * as express from 'express';
-	import { JoiModelValidator, PagedArray, ModelAutoMapper } from '@micro-fleet/common';
-	import { ISoftDelRepository } from '@micro-fleet/persistence';
-	import { RestControllerBase } from '@micro-fleet/web/dist/app/RestControllerBase';
-	export abstract class RestCRUDControllerBase<TModel extends IModelDTO> extends RestControllerBase {
-	    protected _ClassDTO?: Newable<TModel>;
-	    	    constructor(_ClassDTO?: Newable<TModel>);
-	    protected readonly repo: ISoftDelRepository<TModel, any, any>;
-	    protected readonly validator: JoiModelValidator<TModel>;
-	    protected readonly translator: ModelAutoMapper<TModel>;
-	    countAll(req: express.Request, res: express.Response): Promise<void>;
-	    protected doCountAll(req: express.Request, res: express.Response): Promise<number>;
-	    create(req: express.Request, res: express.Response): Promise<void>;
-	    protected doCreate(req: express.Request, res: express.Response, dto: TModel): Promise<TModel | TModel[]>;
-	    deleteHard(req: express.Request, res: express.Response): Promise<void>;
-	    protected doDeleteHard(req: express.Request, res: express.Response, pk: any): Promise<number>;
-	    deleteSoft(req: express.Request, res: express.Response): Promise<void>;
-	    protected doDeleteSoft(req: express.Request, res: express.Response, pk: any): Promise<number>;
-	    exists(req: express.Request, res: express.Response): Promise<void>;
-	    protected doExists(req: express.Request, res: express.Response, uniqueProps: any): Promise<boolean>;
-	    findByPk(req: express.Request, res: express.Response): Promise<void>;
-	    protected doFindByPk(req: express.Request, res: express.Response, pk: any): Promise<TModel>;
-	    recover(req: express.Request, res: express.Response): Promise<void>;
-	    protected doRecover(req: express.Request, res: express.Response, pk: any): Promise<number>;
-	    page(req: express.Request, res: express.Response): Promise<void>;
-	    protected doPage(req: express.Request, res: express.Response, pageIndex: number, pageSize: number, sortBy: string, sortType: 'asc' | 'desc'): Promise<PagedArray<TModel>>;
-	    patch(req: express.Request, res: express.Response): Promise<void>;
-	    protected doPatch(req: express.Request, res: express.Response, model: Partial<TModel> | Partial<TModel>[]): Promise<Partial<TModel> | Partial<TModel>[]>;
-	    update(req: express.Request, res: express.Response): Promise<void>;
-	    protected doUpdate(req: express.Request, res: express.Response, dto: TModel | TModel[]): Promise<TModel | TModel[]>;
-	}
-
-}
-declare module '@micro-fleet/web/dist/app/constants/AuthConstant' {
-	 enum TokenType {
-	    ACCESS = "jwt-access",
-	    REFRESH = "jwt-refresh"
-	}
-	export { TokenType };
-
-}
 declare module '@micro-fleet/web/dist/app/filters/ErrorHandlerFilter' {
 	import * as express from 'express';
 	import { IActionErrorHandler } from '@micro-fleet/web/dist/app/decorators/filter';
@@ -593,7 +556,6 @@ declare module '@micro-fleet/web' {
 	export * from '@micro-fleet/web/dist/app/AuthAddOn';
 	export * from '@micro-fleet/web/dist/app/ExpressServerAddOn';
 	export * from '@micro-fleet/web/dist/app/RestControllerBase';
-	export * from '@micro-fleet/web/dist/app/RestCRUDControllerBase';
 	export * from '@micro-fleet/web/dist/app/register-addon';
 	export * from '@micro-fleet/web/dist/app/Types';
 	export * from '@micro-fleet/web/dist/app/WebContext';
