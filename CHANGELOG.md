@@ -1,5 +1,9 @@
 ## VERSIONS
 
+### 1.0.2
+- Adds prop "user" to Express request instead of "auth".
+- Fixed issue with auth secret.
+
 ### 1.0.1
 - Return validation error details to client.
 - Correctly export "decorators" group and definition files.

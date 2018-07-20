@@ -12,7 +12,7 @@ class PassthroughController {
 
 	@dec.GET('/')
 	public getSample(req: express.Request, res: express.Response): void {
-		this.spyFn(req['auth'].accountId, req['auth'].username);
+		this.spyFn(req['user'].accountId, req['user'].username);
 		res.sendStatus(200);
 	}
 }

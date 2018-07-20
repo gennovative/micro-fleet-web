@@ -20,10 +20,7 @@ class AuthorizeFilter extends ActionFilterBase_1.ActionFilterBase {
             if (!authResult.payload) {
                 return response.status(401).send(authResult.info.message);
             }
-            const auth = {};
-            this.addReadonlyProp(auth, 'accountId', authResult.payload.accountId);
-            this.addReadonlyProp(auth, 'username', authResult.payload.username);
-            this.addReadonlyProp(request, 'auth', auth);
+            this.addReadonlyProp(request, 'user', authResult.payload);
             next();
         }
         catch (err) {

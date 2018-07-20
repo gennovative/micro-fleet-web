@@ -111,8 +111,8 @@ describe('AuthFilter', function() {
 				})
 				.then((res) => {
 					const controller: any = container.resolve('PassthroughController');
-					// Assert: req['auth'].accountId == payload.accountId
-					// and req['auth'].username == payload.username
+					// Assert: req['user'].accountId == payload.accountId
+					// and req['user'].username == payload.username
 					expect(controller['spyFn']).to.be.called.with(payload.accountId, payload.username);
 				})
 				.catch(error => {

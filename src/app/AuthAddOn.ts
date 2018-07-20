@@ -72,17 +72,14 @@ export class AuthAddOn implements IServiceAddOn {
 	}
 
 	public async createToken(payload: any, isRefresh: Boolean): Promise<string> {
-		const refreshExpr: number | string = (this._configProvider.get(S.AUTH_EXPIRE_REFRESH).value || '30d') as number | string;
-		const accessExpr: number | string = (this._configProvider.get(S.AUTH_EXPIRE_ACCESS).value || 60 * 30) as number | string;
+		const refreshExpr = this._configProvider.get(S.AUTH_EXPIRE_REFRESH).TryGetValue('30d') as number | string;
+		const accessExpr = this._configProvider.get(S.AUTH_EXPIRE_ACCESS).TryGetValue(60 * 30) as number | string;
 		const sign = new Promise<any>((resolve, reject) => {
 			jwt.sign(
 				// Data
-				{
-					accountId: payload.id,
-					username: payload.username
-				},
+				payload,
 				// Secret
-				this._configProvider.get(S.AUTH_ISSUER).value as string,
+				this._configProvider.get(S.AUTH_SECRET).value as string,
 				// Config
 				{
 					expiresIn: isRefresh ? refreshExpr : accessExpr,

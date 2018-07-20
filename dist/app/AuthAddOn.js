@@ -63,17 +63,14 @@ let AuthAddOn = class AuthAddOn {
         });
     }
     async createToken(payload, isRefresh) {
-        const refreshExpr = (this._configProvider.get(S.AUTH_EXPIRE_REFRESH).value || '30d');
-        const accessExpr = (this._configProvider.get(S.AUTH_EXPIRE_ACCESS).value || 60 * 30);
+        const refreshExpr = this._configProvider.get(S.AUTH_EXPIRE_REFRESH).TryGetValue('30d');
+        const accessExpr = this._configProvider.get(S.AUTH_EXPIRE_ACCESS).TryGetValue(60 * 30);
         const sign = new Promise((resolve, reject) => {
             jwt.sign(
             // Data
-            {
-                accountId: payload.id,
-                username: payload.username
-            }, 
+            payload, 
             // Secret
-            this._configProvider.get(S.AUTH_ISSUER).value, 
+            this._configProvider.get(S.AUTH_SECRET).value, 
             // Config
             {
                 expiresIn: isRefresh ? refreshExpr : accessExpr,
