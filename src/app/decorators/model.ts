@@ -10,7 +10,7 @@ export type ModelDecorator = (opts: ModelFilterOptions) => Function;
  */
 export function model(opts: ModelFilterOptions): Function {
 	return function (TargetClass: Newable, key: string): Function {
-		TargetClass = addFilterToTarget<ModelFilter>(ModelFilter, TargetClass, key, FilterPriority.HIGH, opts) as Newable;
+		TargetClass = addFilterToTarget<ModelFilter>(ModelFilter, TargetClass, key, FilterPriority.MEDIUM, opts) as Newable;
 		return TargetClass;
 	};
 }

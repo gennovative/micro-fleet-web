@@ -1,5 +1,11 @@
 ## VERSIONS
 
+### 1.0.1
+- Return validation error details to client.
+- Correctly export "decorators" group and definition files.
+- Removed "x-powered-by" from Express response headers.
+- Correctly load controller class.
+
 ### 1.0.0
 - Added unit tests.
 - Utilizes Express middleware for controller, action and filter.

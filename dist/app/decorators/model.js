@@ -7,7 +7,7 @@ const filter_1 = require("./filter");
  */
 function model(opts) {
     return function (TargetClass, key) {
-        TargetClass = filter_1.addFilterToTarget(ModelFilter_1.ModelFilter, TargetClass, key, filter_1.FilterPriority.HIGH, opts);
+        TargetClass = filter_1.addFilterToTarget(ModelFilter_1.ModelFilter, TargetClass, key, filter_1.FilterPriority.MEDIUM, opts);
         return TargetClass;
     };
 }

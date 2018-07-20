@@ -129,6 +129,7 @@ let ExpressServerAddOn = class ExpressServerAddOn {
     }
     _createServer() {
         const app = this._express;
+        app.disable('x-powered-by');
         // When `deadLetter()` is called, prevent all new requests.
         app.use((req, res, next) => {
             if (!this._isAlive) {
@@ -164,7 +165,7 @@ let ExpressServerAddOn = class ExpressServerAddOn {
     //#endregion Init
     //#region Controller
     async _loadControllers() {
-        const ctrlPath = this._controllerPath || path.join(process.cwd(), 'controllers');
+        const ctrlPath = this._controllerPath || path.join(process.cwd(), 'dist', 'app', 'controllers');
         return await Promise.resolve().then(() => require(ctrlPath)) || {};
     }
     _initControllers(controllers, app) {

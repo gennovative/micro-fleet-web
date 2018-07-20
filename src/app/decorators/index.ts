@@ -6,26 +6,11 @@ if (!Reflect || typeof Reflect['hasOwnMetadata'] !== 'function') {
 import { controller, ControllerDecorator } from './controller';
 import { authorized, AuthorizedDecorator } from './authorized';
 import { model, ModelDecorator } from './model';
-import { filter, FilterDecorator, IActionFilter as AF, IActionErrorHandler as EH,
-	FilterPriority as FP } from './filter';
+import { filter, FilterDecorator } from './filter';
 import * as act from './action';
 
-/**
- * Provides operations to intercept HTTP requests to a controller.
- */
-export interface IActionFilter extends AF {}
 
-/**
- * Provides operations to handle errors thrown from controller actions.
- */
-export interface IActionErrorHandler extends EH {}
-
-/**
- * Represents the order in which filters are invoked.
- */
-export const FilterPriority = FP;
-
-export const decorators: {
+export type Decorators = {
 
 	/**
 	 * Used to decorate an action that accepts request of ALL verbs.
@@ -114,7 +99,9 @@ export const decorators: {
 	filter: FilterDecorator,
 
 	model: ModelDecorator,
-} = {
+};
+
+export const decorators: Decorators = {
 	ALL: act.ALL,
 	DELETE: act.DELETE,
 	GET: act.GET,

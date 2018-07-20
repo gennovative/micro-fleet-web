@@ -9,10 +9,6 @@ const authorized_1 = require("./authorized");
 const model_1 = require("./model");
 const filter_1 = require("./filter");
 const act = require("./action");
-/**
- * Represents the order in which filters are invoked.
- */
-exports.FilterPriority = filter_1.FilterPriority;
 exports.decorators = {
     ALL: act.ALL,
     DELETE: act.DELETE,

@@ -92,7 +92,7 @@ describe('@action()', function() {
 					expect(responses[2]).to.equal('DefaultController.doPatch');
 					expect(responses[3]).to.equal('DefaultController.doPut');
 					expect(responses[4]).to.equal('DefaultController.doDelete');
-					expect(responses[5]['x-powered-by']).to.equal('Express');
+					expect(responses[5]['content-type']).to.exist;
 					expect(responses[6]).to.equal('DefaultController.doOptions');
 				})
 				.catch(error => {
@@ -128,7 +128,7 @@ describe('@action()', function() {
 					expect(responses[2]).to.equal('CustomController.doPatch');
 					expect(responses[3]).to.equal('CustomController.doPut');
 					expect(responses[4]).to.equal('CustomController.doDelete');
-					expect(responses[5]['x-powered-by']).to.equal('Express');
+					expect(responses[5]['content-type']).to.exist;
 					expect(responses[6]).to.equal('CustomController.doOptions');
 				})
 				.catch(error => {
@@ -266,7 +266,7 @@ describe('@action()', function() {
 					expect(responses[2]).to.equal('DefaultController.doMany');
 					expect(responses[3]).to.equal('DefaultController.doMany');
 					expect(responses[4]).to.equal('DefaultController.doMany');
-					expect(responses[5]['x-powered-by']).to.equal('Express');
+					expect(responses[5]['content-type']).to.exist;
 					expect(responses[6]).to.equal('DefaultController.doMany');
 				})
 				.catch(error => {
@@ -302,7 +302,7 @@ describe('@action()', function() {
 					expect(responses[2]).to.equal('CustomController.doMany');
 					expect(responses[3]).to.equal('CustomController.doMany');
 					expect(responses[4]).to.equal('CustomController.doMany');
-					expect(responses[5]['x-powered-by']).to.equal('Express');
+					expect(responses[5]['content-type']).to.exist;
 					expect(responses[6]).to.equal('CustomController.doMany');
 				})
 				.catch(error => {

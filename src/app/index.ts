@@ -1,6 +1,10 @@
+
+import decoratorObj = require('./decorators/index');
+export const decorators = decoratorObj.decorators;
+
 export * from './constants/AuthConstant';
 export * from './constants/MetaData';
-export * from './decorators';
+export { IActionFilter, IActionErrorHandler, FilterPriority } from './decorators/filter';
 export * from './filters/AuthorizeFilter';
 export * from './filters/ErrorHandlerFilter';
 export * from './filters/ModelFilter';

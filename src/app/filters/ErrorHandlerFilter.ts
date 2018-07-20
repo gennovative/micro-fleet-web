@@ -23,6 +23,6 @@ export class ErrorHandlerFilter implements IActionErrorHandler {
 			return next(error);
 		}
 		// TODO: Write error to file or logging service.
-		res.status(412).send(error);
+		res.status(412).send(error['details'] || error);
 	}
 }

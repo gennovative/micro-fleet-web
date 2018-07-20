@@ -338,14 +338,6 @@ declare module '@micro-fleet/web/dist/app/RestControllerBase' {
 	}
 
 }
-declare module '@micro-fleet/web/dist/app/constants/AuthConstant' {
-	 enum TokenType {
-	    ACCESS = "jwt-access",
-	    REFRESH = "jwt-refresh"
-	}
-	export { TokenType };
-
-}
 declare module '@micro-fleet/web/dist/app/decorators/controller' {
 	export type ControllerDecorator = (path?: string) => Function;
 	/**
@@ -382,13 +374,14 @@ declare module '@micro-fleet/web/dist/app/decorators/authorized' {
 }
 declare module '@micro-fleet/web/dist/app/filters/ModelFilter' {
 	import * as express from 'express';
+	import * as joi from 'joi';
 	import { IActionFilter } from '@micro-fleet/web/dist/app/decorators/filter';
 	import { ActionFilterBase } from '@micro-fleet/web/dist/app/filters/ActionFilterBase';
 	export type ModelFilterOptions = {
 	    /**
-	     * The target model class.
+	     * Result object will be instance of this class.
 	     */
-	    ModelClass: Newable;
+	    ModelClass?: Newable;
 	    /**
 	     * Whether this request contains all properties of model class,
 	     * or just some of them.
@@ -400,6 +393,10 @@ declare module '@micro-fleet/web/dist/app/filters/ModelFilter' {
 	     * As default, model object is extracted from `request.body.model`.
 	     */
 	    modelPropFn?: (request: express.Request) => any;
+	    /**
+	     * Custom validation rule for arbitrary object.
+	     */
+	    customValidationRule?: joi.SchemaMap;
 	};
 	export class ModelFilter extends ActionFilterBase implements IActionFilter {
 	    execute(request: express.Request, response: express.Response, next: Function, options: ModelFilterOptions): void;
@@ -419,23 +416,9 @@ declare module '@micro-fleet/web/dist/app/decorators/index' {
 	import { ControllerDecorator } from '@micro-fleet/web/dist/app/decorators/controller';
 	import { AuthorizedDecorator } from '@micro-fleet/web/dist/app/decorators/authorized';
 	import { ModelDecorator } from '@micro-fleet/web/dist/app/decorators/model';
-	import { FilterDecorator, IActionFilter as AF, IActionErrorHandler as EH, FilterPriority as FP } from '@micro-fleet/web/dist/app/decorators/filter';
+	import { FilterDecorator } from '@micro-fleet/web/dist/app/decorators/filter';
 	import * as act from '@micro-fleet/web/dist/app/decorators/action';
-	/**
-	 * Provides operations to intercept HTTP requests to a controller.
-	 */
-	export interface IActionFilter extends AF {
-	}
-	/**
-	 * Provides operations to handle errors thrown from controller actions.
-	 */
-	export interface IActionErrorHandler extends EH {
-	}
-	/**
-	 * Represents the order in which filters are invoked.
-	 */
-	export const FilterPriority: typeof FP;
-	export const decorators: {
+	export type Decorators = {
 	    /**
 	     * Used to decorate an action that accepts request of ALL verbs.
 	     * @param {string} path Segment of URL pointing to this action.
@@ -512,6 +495,15 @@ declare module '@micro-fleet/web/dist/app/decorators/index' {
 	    filter: FilterDecorator;
 	    model: ModelDecorator;
 	};
+	export const decorators: Decorators;
+
+}
+declare module '@micro-fleet/web/dist/app/constants/AuthConstant' {
+	 enum TokenType {
+	    ACCESS = "jwt-access",
+	    REFRESH = "jwt-refresh"
+	}
+	export { TokenType };
 
 }
 declare module '@micro-fleet/web/dist/app/filters/ErrorHandlerFilter' {
@@ -546,9 +538,11 @@ declare module '@micro-fleet/web/dist/app/register-addon' {
 
 }
 declare module '@micro-fleet/web' {
+	import decoratorObj = require('@micro-fleet/web/dist/app/decorators/index');
+	export const decorators: decoratorObj.Decorators;
 	export * from '@micro-fleet/web/dist/app/constants/AuthConstant';
 	export * from '@micro-fleet/web/dist/app/constants/MetaData';
-	export * from '@micro-fleet/web/dist/app/decorators';
+	export { IActionFilter, IActionErrorHandler, FilterPriority } from '@micro-fleet/web/dist/app/decorators/filter';
 	export * from '@micro-fleet/web/dist/app/filters/AuthorizeFilter';
 	export * from '@micro-fleet/web/dist/app/filters/ErrorHandlerFilter';
 	export * from '@micro-fleet/web/dist/app/filters/ModelFilter';

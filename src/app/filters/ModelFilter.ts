@@ -1,4 +1,5 @@
 import * as express from 'express';
+import * as joi from 'joi';
 import { Guard, ModelAutoMapper } from '@micro-fleet/common';
 
 import { IActionFilter } from '../decorators/filter';
@@ -7,9 +8,9 @@ import { ActionFilterBase } from './ActionFilterBase';
 
 export type ModelFilterOptions = {
 	/**
-	 * The target model class.
+	 * Result object will be instance of this class.
 	 */
-	ModelClass: Newable;
+	ModelClass?: Newable;
 
 	/**
 	 * Whether this request contains all properties of model class,
@@ -23,6 +24,11 @@ export type ModelFilterOptions = {
 	 * As default, model object is extracted from `request.body.model`.
 	 */
 	modelPropFn?: (request: express.Request) => any;
+
+	/**
+	 * Custom validation rule for arbitrary object.
+	 */
+	customValidationRule?: joi.SchemaMap;
 };
 
 export class ModelFilter 

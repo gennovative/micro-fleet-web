@@ -171,6 +171,7 @@ export class ExpressServerAddOn implements IServiceAddOn {
 	protected _createServer(): express.Express {
 		const app = this._express;
 
+		app.disable('x-powered-by');
 		// When `deadLetter()` is called, prevent all new requests.
 		app.use((req, res, next) => {
 			if (!this._isAlive) {
@@ -216,7 +217,7 @@ export class ExpressServerAddOn implements IServiceAddOn {
 	//#region Controller
 
 	protected async _loadControllers(): Promise<ControllerExports> {
-		const ctrlPath = this._controllerPath || path.join(process.cwd(), 'controllers');
+		const ctrlPath = this._controllerPath || path.join(process.cwd(), 'dist', 'app', 'controllers');
 		return await import(ctrlPath) || {};
 	}
 

@@ -26,7 +26,7 @@ let ErrorHandlerFilter = class ErrorHandlerFilter {
             return next(error);
         }
         // TODO: Write error to file or logging service.
-        res.status(412).send(error);
+        res.status(412).send(error['details'] || error);
     }
 };
 ErrorHandlerFilter = __decorate([
