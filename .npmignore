@@ -6,6 +6,7 @@ dist/**/*.map
 src
 .editorconfig
 .gitignore
+.git
 CHANGELOG.md
 tsconfig.json
 tslint.json

@@ -239,7 +239,7 @@ export class ExpressServerAddOn implements IServiceAddOn {
 	}
 
 	protected _buildControllerFilters(CtrlClass: Function, router: express.Router): void {
-		let metaFilters: PrioritizedFilterArray = this._getMetadata(MetaData.CONTROLLER_FILTER, CtrlClass);
+		const metaFilters: PrioritizedFilterArray = this._getMetadata(MetaData.CONTROLLER_FILTER, CtrlClass);
 		this._useFilterMiddleware(metaFilters, router);
 	}
 
@@ -249,8 +249,8 @@ export class ExpressServerAddOn implements IServiceAddOn {
 	//#region Action
 
 	protected _initActions(CtrlClass: Newable, router: express.Router): void {
-		let allFunctions = new Map<string, Function>(),
-			actionFunc;
+		const allFunctions = new Map<string, Function>();
+		let actionFunc;
 		// Iterates over all function backwards prototype chain, except root Object.prototype
 		for (let proto = CtrlClass.prototype; proto !== Object.prototype; proto = Object.getPrototypeOf(proto)) {
 			for (let actionName of Object.getOwnPropertyNames(proto)) {

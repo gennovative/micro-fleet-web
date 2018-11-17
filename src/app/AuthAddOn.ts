@@ -49,7 +49,7 @@ export class AuthAddOn implements IServiceAddOn {
 
 	private initToken(opts: passportJwt.StrategyOptions): void {
 		// `payload` is decrypted from Access token from header.
-		let strategy = new JwtStrategy(opts, (payload, done) => {
+		const strategy = new JwtStrategy(opts, (payload, done) => {
 			// TODO: 1. Validate payload object
 			// Optional: Log timestamp for statistics purpose
 			done(null, payload);

@@ -184,13 +184,14 @@ let ExpressServerAddOn = class ExpressServerAddOn {
         return router;
     }
     _buildControllerFilters(CtrlClass, router) {
-        let metaFilters = this._getMetadata(MetaData_1.MetaData.CONTROLLER_FILTER, CtrlClass);
+        const metaFilters = this._getMetadata(MetaData_1.MetaData.CONTROLLER_FILTER, CtrlClass);
         this._useFilterMiddleware(metaFilters, router);
     }
     //#endregion Controller
     //#region Action
     _initActions(CtrlClass, router) {
-        let allFunctions = new Map(), actionFunc;
+        const allFunctions = new Map();
+        let actionFunc;
         // Iterates over all function backwards prototype chain, except root Object.prototype
         for (let proto = CtrlClass.prototype; proto !== Object.prototype; proto = Object.getPrototypeOf(proto)) {
             for (let actionName of Object.getOwnPropertyNames(proto)) {

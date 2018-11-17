@@ -1,5 +1,9 @@
 ## VERSIONS
 
+### 1.0.3
+- Fixed node engine version in package.json
+- Refactor to replace `let` with `const`.
+
 ### 1.0.2
 - Adds prop "user" to Express request instead of "auth".
 - Fixed issue with auth secret.
