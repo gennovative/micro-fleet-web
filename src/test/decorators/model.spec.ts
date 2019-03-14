@@ -73,7 +73,7 @@ describe('@model()', function() {
 	});
 
 	describe('translation', () => {
-		it('Should convert whole request.body.model to model class', (done) => {
+		it('Should convert whole request.body.model to model class', (done: Function) => {
 			// Arrange
 			const payload = <SampleModel> {
 				name: 'Valid name',
@@ -102,7 +102,7 @@ describe('@model()', function() {
 				.finally(() => done());
 		});
 
-		it('Should get request payload from factory function then converting to model class', (done) => {
+		it('Should get request payload from factory function then converting to model class', (done: Function) => {
 			// Arrange
 			const payload = <SampleModel> {
 				name: 'Valid name',
@@ -131,7 +131,7 @@ describe('@model()', function() {
 				.finally(() => done());
 		});
 
-		it('Should convert just some properties of the model class', (done) => {
+		it('Should convert just some properties of the model class', (done: Function) => {
 			// Arrange
 			const payload = <Partial<SampleModel>> {
 				name: 'Valid name',
@@ -161,7 +161,7 @@ describe('@model()', function() {
 	}); // describe 'translating'
 
 	describe('validation', () => {
-		it('Should respond with 412 status code if there is validation error.', (done) => {
+		it('Should respond with 412 status code if there is validation error.', (done: Function) => {
 			// Arrange
 			const payload = <SampleModel> {
 				name: '',

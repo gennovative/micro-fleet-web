@@ -77,7 +77,7 @@ describe('AuthFilter', function() {
 	});
 
 	describe('execute', () => {
-		it('Should add decrypted value from auth token to request params', (done) => {
+		it('Should add decrypted value from auth token to request params', (done: Function) => {
 			// Arrange
 			const payload = {
 				accountId: '123',
@@ -122,7 +122,7 @@ describe('AuthFilter', function() {
 				.finally(() => done());
 		});
 
-		it('Should response with 401 status code if no Authorization header', (done) => {
+		it('Should response with 401 status code if no Authorization header', (done: Function) => {
 			// Arrange
 			const spyMiddleware = chai.spy();
 
@@ -153,7 +153,7 @@ describe('AuthFilter', function() {
 			.finally(() => done());
 		});
 
-		it('Should response with 401 status code if auth token has expired', (done) => {
+		it('Should response with 401 status code if auth token has expired', (done: Function) => {
 			// Arrange
 			const spyMiddleware = chai.spy();
 			const payload = {
@@ -203,7 +203,7 @@ describe('AuthFilter', function() {
 				.finally(() => done());
 		});
 
-		it('Should response with 401 status code if auth token cannot be decrypted', (done) => {
+		it('Should response with 401 status code if auth token cannot be decrypted', (done: Function) => {
 			// Arrange
 			const spyMiddleware = chai.spy();
 			const payload = {
@@ -254,7 +254,7 @@ describe('AuthFilter', function() {
 				.finally(() => done());
 		});
 
-		it('Should response with 401 status code if unknown error occurs', (done) => {
+		it('Should response with 401 status code if unknown error occurs', (done: Function) => {
 			// Arrange
 			const spyMiddleware = chai.spy();
 			const payload = {
@@ -296,7 +296,7 @@ describe('AuthFilter', function() {
 				.then(() => {
 					expect(false, 'Should never come here!').to.be.true;
 				})
-				.catch(error => {
+				.catch((error: any) => {
 					if (error instanceof StatusCodeError) {
 						expect(spyMiddleware).not.to.be.called;
 						expect(error.statusCode).to.equal(401);

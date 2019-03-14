@@ -79,7 +79,7 @@ describe('@authorized()', function() {
 			server.controllerPath = path.join(process.cwd(), 'dist', 'test', 'shared', 'authorized-controller');
 		});
 
-		it('Should allow access if there is Authorization header', (done) => {
+		it('Should allow access if there is Authorization header', (done: Function) => {
 			// Arrange
 			const payload = {
 				accountId: '123',
@@ -118,7 +118,7 @@ describe('@authorized()', function() {
 				.finally(() => done());
 		});
 
-		it('Should response with 401 status code if no Authorization header', (done) => {
+		it('Should response with 401 status code if no Authorization header', (done: Function) => {
 			// Arrange
 			(server.init() as any as Bluebird<void>)
 			.then(() => {
@@ -150,7 +150,7 @@ describe('@authorized()', function() {
 			server.controllerPath = path.join(process.cwd(), 'dist', 'test', 'shared', 'authorized-action');
 		});
 
-		it('Should allow access if there is Authorization header', (done) => {
+		it('Should allow access if there is Authorization header', (done: Function) => {
 			// Arrange
 			const payload = {
 				accountId: '123',
@@ -189,7 +189,7 @@ describe('@authorized()', function() {
 				.finally(() => done());
 		});
 
-		it('Should response with 401 status code if no Authorization header', (done) => {
+		it('Should response with 401 status code if no Authorization header', (done: Function) => {
 			// Arrange
 			(server.init() as any as Bluebird<void>)
 			.then(() => {

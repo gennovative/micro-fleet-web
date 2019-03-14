@@ -68,7 +68,7 @@ describe('@controller()', function() {
 			container = server = null;
 		});
 
-		it('Should automatically parse controller name to create route path', (done) => {
+		it('Should automatically parse controller name to create route path', (done: Function) => {
 			// Arrange
 			server.controllerPath = path.join(process.cwd(), 'dist', 'test', 'shared', 'default-controller');
 			(server.init() as any as Bluebird<void>)
@@ -87,7 +87,7 @@ describe('@controller()', function() {
 				.finally(() => done());
 		});
 
-		it('Should accept custom route path', (done) => {
+		it('Should accept custom route path', (done: Function) => {
 			// Arrange
 			server.controllerPath = path.join(process.cwd(), 'dist', 'test', 'shared', 'custom-controller');
 			(server.init() as any as Bluebird<void>)

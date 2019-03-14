@@ -79,7 +79,7 @@ describe('@filter()', function() {
 	});
 
 	describe('', () => {
-		it('Should invoke same-priority filters in the order they are attached', (done) => {
+		it('Should invoke same-priority filters in the order they are attached', (done: Function) => {
 			// Arrange
 			server.controllerPath = path.join(process.cwd(), 'dist', 'test', 'shared', 'filter-controller');
 			(server.init() as any as Bluebird<void>)
@@ -99,7 +99,7 @@ describe('@filter()', function() {
 				.finally(() => done());
 		});
 
-		it('Should invoke filters by priority regardless the order they are attached', (done) => {
+		it('Should invoke filters by priority regardless the order they are attached', (done: Function) => {
 			// Arrange
 			server.controllerPath = path.join(process.cwd(), 'dist', 'test', 'shared', 'filter-controller');
 			(server.init() as any as Bluebird<void>)

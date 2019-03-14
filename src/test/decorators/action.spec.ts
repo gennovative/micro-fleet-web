@@ -67,7 +67,7 @@ describe('@action()', function() {
 	});
 
 	describe('Single HTTP verb', () => {
-		it('Should automatically parse action name to create route path', (done) => {
+		it('Should automatically parse action name to create route path', (done: Function) => {
 			// Arrange
 			server.controllerPath = path.join(process.cwd(), 'dist', 'test', 'shared', 'default-controller');
 			(server.init() as any as Bluebird<void>)
@@ -103,7 +103,7 @@ describe('@action()', function() {
 				.finally(() => done());
 		});
 
-		it('Should accept custom route path', (done) => {
+		it('Should accept custom route path', (done: Function) => {
 			// Arrange
 			server.controllerPath = path.join(process.cwd(), 'dist', 'test', 'shared', 'custom-controller');
 			(server.init() as any as Bluebird<void>)
@@ -139,7 +139,7 @@ describe('@action()', function() {
 				.finally(() => done());
 		});
 
-		it('Should only expose decorated actions', (done) => {
+		it('Should only expose decorated actions', (done: Function) => {
 			// Arrange
 			const URL = `${BASE_URL}/default`;
 			server.controllerPath = path.join(process.cwd(), 'dist', 'test', 'shared', 'default-controller');
@@ -172,7 +172,7 @@ describe('@action()', function() {
 				.finally(() => done());
 		});
 
-		it('Should disable CORS by default (allow all requests)', (done) => {
+		it('Should disable CORS by default (allow all requests)', (done: Function) => {
 			// Arrange
 			const URL = `${BASE_URL}/default`;
 			server.controllerPath = path.join(process.cwd(), 'dist', 'test', 'shared', 'default-controller');
@@ -202,7 +202,7 @@ describe('@action()', function() {
 				.finally(() => done());
 		});
 
-		it('Should restrict origin with CORS', (done) => {
+		it('Should restrict origin with CORS', (done: Function) => {
 			// Arrange
 			const config: MockConfigurationProvider = container.resolve(CmT.CONFIG_PROVIDER);
 			config.enableCors = true;
@@ -241,7 +241,7 @@ describe('@action()', function() {
 	}); // END describe('Single HTTP verb')
 
 	describe('Multiple HTTP verbs', () => {
-		it('Should automatically parse action name to create route paths', (done) => {
+		it('Should automatically parse action name to create route paths', (done: Function) => {
 			// Arrange
 			server.controllerPath = path.join(process.cwd(), 'dist', 'test', 'shared', 'default-controller');
 			(server.init() as any as Bluebird<void>)
@@ -277,7 +277,7 @@ describe('@action()', function() {
 				.finally(() => done());
 		});
 
-		it('Should accept custom route paths', (done) => {
+		it('Should accept custom route paths', (done: Function) => {
 			// Arrange
 			server.controllerPath = path.join(process.cwd(), 'dist', 'test', 'shared', 'custom-controller');
 			(server.init() as any as Bluebird<void>)
@@ -320,7 +320,7 @@ describe('@action()', function() {
 			'merge', 'notify', 'options', 'patch', 'post', 'purge', 'put', 'report',
 			'search', 'subscribe', 'trace', 'unlock', 'unsubscribe' ];
 
-		it('Should automatically parse action name to create route paths', (done) => {
+		it('Should automatically parse action name to create route paths', (done: Function) => {
 			// Arrange
 			server.controllerPath = path.join(process.cwd(), 'dist', 'test', 'shared', 'default-controller');
 			(server.init() as any as Bluebird<void>)
@@ -344,7 +344,7 @@ describe('@action()', function() {
 				.finally(() => done());
 		});
 
-		it('Should accept custom route paths', (done) => {
+		it('Should accept custom route paths', (done: Function) => {
 			// Arrange
 			server.controllerPath = path.join(process.cwd(), 'dist', 'test', 'shared', 'custom-controller');
 			(server.init() as any as Bluebird<void>)
