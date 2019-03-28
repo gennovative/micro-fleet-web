@@ -12,7 +12,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const path = require("path");
 const express = require("express");
 const cors = require("cors");
-const bodyParser = require("body-parser");
 const common_1 = require("@micro-fleet/common");
 const { WebSettingKeys: W } = common_1.constants;
 const MetaData_1 = require("./constants/MetaData");
@@ -145,8 +144,8 @@ let ExpressServerAddOn = class ExpressServerAddOn {
             optionsSuccessStatus: 200,
         };
         app.use(cors(corsOptions));
-        app.use(bodyParser.urlencoded({ extended: true })); // Parse Form values in POST requests
-        app.use(bodyParser.json()); // Parse requests with JSON payloads
+        app.use(express.urlencoded({ extended: true })); // Parse Form values in POST requests
+        app.use(express.json()); // Parse requests with JSON payloads
         // Binds filters with priority from MEDIUM to LOW
         // All 3rd party middlewares have priority MEDIUM.
         this._useFilterMiddleware(this._globalFilters.filter((f, i) => i == filter_1.FilterPriority.MEDIUM || i == filter_1.FilterPriority.LOW), app);
@@ -169,7 +168,7 @@ let ExpressServerAddOn = class ExpressServerAddOn {
         return await Promise.resolve().then(() => require(ctrlPath)) || {};
     }
     _initControllers(controllers, app) {
-        for (let ctrlName of Object.getOwnPropertyNames(controllers)) {
+        for (const ctrlName of Object.getOwnPropertyNames(controllers)) {
             const CtrlClass = controllers[ctrlName];
             this._assertValidController(ctrlName, CtrlClass);
             const router = this._buildControllerRoutes(CtrlClass, app);
@@ -178,9 +177,9 @@ let ExpressServerAddOn = class ExpressServerAddOn {
         }
     }
     _buildControllerRoutes(CtrlClass, app) {
-        const [path] = this._getMetadata(MetaData_1.MetaData.CONTROLLER, CtrlClass);
+        const [ctrlPath] = this._getMetadata(MetaData_1.MetaData.CONTROLLER, CtrlClass);
         const router = express.Router({ mergeParams: true });
-        app.use(`${this._urlPrefix}${path}`, router);
+        app.use(`${this._urlPrefix}${ctrlPath}`, router);
         return router;
     }
     _buildControllerFilters(CtrlClass, router) {
@@ -191,10 +190,9 @@ let ExpressServerAddOn = class ExpressServerAddOn {
     //#region Action
     _initActions(CtrlClass, router) {
         const allFunctions = new Map();
-        let actionFunc;
         // Iterates over all function backwards prototype chain, except root Object.prototype
         for (let proto = CtrlClass.prototype; proto !== Object.prototype; proto = Object.getPrototypeOf(proto)) {
-            for (let actionName of Object.getOwnPropertyNames(proto)) {
+            for (const actionName of Object.getOwnPropertyNames(proto)) {
                 // Make sure function in super class never overides function in derives class.
                 if (allFunctions.has(actionName)) {
                     continue;
@@ -207,13 +205,14 @@ let ExpressServerAddOn = class ExpressServerAddOn {
             }
         }
         // Destructuring to get second element (expected: [key, value])
-        for ([, actionFunc] of allFunctions) {
-            const proxyFn = this._proxyActionFunc(actionFunc, CtrlClass);
-            this._buildActionRoutesAndFilters(proxyFn, actionFunc.name, CtrlClass, router);
+        // tslint:disable-next-line:prefer-const
+        for (let [, actFn] of allFunctions) {
+            const proxyFn = this._proxyActionFunc(actFn, CtrlClass);
+            this._buildActionRoutesAndFilters(proxyFn, actFn.name, CtrlClass, router);
         }
     }
     _proxyActionFunc(actionFunc, CtrlClass) {
-        let bound = this._depContainer.bind(CtrlClass.name, CtrlClass);
+        const bound = this._depContainer.bind(CtrlClass.name, CtrlClass);
         if (this._creationStrategy == ControllerCreationStrategy.SINGLETON) {
             bound.asSingleton();
         }
@@ -225,7 +224,8 @@ let ExpressServerAddOn = class ExpressServerAddOn {
                 return null;
             }
             // Wrapper function that handles uncaught errors,
-            // so that controller actions don't need to call `next(error)` like said by https://expressjs.com/en/guide/error-handling.html
+            // so that controller actions don't need to call `next(error)` like said
+            // by https://expressjs.com/en/guide/error-handling.html
             return function (req, res, next) {
                 try {
                     actionFunc.call(this, req, res);
@@ -241,7 +241,7 @@ let ExpressServerAddOn = class ExpressServerAddOn {
         const filters = this._getActionFilters(CtrlClass, actionName);
         const filterFuncs = filters.map(f => this._extractFilterExecuteFunc(f.FilterClass, f.filterParams));
         // In case one action supports multiple methods (GET, POST etc.)
-        for (let method of Object.getOwnPropertyNames(actionDesc)) {
+        for (const method of Object.getOwnPropertyNames(actionDesc)) {
             const routerMethod = router[method];
             if (typeof routerMethod !== 'function') {
                 throw new common_1.CriticalException(`Express Router doesn't support method "${method}"`);
@@ -249,7 +249,7 @@ let ExpressServerAddOn = class ExpressServerAddOn {
             const routePath = actionDesc[method];
             const args = [routePath, ...filterFuncs, actionFunc];
             // This is equivalent to:
-            // router.METHOD(path, filter_1, filter_2, actionFunc);
+            // router.METHOD(path, filter_1, filter_2, actionFunc)
             routerMethod.apply(router, args);
         }
     }
@@ -288,14 +288,14 @@ let ExpressServerAddOn = class ExpressServerAddOn {
         // `reverse()`: Policies with priority of greater number should run before ones with less priority.
         // Expected format:
         // filters = [
-        //		1: [ FilterClass, FilterClass ],
-        //		5: [ FilterClass, FilterClass ],
+        //        1: [ FilterClass, FilterClass ],
+        //        5: [ FilterClass, FilterClass ],
         // ]
         cloned.reverse().forEach(samePriorityFilters => {
             if (!samePriorityFilters || !samePriorityFilters.length) {
                 return;
             }
-            for (let { FilterClass, filterParams } of samePriorityFilters) { // 1: [ FilterClass, FilterClass ]
+            for (const { FilterClass, filterParams } of samePriorityFilters) { // 1: [ FilterClass, FilterClass ]
                 appOrRouter.use(this._extractFilterExecuteFunc(FilterClass, filterParams));
             }
         });
@@ -304,7 +304,7 @@ let ExpressServerAddOn = class ExpressServerAddOn {
         if (!handlers || !handlers.length) {
             return;
         }
-        for (let HandlerClass of handlers) {
+        for (const HandlerClass of handlers) {
             appOrRouter.use(this._extractFilterExecuteFunc(HandlerClass, [], 4));
         }
     }
@@ -327,13 +327,13 @@ let ExpressServerAddOn = class ExpressServerAddOn {
             return this._instantiateClassTraditionally(TargetClass, isSingleton, arg1, arg2, arg3, arg4, arg5);
         }
         const instance = this._instantiateClassFromContainer(TargetClass, isSingleton);
-        common_1.Guard.assertIsDefined(instance, `Class "${TargetClass.name}" is decorated with @injectable, but cannot be resolved. 
-			Make sure its class name is bound as dependency identifier, or its constructor arguments are resolved successfully.`);
+        common_1.Guard.assertIsDefined(instance, `Class "${TargetClass.name}" is decorated with @injectable, but cannot be resolved.
+            Make sure its class name is bound as dependency identifier, or its constructor arguments are resolved successfully.`);
         return instance;
     }
     _instantiateClassFromContainer(TargetClass, isSingleton) {
         const container = this._depContainer;
-        // const container: IDependencyContainer = serviceContext.dependencyContainer;
+        // const container: IDependencyContainer = serviceContext.dependencyContainer
         if (!container.isBound(TargetClass.name)) {
             const bindResult = container.bind(TargetClass.name, TargetClass);
             isSingleton && bindResult.asSingleton();
@@ -342,7 +342,9 @@ let ExpressServerAddOn = class ExpressServerAddOn {
     }
     _instantiateClassTraditionally(TargetClass, isSingleton, arg1, arg2, arg3, arg4, arg5) {
         if (isSingleton) {
-            return TargetClass['__instance'] ? TargetClass['__instance'] : (TargetClass['__instance'] = new TargetClass(arg1, arg2, arg3, arg4, arg5));
+            return TargetClass['__instance'] ?
+                TargetClass['__instance'] :
+                (TargetClass['__instance'] = new TargetClass(arg1, arg2, arg3, arg4, arg5));
         }
         return new TargetClass(arg1, arg2, arg3, arg4, arg5);
     }

@@ -6,7 +6,7 @@ class ActionFilterBase {
             writable: false,
             enumerable: true,
             configurable: false,
-            value
+            value,
         });
     }
 }

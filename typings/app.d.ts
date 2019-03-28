@@ -1,11 +1,11 @@
 /// <reference path="./global.d.ts" />
 declare module '@micro-fleet/web/dist/app/constants/MetaData' {
 	export class MetaData {
-	    static readonly CONTROLLER: string;
-	    static readonly CONTROLLER_FILTER: string;
-	    static readonly ACTION: string;
-	    static readonly ACTION_FILTER: string;
-	    static readonly AUTHORIZED_FILTER: string;
+	    static readonly CONTROLLER = "common-web:controller";
+	    static readonly CONTROLLER_FILTER = "common-web:controllerFilter";
+	    static readonly ACTION = "common-web:action";
+	    static readonly ACTION_FILTER = "common-web:actionFilter";
+	    static readonly AUTHORIZED_FILTER = "common-web:authorizedFilter";
 	}
 
 }
@@ -18,57 +18,57 @@ declare module '@micro-fleet/web/dist/app/decorators/action' {
 	/**
 	 * Used to decorate action function of REST controller class.
 	 * @param {string} method Case-insensitive HTTP verb supported by Express
-	     * 		(see full list at https://expressjs.com/en/4x/api.html#routing-methods)
+	     *         (see full list at https://expressjs.com/en/4x/api.html#routing-methods)
 	 * @param {string} path Segment of URL pointing to this action.
-	 * 		If not specified, it is default to be the action's function name.
+	 *         If not specified, it is default to be the action's function name.
 	 */
 	export function action(method: string, path?: string): Function;
 	/**
 	 * Used to decorate an action that accepts request of ALL verbs.
 	 * @param {string} path Segment of URL pointing to this action.
-	 * 		If not specified, it is default to be the action's function name.
+	 *         If not specified, it is default to be the action's function name.
 	 */
 	export function ALL(path?: string): Function;
 	/**
 	 * Used to decorate an action that accepts GET request.
 	 * @param {string} path Segment of URL pointing to this action.
-	 * 		If not specified, it is default to be the action's function name.
+	 *         If not specified, it is default to be the action's function name.
 	 */
 	export function GET(path?: string): Function;
 	/**
 	 * Used to decorate an action that accepts POST request.
 	 * @param {string} path Segment of URL pointing to this action.
-	 * 		If not specified, it is default to be the action's function name.
+	 *         If not specified, it is default to be the action's function name.
 	 */
 	export function POST(path?: string): Function;
 	/**
 	 * Used to decorate an action that accepts PUT request.
 	 * @param {string} path Segment of URL pointing to this action.
-	 * 		If not specified, it is default to be the action's function name.
+	 *         If not specified, it is default to be the action's function name.
 	 */
 	export function PUT(path?: string): Function;
 	/**
 	 * Used to decorate an action that accepts PATCH request.
 	 * @param {string} path Segment of URL pointing to this action.
-	 * 		If not specified, it is default to be the action's function name.
+	 *         If not specified, it is default to be the action's function name.
 	 */
 	export function PATCH(path?: string): Function;
 	/**
 	 * Used to decorate an action that accepts DELETE request.
 	 * @param {string} path Segment of URL pointing to this action.
-	 * 		If not specified, it is default to be the action's function name.
+	 *         If not specified, it is default to be the action's function name.
 	 */
 	export function DELETE(path?: string): Function;
 	/**
 	 * Used to decorate an action that accepts HEAD request.
 	 * @param {string} path Segment of URL pointing to this action.
-	 * 		If not specified, it is default to be the action's function name.
+	 *         If not specified, it is default to be the action's function name.
 	 */
 	export function HEAD(path?: string): Function;
 	/**
 	 * Used to decorate an action that accepts OPTIONS request.
 	 * @param {string} path Segment of URL pointing to this action.
-	 * 		If not specified, it is default to be the action's function name.
+	 *         If not specified, it is default to be the action's function name.
 	 */
 	export function OPTIONS(path?: string): Function;
 
@@ -184,12 +184,12 @@ declare module '@micro-fleet/web/dist/app/ExpressServerAddOn' {
 	     * @param FilterClass The filter class.
 	     * @param {FilterPriority} priority Filters with greater priority run before ones with less priority.
 	     */
-	    addGlobalFilter<T extends ActionInterceptor>(FilterClass: Newable<T>, priority?: FilterPriority): void;
+	    addGlobalFilter<TFilter extends ActionInterceptor>(FilterClass: Newable<TFilter>, priority?: FilterPriority): void;
 	    /**
 	     * Registers a global-scoped error handler which catches error from filters and actions.
 	     * @param HandlerClass The error handler class.
 	     */
-	    addGlobalErrorHandler<T extends IActionErrorHandler>(HandlerClass: Newable<T>): void;
+	    addGlobalErrorHandler<THandler extends IActionErrorHandler>(HandlerClass: Newable<THandler>): void;
 	    /**
 	     * @memberOf IServiceAddOn
 	     */
@@ -213,8 +213,8 @@ declare module '@micro-fleet/web/dist/app/ExpressServerAddOn' {
 	    protected _buildActionRoutesAndFilters(actionFunc: Function, actionName: string, CtrlClass: Newable, router: express.Router): void;
 	    protected _getActionFilters(CtrlClass: Function, actionName: string): FilterArray;
 	    protected _extractActionFromPrototype(prototype: any, name: string): Maybe<Function>;
-	    	    	    protected _extractFilterExecuteFunc<T extends ActionInterceptor>(FilterClass: Newable<T>, filterParams: any[], paramLength?: number): Function;
-	    protected _instantiateClass<T extends ActionInterceptor>(TargetClass: Newable<T>, isSingleton: boolean, arg1?: any, arg2?: any, arg3?: any, arg4?: any, arg5?: any): ActionInterceptor;
+	    	    	    protected _extractFilterExecuteFunc<TFilter extends ActionInterceptor>(FilterClass: Newable<TFilter>, filterParams: any[], paramLength?: number): Function;
+	    protected _instantiateClass<TTarget extends ActionInterceptor>(TargetClass: Newable<TTarget>, isSingleton: boolean, arg1?: any, arg2?: any, arg3?: any, arg4?: any, arg5?: any): ActionInterceptor;
 	    protected _instantiateClassFromContainer(TargetClass: Newable, isSingleton: boolean): any;
 	    protected _instantiateClassTraditionally(TargetClass: Newable, isSingleton: boolean, arg1?: any, arg2?: any, arg3?: any, arg4?: any, arg5?: any): any;
 	    protected _getMetadata(metaKey: string, classOrProto: any, propName?: string): any;
@@ -225,9 +225,9 @@ declare module '@micro-fleet/web/dist/app/ExpressServerAddOn' {
 }
 declare module '@micro-fleet/web/dist/app/Types' {
 	export class Types {
-	    static readonly TENANT_RESOLVER: string;
-	    static readonly WEBSERVER_ADDON: string;
-	    static readonly AUTH_ADDON: string;
+	    static readonly TENANT_RESOLVER = "common-web.TenantResolver";
+	    static readonly WEBSERVER_ADDON = "common-web.ExpressServerAddOn";
+	    static readonly AUTH_ADDON = "common-web.AuthAddOn";
 	}
 
 }
@@ -343,8 +343,8 @@ declare module '@micro-fleet/web/dist/app/decorators/controller' {
 	/**
 	 * Used to decorate REST controller class.
 	 * @param {string} path Segment of URL pointing to this controller.
-	 * 		If '_' is given, it is extract from controller class name: {path}Controller.
-	 * 		If not specified, it is default to be empty string.
+	 *         If '_' is given, it is extract from controller class name: {path}Controller.
+	 *         If not specified, it is default to be empty string.
 	 */
 	export function controller(path?: string): Function;
 
@@ -422,63 +422,63 @@ declare module '@micro-fleet/web/dist/app/decorators/index' {
 	    /**
 	     * Used to decorate an action that accepts request of ALL verbs.
 	     * @param {string} path Segment of URL pointing to this action.
-	     * 		If not specified, it is default to be the action's function name.
+	     *         If not specified, it is default to be the action's function name.
 	     */
 	    ALL: act.ActionVerbDecorator;
 	    /**
 	     * Used to decorate an action that accepts DELETE request.
 	     * @param {string} path Segment of URL pointing to this action.
-	     * 		If not specified, it is default to be the action's function name.
+	     *         If not specified, it is default to be the action's function name.
 	     */
 	    DELETE: act.ActionVerbDecorator;
 	    /**
 	     * Used to decorate an action that accepts GET request.
 	     * @param {string} path Segment of URL pointing to this action.
-	     * 		If not specified, it is default to be the action's function name.
+	     *         If not specified, it is default to be the action's function name.
 	     */
 	    GET: act.ActionVerbDecorator;
 	    /**
 	     * Used to decorate an action that accepts POST request.
 	     * @param {string} path Segment of URL pointing to this action.
-	     * 		If not specified, it is default to be the action's function name.
+	     *         If not specified, it is default to be the action's function name.
 	     */
 	    POST: act.ActionVerbDecorator;
 	    /**
 	     * Used to decorate an action that accepts PATCH request.
 	     * @param {string} path Segment of URL pointing to this action.
-	     * 		If not specified, it is default to be the action's function name.
+	     *         If not specified, it is default to be the action's function name.
 	     */
 	    PATCH: act.ActionVerbDecorator;
 	    /**
 	     * Used to decorate an action that accepts PUT request.
 	     * @param {string} path Segment of URL pointing to this action.
-	     * 		If not specified, it is default to be the action's function name.
+	     *         If not specified, it is default to be the action's function name.
 	     */
 	    PUT: act.ActionVerbDecorator;
 	    /**
 	     * Used to decorate an action that accepts HEAD request.
 	     * @param {string} path Segment of URL pointing to this action.
-	     * 		If not specified, it is default to be the action's function name.
+	     *         If not specified, it is default to be the action's function name.
 	     */
 	    HEAD: act.ActionVerbDecorator;
 	    /**
 	     * Used to decorate an action that accepts OPTIONS request.
 	     * @param {string} path Segment of URL pointing to this action.
-	     * 		If not specified, it is default to be the action's function name.
+	     *         If not specified, it is default to be the action's function name.
 	     */
 	    OPTIONS: act.ActionVerbDecorator;
 	    /**
 	     * Used to decorate action function of REST controller class.
 	     * @param {string} method Case-insensitive HTTP verb supported by Express
-	     * 		(see full list at https://expressjs.com/en/4x/api.html#routing-methods)
+	     *         (see full list at https://expressjs.com/en/4x/api.html#routing-methods)
 	     * @param {string} path Segment of URL pointing to this action.
-	     * 		If not specified, it is default to be the action's function name.
+	     *         If not specified, it is default to be the action's function name.
 	     */
 	    action: act.ActionDecorator;
 	    /**
 	     * Used to decorate REST controller class.
 	     * @param {string} path Segment of URL pointing to this controller,
-	     * 		if not specified, it is extract from controller class name: {path}Controller.
+	     *         if not specified, it is extract from controller class name: {path}Controller.
 	     */
 	    controller: ControllerDecorator;
 	    /**
@@ -489,7 +489,7 @@ declare module '@micro-fleet/web/dist/app/decorators/index' {
 	     * Used to add filter to controller class and controller action.
 	     * @param {class} FilterClass Filter class.
 	     * @param {ExpressionStatement} filterFunc An arrow function that returns filter's function.
-	     * 		This array function won't be executed, but is used to extract filter function name.
+	     *         This array function won't be executed, but is used to extract filter function name.
 	     * @param {number} priority A number from 0 to 10, filters with greater priority run before ones with less priority.
 	     */
 	    filter: FilterDecorator;

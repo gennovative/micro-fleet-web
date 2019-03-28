@@ -32,7 +32,8 @@ exports.filter = filter;
  * @param {FilterPriority} priority Filters with greater priority run before ones with less priority.
  */
 function addFilterToTarget(FilterClass, TargetClassOrPrototype, targetFunc, priority = FilterPriority.MEDIUM, ...filterParams) {
-    let metaKey, isClassScope = (!targetFunc); // If `targetFunc` has value, `targetClass` is "prototype" object, otherwise it's a class.
+    const isClassScope = (!targetFunc); // If `targetFunc` has value, `targetClass` is "prototype" object, otherwise it's a class.
+    let metaKey;
     if (isClassScope) {
         metaKey = MetaData_1.MetaData.CONTROLLER_FILTER;
     }
@@ -58,8 +59,8 @@ function pushFilterToArray(filters, FilterClass, priority = FilterPriority.MEDIU
     // `filters` is a 2-dimensioned matrix, with indexes are priority value,
     //   values are array of Filter classes. Eg:
     // filters = [
-    //		1: [ FilterClass, FilterClass ]
-    //		3: [ FilterClass, FilterClass ]
+    //        1: [ FilterClass, FilterClass ]
+    //        3: [ FilterClass, FilterClass ]
     // ]
     filters[priority] = filters[priority] || [];
     filters[priority].push({ FilterClass, filterParams });

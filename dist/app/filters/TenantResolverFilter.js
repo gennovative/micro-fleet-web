@@ -37,8 +37,8 @@ let TenantResolverFilter = class TenantResolverFilter {
             return next();
         }
         // TODO: Else, look up from database
-        // const tenant = await this._tenantProvider.findBySlug(tenantSlug);
-        // if (!tenant) { return null; }
+        // const tenant = await this._tenantProvider.findBySlug(tenantSlug)
+        // if (!tenant) { return null }
         // Mocking
         const tenant = { id: Math.random().toString().slice(2) };
         this._cache.setPrimitive(key, tenant.id, null, cache_1.CacheLevel.BOTH);

@@ -19,6 +19,7 @@ let ErrorHandlerFilter = class ErrorHandlerFilter {
     constructor(
     // @inject() private logProvider: ILogProvider
     ) {
+        // Empty
     }
     execute(error, req, res, next) {
         if (res.headersSent || !(error instanceof common_1.ValidationError)) {

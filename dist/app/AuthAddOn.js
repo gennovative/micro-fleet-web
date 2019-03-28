@@ -62,10 +62,10 @@ let AuthAddOn = class AuthAddOn {
             })(request, response, next);
         });
     }
-    async createToken(payload, isRefresh) {
+    createToken(payload, isRefresh) {
         const refreshExpr = this._configProvider.get(S.AUTH_EXPIRE_REFRESH).TryGetValue('30d');
         const accessExpr = this._configProvider.get(S.AUTH_EXPIRE_ACCESS).TryGetValue(60 * 30);
-        const sign = new Promise((resolve, reject) => {
+        return new Promise((resolve, reject) => {
             jwt.sign(
             // Data
             payload, 
@@ -84,8 +84,6 @@ let AuthAddOn = class AuthAddOn {
                 reject('Failed to create auth token');
             });
         });
-        const token = await sign;
-        return token;
     }
     /**
      * @memberOf IServiceAddOn.deadLetter

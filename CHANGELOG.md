@@ -1,5 +1,9 @@
 ## VERSIONS
 
+### 1.0.4
+- Upgraded dependencies.
+- Improved lint rules.
+
 ### 1.0.3
 - Fixed node engine version in package.json
 - Refactor to replace `let` with `const`.

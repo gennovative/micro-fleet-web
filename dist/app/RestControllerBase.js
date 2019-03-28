@@ -12,6 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const common_1 = require("@micro-fleet/common");
 let RestControllerBase = class RestControllerBase {
     constructor() {
+        // Empty
     }
     //#region Sucessful responses
     /**
@@ -50,7 +51,7 @@ let RestControllerBase = class RestControllerBase {
      */
     clientError(res, returnErr, statusCode = 400, shouldLogErr = false) {
         // TODO: Implement Logging library
-        // shouldLogErr && super.log.error(returnErr);
+        // shouldLogErr && super.log.error(returnErr)
         statusCode = (400 <= statusCode && statusCode <= 499) ? statusCode : 400;
         if (typeof returnErr == 'number') {
             returnErr += '';
@@ -100,7 +101,7 @@ let RestControllerBase = class RestControllerBase {
      */
     internalError(res, logErr) {
         // TODO: Implement Logging library
-        // super.log.error(logErr);
+        // super.log.error(logErr)
         res.status(500).send('server.error.internal');
     }
     //#endregion Server error reponses
