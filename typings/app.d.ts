@@ -144,7 +144,7 @@ declare module '@micro-fleet/web/dist/app/ExpressServerAddOn' {
 	/// <reference types="node" />
 	import * as http from 'http';
 	import * as express from 'express';
-	import { Maybe } from '@micro-fleet/common';
+	import { IDependencyContainer, Maybe, IConfigurationProvider } from '@micro-fleet/common';
 	import { IActionErrorHandler, ActionInterceptor, PrioritizedFilterArray, FilterArray, FilterPriority } from '@micro-fleet/web/dist/app/decorators/filter'; type ControllerExports = {
 	    [name: string]: Newable;
 	};
@@ -153,19 +153,35 @@ declare module '@micro-fleet/web/dist/app/ExpressServerAddOn' {
 	    TRANSIENT = 1
 	}
 	export class ExpressServerAddOn implements IServiceAddOn {
+	    /**
+	     * Gets this add-on's name.
+	     */
 	    readonly name: string;
-	    protected _server: http.Server;
-	    protected _globalFilters: PrioritizedFilterArray;
-	    protected _globalErrorHandlers: Newable[];
-	    protected _isAlive: boolean;
-	    	    	    	    	    	    	    	    /**
+	    /**
 	     * Gets or sets strategy when creating controller instance.
 	     */
 	    controllerCreation: ControllerCreationStrategy;
 	    /**
-	     * Gets or sets path to controller classes.
+	     * Gets or sets path to folder containing controller classes.
 	     */
 	    controllerPath: string;
+	    protected _server: http.Server;
+	    protected _express: express.Express;
+	    protected _port: number;
+	    protected _urlPrefix: string;
+	    protected _globalFilters: PrioritizedFilterArray;
+	    protected _globalErrorHandlers: Newable[];
+	    protected _isAlive: boolean;
+	    protected _sslEnabled: boolean;
+	    protected _sslPort: number;
+	    protected _sslKey: string;
+	    protected _sslKeyFile: string;
+	    protected _sslCert: string;
+	    protected _sslCertFile: string;
+	    protected _sslOnly: boolean;
+	    protected _sslServer: http.Server;
+	    protected _cfgProvider: IConfigurationProvider;
+	    protected _depContainer: IDependencyContainer;
 	    /**
 	     * Gets express instance.
 	     */
@@ -202,8 +218,13 @@ declare module '@micro-fleet/web/dist/app/ExpressServerAddOn' {
 	     * @memberOf IServiceAddOn
 	     */
 	    init(): Promise<void>;
-	    protected _createServer(): express.Express;
-	    protected _startServer(app: express.Express): Promise<any>;
+	    protected loadConfig(): void;
+	    protected getCfg<TVal extends PrimitiveType>(name: string, defaultValue: any): TVal;
+	    protected _setupExpress(): express.Express;
+	    protected _startServers(app: express.Express): Promise<any>;
+	    protected _startHttp(app: express.Express): Promise<any>;
+	    protected _startSsl(app: express.Express): Promise<any>;
+	    protected _readKeyPairs(): [string, string];
 	    protected _loadControllers(): Promise<ControllerExports>;
 	    protected _initControllers(controllers: ControllerExports, app: express.Express): void;
 	    protected _buildControllerRoutes(CtrlClass: Newable, app: express.Express): express.Router;
@@ -213,7 +234,9 @@ declare module '@micro-fleet/web/dist/app/ExpressServerAddOn' {
 	    protected _buildActionRoutesAndFilters(actionFunc: Function, actionName: string, CtrlClass: Newable, router: express.Router): void;
 	    protected _getActionFilters(CtrlClass: Function, actionName: string): FilterArray;
 	    protected _extractActionFromPrototype(prototype: any, name: string): Maybe<Function>;
-	    	    	    protected _extractFilterExecuteFunc<TFilter extends ActionInterceptor>(FilterClass: Newable<TFilter>, filterParams: any[], paramLength?: number): Function;
+	    protected _useFilterMiddleware(filters: PrioritizedFilterArray, appOrRouter: express.Express | express.Router): void;
+	    protected _useErrorHandlerMiddleware(handlers: Newable[], appOrRouter: express.Express | express.Router): void;
+	    protected _extractFilterExecuteFunc<TFilter extends ActionInterceptor>(FilterClass: Newable<TFilter>, filterParams: any[], paramLength?: number): Function;
 	    protected _instantiateClass<TTarget extends ActionInterceptor>(TargetClass: Newable<TTarget>, isSingleton: boolean, arg1?: any, arg2?: any, arg3?: any, arg4?: any, arg5?: any): ActionInterceptor;
 	    protected _instantiateClassFromContainer(TargetClass: Newable, isSingleton: boolean): any;
 	    protected _instantiateClassTraditionally(TargetClass: Newable, isSingleton: boolean, arg1?: any, arg2?: any, arg3?: any, arg4?: any, arg5?: any): any;

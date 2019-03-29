@@ -1,8 +1,9 @@
 ## VERSIONS
 
-### 1.0.4
+### 1.1.0
 - Upgraded dependencies.
 - Improved lint rules.
+- [#1](https://github.com/gennovative/micro-fleet-web/issues/1) - Supports HTTPS server.
 
 ### 1.0.3
 - Fixed node engine version in package.json

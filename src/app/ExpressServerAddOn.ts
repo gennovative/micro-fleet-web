@@ -1,5 +1,8 @@
+import * as fs from 'fs'
 import * as path from 'path'
 import * as http from 'http'
+import * as https from 'https'
+
 import * as express from 'express'
 import * as cors from 'cors'
 import { injectable, lazyInject, CriticalException, IDependencyContainer, Guard,
@@ -16,6 +19,7 @@ import { webContext } from './WebContext'
 const INVERSIFY_INJECTABLE = 'inversify:paramtypes'
 const DEFAULT_PORT = 80
 const DEFAULT_URL_PREFIX = ''
+const DEFAULT_SSL_PORT = 443
 
 type ControllerExports = { [name: string]: Newable }
 
@@ -24,50 +28,48 @@ export enum ControllerCreationStrategy { SINGLETON, TRANSIENT }
 @injectable()
 export class ExpressServerAddOn implements IServiceAddOn {
 
+    /**
+     * Gets this add-on's name.
+     */
     public readonly name: string = 'ExpressServerAddOn'
-
-    protected _server: http.Server
-    protected _globalFilters: PrioritizedFilterArray
-    protected _globalErrorHandlers: Newable[]
-    protected _isAlive: boolean
-
-    private _creationStrategy: ControllerCreationStrategy
-    private _controllerPath: string
-    private _express: express.Express
-    private _port: number
-    private _urlPrefix: string
-
-
-    @lazyInject(T.CONFIG_PROVIDER)
-    private _cfgProvider: IConfigurationProvider
-
-    @lazyInject(T.DEPENDENCY_CONTAINER)
-    private _depContainer: IDependencyContainer
-
-
-    //#region Getters / Setters
 
     /**
      * Gets or sets strategy when creating controller instance.
      */
-    public get controllerCreation(): ControllerCreationStrategy {
-        return this._creationStrategy
-    }
-
-    public set controllerCreation(value: ControllerCreationStrategy) {
-        this._creationStrategy = value
-    }
+    public controllerCreation: ControllerCreationStrategy
 
     /**
-     * Gets or sets path to controller classes.
+     * Gets or sets path to folder containing controller classes.
      */
-    public get controllerPath(): string {
-        return this._controllerPath
-    }
+    public controllerPath: string
 
-    public set controllerPath(value: string) {
-        this._controllerPath = value
-    }
+    protected _server: http.Server
+    protected _express: express.Express
+    protected _port: number
+    protected _urlPrefix: string
+
+    protected _globalFilters: PrioritizedFilterArray
+    protected _globalErrorHandlers: Newable[]
+    protected _isAlive: boolean
+
+    protected _sslEnabled: boolean
+    protected _sslPort: number
+    protected _sslKey: string
+    protected _sslKeyFile: string
+    protected _sslCert: string
+    protected _sslCertFile: string
+    protected _sslOnly: boolean
+    protected _sslServer: http.Server
+
+
+    @lazyInject(T.CONFIG_PROVIDER)
+    protected _cfgProvider: IConfigurationProvider
+
+    @lazyInject(T.DEPENDENCY_CONTAINER)
+    protected _depContainer: IDependencyContainer
+
+
+    //#region Getters / Setters
 
     /**
      * Gets express instance.
@@ -100,7 +102,7 @@ export class ExpressServerAddOn implements IServiceAddOn {
         this._urlPrefix = ''
         this._port = 0
         this._express = express()
-        this._creationStrategy = ControllerCreationStrategy.TRANSIENT
+        this.controllerCreation = ControllerCreationStrategy.TRANSIENT
     }
 
 
@@ -150,24 +152,39 @@ export class ExpressServerAddOn implements IServiceAddOn {
      * @memberOf IServiceAddOn
      */
     public init(): Promise<void> {
+        this.loadConfig()
         webContext.setUrlPrefix(this._urlPrefix)
-
-        this._port = this._cfgProvider.get(W.WEB_PORT).TryGetValue(DEFAULT_PORT) as number
-        this._urlPrefix = this._cfgProvider.get(W.WEB_URL_PREFIX).TryGetValue(DEFAULT_URL_PREFIX) as string
 
         return <any>Promise.all([
             // Loading controllers from file takes time,
             // so we call createServer in parallel.
             this._loadControllers(),
-            this._createServer(),
+            this._setupExpress(),
         ]).then(([controllers, app]: [ControllerExports, express.Express]) => {
             this._initControllers(controllers, app)
             this._useErrorHandlerMiddleware(this._globalErrorHandlers, app)
-            return this._startServer(app)
+            return this._startServers(app)
         })
     }
 
-    protected _createServer(): express.Express {
+    protected loadConfig(): void {
+        this._port = this.getCfg<number>(W.WEB_PORT, DEFAULT_PORT)
+        this._urlPrefix = this.getCfg<string>(W.WEB_URL_PREFIX, DEFAULT_URL_PREFIX)
+        this._sslEnabled = this.getCfg<boolean>(W.WEB_SSL_ENABLED, false)
+        if (!this._sslEnabled) {
+            return
+        }
+        this._sslPort = this.getCfg<number>(W.WEB_SSL_PORT, DEFAULT_SSL_PORT)
+        this._sslOnly = this.getCfg<boolean>(W.WEB_SSL_ONLY, false)
+        this._sslCertFile = this.getCfg<string>(W.WEB_SSL_CERT_FILE, '')
+        this._sslKeyFile = this.getCfg<string>(W.WEB_SSL_KEY_FILE, '')
+    }
+
+    protected getCfg<TVal extends PrimitiveType>(name: string, defaultValue: any): TVal {
+        return this._cfgProvider.get(name).TryGetValue(defaultValue) as TVal
+    }
+
+    protected _setupExpress(): express.Express {
         const app = this._express
 
         app.disable('x-powered-by')
@@ -198,16 +215,62 @@ export class ExpressServerAddOn implements IServiceAddOn {
         return app
     }
 
-    protected _startServer(app: express.Express): Promise<any> {
-        return new Promise((resolve, reject) => {
-            this._server = app.listen(this._port, () => {
-                this._isAlive = true
-                console.log('Listening on: ', this._port)
-                resolve()
-            })
-            this._server.on('error', reject)
+    protected _startServers(app: express.Express): Promise<any> {
+        return Promise.all([
+            this._startHttp(app),
+            this._startSsl(app),
+        ])
+    }
 
+    protected _startHttp(app: express.Express): Promise<any> {
+
+        return new Promise((resolve, reject) => {
+            let server: http.Server
+            if (this._sslEnabled && this._sslOnly) {
+                server = http.createServer((req, res) => {
+                    // Redirect the request to HTTPS
+                    res.writeHead(301, {Location: `https://${req.headers.host}${req.url}`})
+                    res.end()
+                })
+            } else {
+                server = http.createServer(app)
+            }
+
+            this._server = server
+                .on('listening', () => {
+                    this._isAlive = true
+                    console.log('HTTP listening on: ', this._port)
+                    resolve()
+                })
+                .on('error', reject)
+                .listen(this._port)
         })
+    }
+
+    protected _startSsl(app: express.Express): Promise<any> {
+        return new Promise((resolve, reject) => {
+            if (!this._sslEnabled) {
+                return resolve()
+            }
+
+            const [key, cert] = this._readKeyPairs()
+            const sslOptions = { key, cert }
+            this._sslServer = https.createServer(sslOptions, app)
+                .on('listening', () => {
+                    this._isAlive = true
+                    console.log('HTTPS listening on: ', this._sslPort)
+                    resolve()
+                })
+                .on('error', reject)
+                .listen(this._sslPort)
+        })
+    }
+
+    protected _readKeyPairs(): [string, string] {
+        return [
+            this._sslKey || fs.readFileSync(this._sslKeyFile, 'utf8'),
+            this._sslCert || fs.readFileSync(this._sslCertFile, 'utf8'),
+        ]
     }
 
     //#endregion Init
@@ -216,7 +279,7 @@ export class ExpressServerAddOn implements IServiceAddOn {
     //#region Controller
 
     protected async _loadControllers(): Promise<ControllerExports> {
-        const ctrlPath = this._controllerPath || path.join(process.cwd(), 'dist', 'app', 'controllers')
+        const ctrlPath = this.controllerPath || path.join(process.cwd(), 'dist', 'app', 'controllers')
         return await import(ctrlPath) || {}
     }
 
@@ -271,7 +334,7 @@ export class ExpressServerAddOn implements IServiceAddOn {
 
     protected _proxyActionFunc(actionFunc: Function, CtrlClass: Newable): Function {
         const bound = this._depContainer.bind(CtrlClass.name, CtrlClass)
-        if (this._creationStrategy == ControllerCreationStrategy.SINGLETON) {
+        if (this.controllerCreation == ControllerCreationStrategy.SINGLETON) {
             bound.asSingleton()
         }
 
@@ -345,7 +408,7 @@ export class ExpressServerAddOn implements IServiceAddOn {
 
     //#region Filter
 
-    private _useFilterMiddleware(filters: PrioritizedFilterArray, appOrRouter: express.Express | express.Router): void {
+    protected _useFilterMiddleware(filters: PrioritizedFilterArray, appOrRouter: express.Express | express.Router): void {
         if (!filters || !filters.length) { return }
 
         // Must make a clone to avoid mutating the original filter array in Reflect metadata.
@@ -367,7 +430,7 @@ export class ExpressServerAddOn implements IServiceAddOn {
         })
     }
 
-    private _useErrorHandlerMiddleware(handlers: Newable[], appOrRouter: express.Express | express.Router): void {
+    protected _useErrorHandlerMiddleware(handlers: Newable[], appOrRouter: express.Express | express.Router): void {
         if (!handlers || !handlers.length) { return }
 
         for (const HandlerClass of handlers) {
