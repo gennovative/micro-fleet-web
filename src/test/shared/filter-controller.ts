@@ -1,7 +1,6 @@
-import * as express from 'express'
 import * as chai from 'chai'
 
-import { IActionFilter, decorators, FilterPriority } from '../../app'
+import { IActionFilter, decorators, FilterPriority, Request, Response } from '../../app'
 const { filter, controller, GET } = decorators
 
 
@@ -41,7 +40,7 @@ class SamePriorityController {
     }
 
     @GET('/')
-    public doGet(req: express.Request, res: express.Response) {
+    public doGet(req: Request, res: Response) {
         this.spyFn()
         this.count++
         global['callOrder'].push(0)
@@ -63,7 +62,7 @@ class PrioritizedController {
     }
 
     @GET('/')
-    public doGet(req: express.Request, res: express.Response) {
+    public doGet(req: Request, res: Response) {
         this.spyFn()
         global['callOrder'].push(0)
         res.sendStatus(200)

@@ -1,5 +1,6 @@
-import * as express from 'express'
 import { injectable } from '@micro-fleet/common'
+
+import { Response } from './interfaces'
 
 
 export type TrailsRouteConfigItem = {
@@ -25,7 +26,7 @@ export abstract class RestControllerBase {
      * @param res Express response object.
      * @param data Data to optionally return to client.
      */
-    protected accepted(res: express.Response, data?: any): void {
+    protected accepted(res: Response, data?: any): void {
         this.send(res, data, 202)
     }
 
@@ -34,7 +35,7 @@ export abstract class RestControllerBase {
      * @param res Express response object.
      * @param data Data to optionally return to client.
      */
-    protected created(res: express.Response, data?: any): void {
+    protected created(res: Response, data?: any): void {
         this.send(res, data, 201)
     }
 
@@ -43,7 +44,7 @@ export abstract class RestControllerBase {
      * @param res Express response object.
      * @param data Data to optionally return to client.
      */
-    protected ok(res: express.Response, data?: any): void {
+    protected ok(res: Response, data?: any): void {
         this.send(res, data, 200)
     }
 
@@ -60,7 +61,7 @@ export abstract class RestControllerBase {
      * @param statusCode HTTP status code. Must be 4xx. Default is 400.
      * @param shouldLogErr Whether to write error to server log (eg: Illegal attempt to read/write resource...). Default to false.
      */
-    protected clientError(res: express.Response, returnErr: any, statusCode: number = 400, shouldLogErr: boolean = false): void {
+    protected clientError(res: Response, returnErr: any, statusCode: number = 400, shouldLogErr: boolean = false): void {
         // TODO: Implement Logging library
         // shouldLogErr && super.log.error(returnErr)
         statusCode = (400 <= statusCode && statusCode <= 499) ? statusCode : 400
@@ -75,7 +76,7 @@ export abstract class RestControllerBase {
      * @param res Express response object.
      * @param returnErr Data to optionally return to client.
      */
-    protected forbidden(res: express.Response, returnErr?: any): void {
+    protected forbidden(res: Response, returnErr?: any): void {
         this.clientError(res, returnErr, 403)
     }
 
@@ -84,7 +85,7 @@ export abstract class RestControllerBase {
      * @param res Express response object.
      * @param returnErr Data to optionally return to client.
      */
-    protected notFound(res: express.Response, returnErr?: any): void {
+    protected notFound(res: Response, returnErr?: any): void {
         this.clientError(res, returnErr, 404)
     }
 
@@ -93,7 +94,7 @@ export abstract class RestControllerBase {
      * @param res Express response object.
      * @param returnErr Data to optionally return to client.
      */
-    protected unauthorized(res: express.Response, returnErr?: any): void {
+    protected unauthorized(res: Response, returnErr?: any): void {
         this.clientError(res, returnErr, 401)
     }
 
@@ -103,7 +104,7 @@ export abstract class RestControllerBase {
      * @param res Express response object.
      * @param returnErr Error to returned to client.
      */
-    protected validationError(res: express.Response, returnErr: any): void {
+    protected validationError(res: Response, returnErr: any): void {
         this.clientError(res, returnErr, 412)
     }
 
@@ -118,7 +119,7 @@ export abstract class RestControllerBase {
      * @param res Express response object.
      * @param logErr Error to dump to server log, but not returned to client.
      */
-    protected internalError(res: express.Response, logErr: any): void {
+    protected internalError(res: Response, logErr: any): void {
         // TODO: Implement Logging library
         // super.log.error(logErr)
         res.status(500).send('server.error.internal')
@@ -133,7 +134,7 @@ export abstract class RestControllerBase {
      * @param data Data to return to client.
      * @param statusCode HTTP status code. Default is 200.
      */
-    protected send(res: express.Response, data: any, statusCode: number): express.Response {
+    protected send(res: Response, data: any, statusCode: number): Response {
         if (typeof data == 'number') {
             data += <any>''
         }

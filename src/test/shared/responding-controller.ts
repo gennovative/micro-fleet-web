@@ -1,11 +1,10 @@
-import * as express from 'express'
-import { decorators as dec } from '../../app'
+import { decorators as dec, Request, Response } from '../../app'
 
 
 @dec.controller('/')
 class SampleController {
     @dec.GET('/')
-    public getSample(req: express.Request, res: express.Response): void {
+    public getSample(req: Request, res: Response): void {
         res.send('SampleController.getSample')
     }
 }

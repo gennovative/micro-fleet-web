@@ -1,6 +1,5 @@
-import * as express from 'express'
 import * as chai from 'chai'
-import { decorators as dec } from '../../app'
+import { decorators as dec, Request, Response } from '../../app'
 
 @dec.controller('/')
 class PassthroughController {
@@ -11,7 +10,7 @@ class PassthroughController {
     }
 
     @dec.GET('/')
-    public getSample(req: express.Request, res: express.Response): void {
+    public getSample(req: Request, res: Response): void {
         this.spyFn(req['user'].accountId, req['user'].username)
         res.sendStatus(200)
     }

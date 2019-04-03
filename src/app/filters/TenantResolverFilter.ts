@@ -1,9 +1,8 @@
-import * as express from 'express'
-
 import { injectable, inject, Maybe, Guard } from '@micro-fleet/common'
 import { CacheProvider, CacheLevel, Types as CaT } from '@micro-fleet/cache'
 
 import { IActionFilter } from '../decorators/filter'
+import { Request, Response } from '../interfaces'
 
 /**
  * Provides method to look up tenant ID from tenant slug.
@@ -18,7 +17,7 @@ export class TenantResolverFilter implements IActionFilter {
         Guard.assertArgDefined('cache', _cache)
     }
 
-    public async execute(req: express.Request, res: express.Response, next: Function): Promise<void> {
+    public async execute(req: Request, res: Response, next: Function): Promise<void> {
         const { tenantSlug } = req.params
 
         // Preserved slug, specially for system services.

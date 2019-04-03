@@ -1,8 +1,8 @@
-import * as express from 'express'
 import * as joi from 'joi'
 import { Guard, ModelAutoMapper } from '@micro-fleet/common'
 
 import { IActionFilter } from '../decorators/filter'
+import { Request, Response } from '../interfaces'
 import { ActionFilterBase } from './ActionFilterBase'
 
 
@@ -23,7 +23,7 @@ export type ModelFilterOptions = {
      * Function to extract model object from request body.
      * As default, model object is extracted from `request.body.model`.
      */
-    modelPropFn?: (request: express.Request) => any
+    modelPropFn?: <T extends object = object>(request: Request<T>) => any
 
     /**
      * Custom validation rule for arbitrary object.
@@ -35,7 +35,7 @@ export class ModelFilter
     extends ActionFilterBase
     implements IActionFilter {
 
-    public execute(request: express.Request, response: express.Response, next: Function,
+    public execute(request: Request, response: Response, next: Function,
             options: ModelFilterOptions): void {
         try {
             const { ModelClass, isPartial, modelPropFn } = options

@@ -6,7 +6,7 @@ export type ModelDecorator = (opts: ModelFilterOptions) => Function
 
 
 /**
- * Marks a controller or action to require auth token to be accessible.
+ * Attempts to translate request body to desired model class.
  */
 export function model(opts: ModelFilterOptions): Function {
     return function (TargetClass: Newable, key: string): Function {

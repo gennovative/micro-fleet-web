@@ -1,7 +1,6 @@
 export class MetaData {
-    public static readonly CONTROLLER = 'common-web:controller'
-    public static readonly CONTROLLER_FILTER = 'common-web:controllerFilter'
-    public static readonly ACTION = 'common-web:action'
-    public static readonly ACTION_FILTER = 'common-web:actionFilter'
-    public static readonly AUTHORIZED_FILTER = 'common-web:authorizedFilter'
+    public static readonly CONTROLLER = 'micro-fleet-web:controller'
+    public static readonly CONTROLLER_FILTER = 'micro-fleet-web:controllerFilter'
+    public static readonly ACTION = 'micro-fleet-web:action'
+    public static readonly ACTION_FILTER = 'micro-fleet-web:actionFilter'
 }

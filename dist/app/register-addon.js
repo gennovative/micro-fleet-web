@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const common_1 = require("@micro-fleet/common");
 const ExpressServerAddOn_1 = require("./ExpressServerAddOn");
-const Types_1 = require("./Types");
+const Types_1 = require("./constants/Types");
 function registerWebAddOn() {
     const depCon = common_1.serviceContext.dependencyContainer;
     if (!depCon.isBound(Types_1.Types.WEBSERVER_ADDON)) {

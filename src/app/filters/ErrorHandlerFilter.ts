@@ -1,10 +1,7 @@
-// Handle validation errors
-// Handle server internal errors
-
-import * as express from 'express'
 import { injectable, ValidationError } from '@micro-fleet/common'
 
 import { IActionErrorHandler } from '../decorators/filter'
+import { Request, Response } from '../interfaces'
 
 /**
  * Provides method to look up tenant ID from tenant slug.
@@ -18,7 +15,7 @@ export class ErrorHandlerFilter implements IActionErrorHandler {
         // Empty
     }
 
-    public execute(error: Error, req: express.Request, res: express.Response, next: Function): void {
+    public execute(error: Error, req: Request, res: Response, next: Function): void {
         if (res.headersSent || !(error instanceof ValidationError)) {
             // Delegate to Express default error handler
             return next(error)

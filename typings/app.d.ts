@@ -1,11 +1,10 @@
 /// <reference path="./global.d.ts" />
 declare module '@micro-fleet/web/dist/app/constants/MetaData' {
 	export class MetaData {
-	    static readonly CONTROLLER = "common-web:controller";
-	    static readonly CONTROLLER_FILTER = "common-web:controllerFilter";
-	    static readonly ACTION = "common-web:action";
-	    static readonly ACTION_FILTER = "common-web:actionFilter";
-	    static readonly AUTHORIZED_FILTER = "common-web:authorizedFilter";
+	    static readonly CONTROLLER = "micro-fleet-web:controller";
+	    static readonly CONTROLLER_FILTER = "micro-fleet-web:controllerFilter";
+	    static readonly ACTION = "micro-fleet-web:action";
+	    static readonly ACTION_FILTER = "micro-fleet-web:actionFilter";
 	}
 
 }
@@ -286,44 +285,16 @@ declare module '@micro-fleet/web/dist/app/ExpressServerAddOn' {
 	export {};
 
 }
-declare module '@micro-fleet/web/dist/app/Types' {
-	export class Types {
-	    static readonly TENANT_RESOLVER = "common-web.TenantResolver";
-	    static readonly WEBSERVER_ADDON = "common-web.ExpressServerAddOn";
-	    static readonly AUTH_ADDON = "common-web.AuthAddOn";
-	}
-
-}
-declare module '@micro-fleet/web/dist/app/AuthAddOn' {
-	import { IConfigurationProvider } from '@micro-fleet/common';
-	import { ExpressServerAddOn } from '@micro-fleet/web/dist/app/ExpressServerAddOn';
-	export type AuthResult = {
-	    payload: any;
-	    info: any;
-	    status: any;
+declare module '@micro-fleet/web/dist/app/interfaces' {
+	import * as express from 'express';
+	export type Request<TModel = object> = express.Request & {
+	    readonly model: TModel;
 	};
-	export class AuthAddOn implements IServiceAddOn {
-	    	    	    readonly name: string;
-	    constructor(_serverAddOn: ExpressServerAddOn, _configProvider: IConfigurationProvider);
-	    /**
-	     * @memberOf IServiceAddOn.init
-	     */
-	    init(): Promise<void>;
-	    	    authenticate(request: any, response: any, next: Function): Promise<AuthResult>;
-	    createToken(payload: any, isRefresh: Boolean): Promise<string>;
-	    /**
-	     * @memberOf IServiceAddOn.deadLetter
-	     */
-	    deadLetter(): Promise<void>;
-	    /**
-	     * @memberOf IServiceAddOn.dispose
-	     */
-	    dispose(): Promise<void>;
-	}
+	export type Response = express.Response;
 
 }
 declare module '@micro-fleet/web/dist/app/RestControllerBase' {
-	import * as express from 'express';
+	import { Response } from '@micro-fleet/web/dist/app/interfaces';
 	export type TrailsRouteConfigItem = {
 	    method: string | string[];
 	    path: string;
@@ -337,19 +308,19 @@ declare module '@micro-fleet/web/dist/app/RestControllerBase' {
 	     * @param res Express response object.
 	     * @param data Data to optionally return to client.
 	     */
-	    protected accepted(res: express.Response, data?: any): void;
+	    protected accepted(res: Response, data?: any): void;
 	    /**
 	     * Responds as Created with status code 201 and optional data.
 	     * @param res Express response object.
 	     * @param data Data to optionally return to client.
 	     */
-	    protected created(res: express.Response, data?: any): void;
+	    protected created(res: Response, data?: any): void;
 	    /**
 	     * Responds as OK with status code 200 and optional data.
 	     * @param res Express response object.
 	     * @param data Data to optionally return to client.
 	     */
-	    protected ok(res: express.Response, data?: any): void;
+	    protected ok(res: Response, data?: any): void;
 	    /**
 	     * Responds with error status code (default 400) and writes error to server log,
 	     * then returned it to client.
@@ -358,46 +329,46 @@ declare module '@micro-fleet/web/dist/app/RestControllerBase' {
 	     * @param statusCode HTTP status code. Must be 4xx. Default is 400.
 	     * @param shouldLogErr Whether to write error to server log (eg: Illegal attempt to read/write resource...). Default to false.
 	     */
-	    protected clientError(res: express.Response, returnErr: any, statusCode?: number, shouldLogErr?: boolean): void;
+	    protected clientError(res: Response, returnErr: any, statusCode?: number, shouldLogErr?: boolean): void;
 	    /**
 	     * Responds as Forbidden with status code 403 and optional error message.
 	     * @param res Express response object.
 	     * @param returnErr Data to optionally return to client.
 	     */
-	    protected forbidden(res: express.Response, returnErr?: any): void;
+	    protected forbidden(res: Response, returnErr?: any): void;
 	    /**
 	     * Responds as Not Found with status code 404 and optional error message.
 	     * @param res Express response object.
 	     * @param returnErr Data to optionally return to client.
 	     */
-	    protected notFound(res: express.Response, returnErr?: any): void;
+	    protected notFound(res: Response, returnErr?: any): void;
 	    /**
 	     * Responds as Unauthorized with status code 401 and optional error message.
 	     * @param res Express response object.
 	     * @param returnErr Data to optionally return to client.
 	     */
-	    protected unauthorized(res: express.Response, returnErr?: any): void;
+	    protected unauthorized(res: Response, returnErr?: any): void;
 	    /**
 	     * Responds error Precondition Failed with status code 412 and
 	     * then returned error to client.
 	     * @param res Express response object.
 	     * @param returnErr Error to returned to client.
 	     */
-	    protected validationError(res: express.Response, returnErr: any): void;
+	    protected validationError(res: Response, returnErr: any): void;
 	    /**
 	     * Responds as Internal Error with status code 500 and
 	     * writes error to server log. The error is not returned to client.
 	     * @param res Express response object.
 	     * @param logErr Error to dump to server log, but not returned to client.
 	     */
-	    protected internalError(res: express.Response, logErr: any): void;
+	    protected internalError(res: Response, logErr: any): void;
 	    /**
 	     * Sends response to client.
 	     * @param res Express response object.
 	     * @param data Data to return to client.
 	     * @param statusCode HTTP status code. Default is 200.
 	     */
-	    protected send(res: express.Response, data: any, statusCode: number): express.Response;
+	    protected send(res: Response, data: any, statusCode: number): Response;
 	}
 
 }
@@ -418,27 +389,10 @@ declare module '@micro-fleet/web/dist/app/filters/ActionFilterBase' {
 	}
 
 }
-declare module '@micro-fleet/web/dist/app/filters/AuthorizeFilter' {
-	import * as express from 'express';
-	import { IActionFilter } from '@micro-fleet/web/dist/app/decorators/filter';
-	import { ActionFilterBase } from '@micro-fleet/web/dist/app/filters/ActionFilterBase';
-	export class AuthorizeFilter extends ActionFilterBase implements IActionFilter {
-	    	    execute(request: express.Request, response: express.Response, next: Function): Promise<any>;
-	}
-
-}
-declare module '@micro-fleet/web/dist/app/decorators/authorized' {
-	export type AuthorizedDecorator = () => Function;
-	/**
-	 * Marks a controller or action to require auth token to be accessible.
-	 */
-	export function authorized(): Function;
-
-}
 declare module '@micro-fleet/web/dist/app/filters/ModelFilter' {
-	import * as express from 'express';
 	import * as joi from 'joi';
 	import { IActionFilter } from '@micro-fleet/web/dist/app/decorators/filter';
+	import { Request, Response } from '@micro-fleet/web/dist/app/interfaces';
 	import { ActionFilterBase } from '@micro-fleet/web/dist/app/filters/ActionFilterBase';
 	export type ModelFilterOptions = {
 	    /**
@@ -455,14 +409,14 @@ declare module '@micro-fleet/web/dist/app/filters/ModelFilter' {
 	     * Function to extract model object from request body.
 	     * As default, model object is extracted from `request.body.model`.
 	     */
-	    modelPropFn?: (request: express.Request) => any;
+	    modelPropFn?: <T extends object = object>(request: Request<T>) => any;
 	    /**
 	     * Custom validation rule for arbitrary object.
 	     */
 	    customValidationRule?: joi.SchemaMap;
 	};
 	export class ModelFilter extends ActionFilterBase implements IActionFilter {
-	    execute(request: express.Request, response: express.Response, next: Function, options: ModelFilterOptions): void;
+	    execute(request: Request, response: Response, next: Function, options: ModelFilterOptions): void;
 	}
 
 }
@@ -470,14 +424,13 @@ declare module '@micro-fleet/web/dist/app/decorators/model' {
 	import { ModelFilterOptions } from '@micro-fleet/web/dist/app/filters/ModelFilter';
 	export type ModelDecorator = (opts: ModelFilterOptions) => Function;
 	/**
-	 * Marks a controller or action to require auth token to be accessible.
+	 * Attempts to translate request body to desired model class.
 	 */
 	export function model(opts: ModelFilterOptions): Function;
 
 }
 declare module '@micro-fleet/web/dist/app/decorators/index' {
 	import { ControllerDecorator } from '@micro-fleet/web/dist/app/decorators/controller';
-	import { AuthorizedDecorator } from '@micro-fleet/web/dist/app/decorators/authorized';
 	import { ModelDecorator } from '@micro-fleet/web/dist/app/decorators/model';
 	import { FilterDecorator } from '@micro-fleet/web/dist/app/decorators/filter';
 	import * as act from '@micro-fleet/web/dist/app/decorators/action';
@@ -545,10 +498,6 @@ declare module '@micro-fleet/web/dist/app/decorators/index' {
 	     */
 	    controller: ControllerDecorator;
 	    /**
-	     * Marks a controller or action to require auth token to be accessible.
-	     */
-	    authorized: AuthorizedDecorator;
-	    /**
 	     * Used to add filter to controller class and controller action.
 	     * @param {class} FilterClass Filter class.
 	     * @param {ExpressionStatement} filterFunc An arrow function that returns filter's function.
@@ -561,37 +510,36 @@ declare module '@micro-fleet/web/dist/app/decorators/index' {
 	export const decorators: Decorators;
 
 }
-declare module '@micro-fleet/web/dist/app/constants/AuthConstant' {
-	 enum TokenType {
-	    ACCESS = "jwt-access",
-	    REFRESH = "jwt-refresh"
-	}
-	export { TokenType };
-
-}
 declare module '@micro-fleet/web/dist/app/filters/ErrorHandlerFilter' {
-	import * as express from 'express';
 	import { IActionErrorHandler } from '@micro-fleet/web/dist/app/decorators/filter';
+	import { Request, Response } from '@micro-fleet/web/dist/app/interfaces';
 	/**
 	 * Provides method to look up tenant ID from tenant slug.
 	 */
 	export class ErrorHandlerFilter implements IActionErrorHandler {
 	    constructor();
-	    execute(error: Error, req: express.Request, res: express.Response, next: Function): void;
+	    execute(error: Error, req: Request, res: Response, next: Function): void;
 	}
 
 }
 declare module '@micro-fleet/web/dist/app/filters/TenantResolverFilter' {
-	import * as express from 'express';
 	import { CacheProvider } from '@micro-fleet/cache';
 	import { IActionFilter } from '@micro-fleet/web/dist/app/decorators/filter';
+	import { Request, Response } from '@micro-fleet/web/dist/app/interfaces';
 	/**
 	 * Provides method to look up tenant ID from tenant slug.
 	 */
 	export class TenantResolverFilter implements IActionFilter {
 	    protected _cache: CacheProvider;
 	    constructor(_cache: CacheProvider);
-	    execute(req: express.Request, res: express.Response, next: Function): Promise<void>;
+	    execute(req: Request, res: Response, next: Function): Promise<void>;
+	}
+
+}
+declare module '@micro-fleet/web/dist/app/constants/Types' {
+	export class Types {
+	    static readonly TENANT_RESOLVER = "web.TenantResolver";
+	    static readonly WEBSERVER_ADDON = "web.ExpressServerAddOn";
 	}
 
 }
@@ -603,18 +551,25 @@ declare module '@micro-fleet/web/dist/app/register-addon' {
 declare module '@micro-fleet/web' {
 	import decoratorObj = require('@micro-fleet/web/dist/app/decorators/index');
 	export const decorators: decoratorObj.Decorators;
-	export * from '@micro-fleet/web/dist/app/constants/AuthConstant';
 	export * from '@micro-fleet/web/dist/app/constants/MetaData';
-	export { IActionFilter, IActionErrorHandler, FilterPriority } from '@micro-fleet/web/dist/app/decorators/filter';
-	export * from '@micro-fleet/web/dist/app/filters/AuthorizeFilter';
+	export { IActionFilter, IActionErrorHandler, FilterPriority, addFilterToTarget, pushFilterToArray } from '@micro-fleet/web/dist/app/decorators/filter';
+	export * from '@micro-fleet/web/dist/app/interfaces';
+	export * from '@micro-fleet/web/dist/app/filters/ActionFilterBase';
 	export * from '@micro-fleet/web/dist/app/filters/ErrorHandlerFilter';
 	export * from '@micro-fleet/web/dist/app/filters/ModelFilter';
 	export * from '@micro-fleet/web/dist/app/filters/TenantResolverFilter';
-	export * from '@micro-fleet/web/dist/app/AuthAddOn';
 	export * from '@micro-fleet/web/dist/app/ExpressServerAddOn';
 	export * from '@micro-fleet/web/dist/app/RestControllerBase';
 	export * from '@micro-fleet/web/dist/app/register-addon';
-	export * from '@micro-fleet/web/dist/app/Types';
+	export * from '@micro-fleet/web/dist/app/constants/Types';
 	export * from '@micro-fleet/web/dist/app/WebContext';
+
+}
+declare module '@micro-fleet/web/dist/app/constants/AuthConstant' {
+	 enum TokenType {
+	    ACCESS = "jwt-access",
+	    REFRESH = "jwt-refresh"
+	}
+	export { TokenType };
 
 }

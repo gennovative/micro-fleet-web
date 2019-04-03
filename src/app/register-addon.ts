@@ -1,7 +1,7 @@
 import { IDependencyContainer, serviceContext } from '@micro-fleet/common'
 
 import { ExpressServerAddOn } from './ExpressServerAddOn'
-import { Types as T } from './Types'
+import { Types as T } from './constants/Types'
 
 
 export function registerWebAddOn(): ExpressServerAddOn {

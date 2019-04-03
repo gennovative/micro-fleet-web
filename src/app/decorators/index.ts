@@ -4,7 +4,6 @@ if (!Reflect || typeof Reflect['hasOwnMetadata'] !== 'function') {
 }
 
 import { controller, ControllerDecorator } from './controller'
-import { authorized, AuthorizedDecorator } from './authorized'
 import { model, ModelDecorator } from './model'
 import { filter, FilterDecorator } from './filter'
 import * as act from './action'
@@ -85,11 +84,6 @@ export type Decorators = {
     controller: ControllerDecorator,
 
     /**
-     * Marks a controller or action to require auth token to be accessible.
-     */
-    authorized: AuthorizedDecorator,
-
-    /**
      * Used to add filter to controller class and controller action.
      * @param {class} FilterClass Filter class.
      * @param {ExpressionStatement} filterFunc An arrow function that returns filter's function.
@@ -112,7 +106,6 @@ export const decorators: Decorators = {
     OPTIONS: act.OPTIONS,
     action: act.action,
     controller,
-    authorized,
     filter,
     model,
 }

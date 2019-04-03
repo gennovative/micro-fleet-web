@@ -5,6 +5,8 @@
 - Improved lint rules.
 - [#1](https://github.com/gennovative/micro-fleet-web/issues/1) - Supports HTTPS server.
 - [#2](https://github.com/gennovative/micro-fleet-web/issues/2) - Inject dependencies to `ExpressServerAddOn` through constructor instead of lazy property.
+- Moved authorization logic to [@micro-fleet/oauth](https://github.com/gennovative/micro-fleet-oauth).
+- Mask `express.Request` and `express.Response` with our own `Request` and `Response` type.
 
 ### 1.0.3
 - Fixed node engine version in package.json

@@ -1,7 +1,6 @@
-import * as express from 'express'
 import * as chai from 'chai'
 
-import { ModelFilter, FilterPriority, decorators } from '../../app'
+import { ModelFilter, FilterPriority, decorators, Request, Response } from '../../app'
 const { filter, model, controller, POST } = decorators
 import { SampleModel } from './SampleModel'
 
@@ -21,8 +20,8 @@ class ModelController {
     @model({
         ModelClass: SampleModel,
     })
-    public doValid(req: express.Request, res: express.Response) {
-        const result: any = req['model']
+    public doValid(req: Request<SampleModel>, res: Response) {
+        const result = req.model
         this.spyFn(result.constructor.name, result.name, result.age, result.position)
         res.sendStatus(200)
     }
@@ -32,8 +31,8 @@ class ModelController {
         ModelClass: SampleModel,
         modelPropFn: (req) => req.body,
     })
-    public doCustom(req: express.Request, res: express.Response) {
-        const result: any = req['model']
+    public doCustom(req: Request<SampleModel>, res: Response) {
+        const result: any = req.model
         this.spyFn(result.constructor.name, result.name, result.age, result.position)
         res.sendStatus(200)
     }
@@ -43,8 +42,8 @@ class ModelController {
         ModelClass: SampleModel,
         isPartial: true,
     })
-    public doPartial(req: express.Request, res: express.Response) {
-        const result: any = req['model']
+    public doPartial(req: Request<SampleModel>, res: Response) {
+        const result: any = req.model
         this.spyFn(result.constructor.name, result.name, result.age, result.position)
         res.sendStatus(200)
     }
@@ -54,7 +53,7 @@ class ModelController {
         ModelClass: SampleModel,
         modelPropFn: (req: any) => req.body,
     })
-    public doInvalid(req: express.Request, res: express.Response) {
+    public doInvalid(req: Request, res: Response) {
         this.spyFn()
         res.sendStatus(200)
     }
