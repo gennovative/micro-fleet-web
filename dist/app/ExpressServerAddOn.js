@@ -8,8 +8,14 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
 Object.defineProperty(exports, "__esModule", { value: true });
+const fs = require("fs");
 const path = require("path");
+const http = require("http");
+const https = require("https");
 const express = require("express");
 const cors = require("cors");
 const common_1 = require("@micro-fleet/common");
@@ -20,6 +26,7 @@ const WebContext_1 = require("./WebContext");
 const INVERSIFY_INJECTABLE = 'inversify:paramtypes';
 const DEFAULT_PORT = 80;
 const DEFAULT_URL_PREFIX = '';
+const DEFAULT_SSL_PORT = 443;
 var ControllerCreationStrategy;
 (function (ControllerCreationStrategy) {
     ControllerCreationStrategy[ControllerCreationStrategy["SINGLETON"] = 0] = "SINGLETON";
@@ -27,35 +34,25 @@ var ControllerCreationStrategy;
 })(ControllerCreationStrategy = exports.ControllerCreationStrategy || (exports.ControllerCreationStrategy = {}));
 let ExpressServerAddOn = class ExpressServerAddOn {
     //#endregion Getters / Setters
-    constructor() {
+    constructor(_configProvider, _depContainer) {
+        this._configProvider = _configProvider;
+        this._depContainer = _depContainer;
+        /**
+         * Gets this add-on's name.
+         */
         this.name = 'ExpressServerAddOn';
+        common_1.Guard.assertArgDefined('_configProvider', _configProvider);
+        common_1.Guard.assertArgDefined('_depContainer', _depContainer);
         this._globalFilters = [];
         this._globalErrorHandlers = [];
         this._isAlive = false;
         this._urlPrefix = '';
         this._port = 0;
         this._express = express();
-        this._creationStrategy = ControllerCreationStrategy.TRANSIENT;
+        this.controllerCreation = ControllerCreationStrategy.TRANSIENT;
     }
+    //#endregion Protected
     //#region Getters / Setters
-    /**
-     * Gets or sets strategy when creating controller instance.
-     */
-    get controllerCreation() {
-        return this._creationStrategy;
-    }
-    set controllerCreation(value) {
-        this._creationStrategy = value;
-    }
-    /**
-     * Gets or sets path to controller classes.
-     */
-    get controllerPath() {
-        return this._controllerPath;
-    }
-    set controllerPath(value) {
-        this._controllerPath = value;
-    }
     /**
      * Gets express instance.
      */
@@ -67,6 +64,12 @@ let ExpressServerAddOn = class ExpressServerAddOn {
      */
     get port() {
         return this._port;
+    }
+    /**
+     * Gets HTTPS port number.
+     */
+    get portSSL() {
+        return this._sslPort;
     }
     /**
      * Gets URL prefix.
@@ -102,8 +105,14 @@ let ExpressServerAddOn = class ExpressServerAddOn {
      */
     dispose() {
         return Promise.resolve().then(() => {
-            this._server.close();
-            this._server = null;
+            if (this._server) {
+                this._server.close();
+                this._server = null;
+            }
+            if (this._sslServer) {
+                this._sslServer.close();
+                this._sslServer = null;
+            }
         });
     }
     //#endregion General public methods
@@ -112,21 +121,35 @@ let ExpressServerAddOn = class ExpressServerAddOn {
      * @memberOf IServiceAddOn
      */
     init() {
+        this.loadConfig();
         WebContext_1.webContext.setUrlPrefix(this._urlPrefix);
-        this._port = this._cfgProvider.get(W.WEB_PORT).TryGetValue(DEFAULT_PORT);
-        this._urlPrefix = this._cfgProvider.get(W.WEB_URL_PREFIX).TryGetValue(DEFAULT_URL_PREFIX);
         return Promise.all([
             // Loading controllers from file takes time,
             // so we call createServer in parallel.
             this._loadControllers(),
-            this._createServer(),
+            this._setupExpress(),
         ]).then(([controllers, app]) => {
             this._initControllers(controllers, app);
             this._useErrorHandlerMiddleware(this._globalErrorHandlers, app);
-            return this._startServer(app);
+            return this._startServers(app);
         });
     }
-    _createServer() {
+    loadConfig() {
+        this._port = this.getCfg(W.WEB_PORT, DEFAULT_PORT);
+        this._urlPrefix = this.getCfg(W.WEB_URL_PREFIX, DEFAULT_URL_PREFIX);
+        this._sslEnabled = this.getCfg(W.WEB_SSL_ENABLED, false);
+        if (!this._sslEnabled) {
+            return;
+        }
+        this._sslPort = this.getCfg(W.WEB_SSL_PORT, DEFAULT_SSL_PORT);
+        this._sslOnly = this.getCfg(W.WEB_SSL_ONLY, false);
+        this._sslCertFile = this.getCfg(W.WEB_SSL_CERT_FILE, '');
+        this._sslKeyFile = this.getCfg(W.WEB_SSL_KEY_FILE, '');
+    }
+    getCfg(name, defaultValue) {
+        return this._configProvider.get(name).TryGetValue(defaultValue);
+    }
+    _setupExpress() {
         const app = this._express;
         app.disable('x-powered-by');
         // When `deadLetter()` is called, prevent all new requests.
@@ -140,7 +163,7 @@ let ExpressServerAddOn = class ExpressServerAddOn {
         // Binds filters with priority HIGH
         this._useFilterMiddleware(this._globalFilters.filter((f, i) => i == filter_1.FilterPriority.HIGH), app);
         const corsOptions = {
-            origin: this._cfgProvider.get(W.WEB_CORS).TryGetValue(false),
+            origin: this.getCfg(W.WEB_CORS, false),
             optionsSuccessStatus: 200,
         };
         app.use(cors(corsOptions));
@@ -151,20 +174,62 @@ let ExpressServerAddOn = class ExpressServerAddOn {
         this._useFilterMiddleware(this._globalFilters.filter((f, i) => i == filter_1.FilterPriority.MEDIUM || i == filter_1.FilterPriority.LOW), app);
         return app;
     }
-    _startServer(app) {
+    _startServers(app) {
+        return Promise.all([
+            this._startHttp(app),
+            this._startSsl(app),
+        ]);
+    }
+    _startHttp(app) {
         return new Promise((resolve, reject) => {
-            this._server = app.listen(this._port, () => {
+            let server;
+            if (this._sslEnabled && this._sslOnly) {
+                server = http.createServer((req, res) => {
+                    // Redirect the request to HTTPS
+                    res.writeHead(301, { Location: `https://${req.headers.host}${req.url}` });
+                    res.end();
+                });
+            }
+            else {
+                server = http.createServer(app);
+            }
+            this._server = server
+                .on('listening', () => {
                 this._isAlive = true;
-                console.log('Listening on: ', this._port);
+                console.log('HTTP listening on: ', this._port);
                 resolve();
-            });
-            this._server.on('error', reject);
+            })
+                .on('error', reject)
+                .listen(this._port);
         });
+    }
+    _startSsl(app) {
+        return new Promise((resolve, reject) => {
+            if (!this._sslEnabled) {
+                return resolve();
+            }
+            const [key, cert] = this._readKeyPairs();
+            const sslOptions = { key, cert };
+            this._sslServer = https.createServer(sslOptions, app)
+                .on('listening', () => {
+                this._isAlive = true;
+                console.log('HTTPS listening on: ', this._sslPort);
+                resolve();
+            })
+                .on('error', reject)
+                .listen(this._sslPort);
+        });
+    }
+    _readKeyPairs() {
+        return [
+            fs.readFileSync(this._sslKeyFile, 'utf8'),
+            fs.readFileSync(this._sslCertFile, 'utf8'),
+        ];
     }
     //#endregion Init
     //#region Controller
     async _loadControllers() {
-        const ctrlPath = this._controllerPath || path.join(process.cwd(), 'dist', 'app', 'controllers');
+        const ctrlPath = this.controllerPath || path.join(process.cwd(), 'dist', 'app', 'controllers');
         return await Promise.resolve().then(() => require(ctrlPath)) || {};
     }
     _initControllers(controllers, app) {
@@ -213,7 +278,7 @@ let ExpressServerAddOn = class ExpressServerAddOn {
     }
     _proxyActionFunc(actionFunc, CtrlClass) {
         const bound = this._depContainer.bind(CtrlClass.name, CtrlClass);
-        if (this._creationStrategy == ControllerCreationStrategy.SINGLETON) {
+        if (this.controllerCreation == ControllerCreationStrategy.SINGLETON) {
             bound.asSingleton();
         }
         // Returns a proxy function that resolves the actual action function in EVERY incomming request.
@@ -361,17 +426,11 @@ let ExpressServerAddOn = class ExpressServerAddOn {
         }
     }
 };
-__decorate([
-    common_1.lazyInject(common_1.Types.CONFIG_PROVIDER),
-    __metadata("design:type", Object)
-], ExpressServerAddOn.prototype, "_cfgProvider", void 0);
-__decorate([
-    common_1.lazyInject(common_1.Types.DEPENDENCY_CONTAINER),
-    __metadata("design:type", Object)
-], ExpressServerAddOn.prototype, "_depContainer", void 0);
 ExpressServerAddOn = __decorate([
     common_1.injectable(),
-    __metadata("design:paramtypes", [])
+    __param(0, common_1.inject(common_1.Types.CONFIG_PROVIDER)),
+    __param(1, common_1.inject(common_1.Types.DEPENDENCY_CONTAINER)),
+    __metadata("design:paramtypes", [Object, Object])
 ], ExpressServerAddOn);
 exports.ExpressServerAddOn = ExpressServerAddOn;
 //# sourceMappingURL=ExpressServerAddOn.js.map

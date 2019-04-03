@@ -144,7 +144,7 @@ declare module '@micro-fleet/web/dist/app/ExpressServerAddOn' {
 	/// <reference types="node" />
 	import * as http from 'http';
 	import * as express from 'express';
-	import { Maybe } from '@micro-fleet/common';
+	import { IDependencyContainer, Maybe, IConfigurationProvider } from '@micro-fleet/common';
 	import { IActionErrorHandler, ActionInterceptor, PrioritizedFilterArray, FilterArray, FilterPriority } from '@micro-fleet/web/dist/app/decorators/filter'; type ControllerExports = {
 	    [name: string]: Newable;
 	};
@@ -153,19 +153,71 @@ declare module '@micro-fleet/web/dist/app/ExpressServerAddOn' {
 	    TRANSIENT = 1
 	}
 	export class ExpressServerAddOn implements IServiceAddOn {
+	    protected _configProvider: IConfigurationProvider;
+	    protected _depContainer: IDependencyContainer;
+	    /**
+	     * Gets this add-on's name.
+	     */
 	    readonly name: string;
-	    protected _server: http.Server;
-	    protected _globalFilters: PrioritizedFilterArray;
-	    protected _globalErrorHandlers: Newable[];
-	    protected _isAlive: boolean;
-	    	    	    	    	    	    	    	    /**
+	    /**
 	     * Gets or sets strategy when creating controller instance.
 	     */
 	    controllerCreation: ControllerCreationStrategy;
 	    /**
-	     * Gets or sets path to controller classes.
+	     * Gets or sets path to folder containing controller classes.
 	     */
 	    controllerPath: string;
+	    protected _globalFilters: PrioritizedFilterArray;
+	    protected _globalErrorHandlers: Newable[];
+	    /**
+	     * The readiness to accept incoming requests.
+	     * This property should be set to `false` in "deadLetter" event so that
+	     * the server can finalized existing requests, but does not accept new ones.
+	     */
+	    protected _isAlive: boolean;
+	    /**
+	     * Whether to start HTTPS server
+	     */
+	    protected _sslEnabled: boolean;
+	    /**
+	     * Port listened by HTTPS server.
+	     * Default as 443.
+	     */
+	    protected _sslPort: number;
+	    /**
+	     * Path to SSL key file
+	     */
+	    protected _sslKeyFile: string;
+	    /**
+	     * Path to SSL certificate file
+	     */
+	    protected _sslCertFile: string;
+	    /**
+	     * Whether to start only HTTPS server, and not starting HTTP server
+	     */
+	    protected _sslOnly: boolean;
+	    /**
+	     * Instance of HTTPS server
+	     */
+	    protected _sslServer: http.Server;
+	    /**
+	     * Instance of HTTP server
+	     */
+	    protected _server: http.Server;
+	    /**
+	     * Port listened by HTTPS server.
+	     * Default as 80.
+	     */
+	    protected _port: number;
+	    /**
+	     * Prefix for all routes.
+	     * Default as /api/v1.
+	     */
+	    protected _urlPrefix: string;
+	    /**
+	     * Instance of Express
+	     */
+	    protected _express: express.Express;
 	    /**
 	     * Gets express instance.
 	     */
@@ -175,10 +227,14 @@ declare module '@micro-fleet/web/dist/app/ExpressServerAddOn' {
 	     */
 	    readonly port: number;
 	    /**
+	     * Gets HTTPS port number.
+	     */
+	    readonly portSSL: number;
+	    /**
 	     * Gets URL prefix.
 	     */
 	    readonly urlPrefix: string;
-	    constructor();
+	    constructor(_configProvider: IConfigurationProvider, _depContainer: IDependencyContainer);
 	    /**
 	     * Registers a global-scoped filter which is called on every coming request.
 	     * @param FilterClass The filter class.
@@ -202,8 +258,13 @@ declare module '@micro-fleet/web/dist/app/ExpressServerAddOn' {
 	     * @memberOf IServiceAddOn
 	     */
 	    init(): Promise<void>;
-	    protected _createServer(): express.Express;
-	    protected _startServer(app: express.Express): Promise<any>;
+	    protected loadConfig(): void;
+	    protected getCfg<TVal extends PrimitiveType>(name: string, defaultValue: any): TVal;
+	    protected _setupExpress(): express.Express;
+	    protected _startServers(app: express.Express): Promise<any>;
+	    protected _startHttp(app: express.Express): Promise<any>;
+	    protected _startSsl(app: express.Express): Promise<any>;
+	    protected _readKeyPairs(): [string, string];
 	    protected _loadControllers(): Promise<ControllerExports>;
 	    protected _initControllers(controllers: ControllerExports, app: express.Express): void;
 	    protected _buildControllerRoutes(CtrlClass: Newable, app: express.Express): express.Router;
@@ -213,7 +274,9 @@ declare module '@micro-fleet/web/dist/app/ExpressServerAddOn' {
 	    protected _buildActionRoutesAndFilters(actionFunc: Function, actionName: string, CtrlClass: Newable, router: express.Router): void;
 	    protected _getActionFilters(CtrlClass: Function, actionName: string): FilterArray;
 	    protected _extractActionFromPrototype(prototype: any, name: string): Maybe<Function>;
-	    	    	    protected _extractFilterExecuteFunc<TFilter extends ActionInterceptor>(FilterClass: Newable<TFilter>, filterParams: any[], paramLength?: number): Function;
+	    protected _useFilterMiddleware(filters: PrioritizedFilterArray, appOrRouter: express.Express | express.Router): void;
+	    protected _useErrorHandlerMiddleware(handlers: Newable[], appOrRouter: express.Express | express.Router): void;
+	    protected _extractFilterExecuteFunc<TFilter extends ActionInterceptor>(FilterClass: Newable<TFilter>, filterParams: any[], paramLength?: number): Function;
 	    protected _instantiateClass<TTarget extends ActionInterceptor>(TargetClass: Newable<TTarget>, isSingleton: boolean, arg1?: any, arg2?: any, arg3?: any, arg4?: any, arg5?: any): ActionInterceptor;
 	    protected _instantiateClassFromContainer(TargetClass: Newable, isSingleton: boolean): any;
 	    protected _instantiateClassTraditionally(TargetClass: Newable, isSingleton: boolean, arg1?: any, arg2?: any, arg3?: any, arg4?: any, arg5?: any): any;

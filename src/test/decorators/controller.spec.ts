@@ -24,7 +24,7 @@ class MockConfigurationProvider implements IConfigurationProvider {
     public enableRemote: boolean = false
     public enableCors: boolean = false
 
-    public get(key: string): Maybe<string | number | boolean | any[]> {
+    public get(key: string): Maybe<PrimitiveType | any[]> {
         switch (key) {
             case W.WEB_CORS:
                 return this.enableCors ? new Maybe(ALLOW_ORIGIN) : new Maybe
