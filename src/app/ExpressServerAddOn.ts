@@ -5,7 +5,7 @@ import * as https from 'https'
 
 import * as express from 'express'
 import * as cors from 'cors'
-import { injectable, lazyInject, CriticalException, IDependencyContainer, Guard,
+import { injectable, inject, CriticalException, IDependencyContainer, Guard,
     Maybe, IConfigurationProvider, Types as T, constants, HandlerContainer } from '@micro-fleet/common'
 const { WebSettingKeys: W } = constants
 
@@ -43,30 +43,73 @@ export class ExpressServerAddOn implements IServiceAddOn {
      */
     public controllerPath: string
 
-    protected _server: http.Server
-    protected _express: express.Express
-    protected _port: number
-    protected _urlPrefix: string
+
+    //#region Protected
 
     protected _globalFilters: PrioritizedFilterArray
     protected _globalErrorHandlers: Newable[]
+
+    /**
+     * The readiness to accept incoming requests.
+     * This property should be set to `false` in "deadLetter" event so that
+     * the server can finalized existing requests, but does not accept new ones.
+     */
     protected _isAlive: boolean
 
+    /**
+     * Whether to start HTTPS server
+     */
     protected _sslEnabled: boolean
+
+    /**
+     * Port listened by HTTPS server.
+     * Default as 443.
+     */
     protected _sslPort: number
-    protected _sslKey: string
+
+    /**
+     * Path to SSL key file
+     */
     protected _sslKeyFile: string
-    protected _sslCert: string
+
+    /**
+     * Path to SSL certificate file
+     */
     protected _sslCertFile: string
+
+    /**
+     * Whether to start only HTTPS server, and not starting HTTP server
+     */
     protected _sslOnly: boolean
+
+    /**
+     * Instance of HTTPS server
+     */
     protected _sslServer: http.Server
 
+    /**
+     * Instance of HTTP server
+     */
+    protected _server: http.Server
 
-    @lazyInject(T.CONFIG_PROVIDER)
-    protected _cfgProvider: IConfigurationProvider
+    /**
+     * Port listened by HTTPS server.
+     * Default as 80.
+     */
+    protected _port: number
 
-    @lazyInject(T.DEPENDENCY_CONTAINER)
-    protected _depContainer: IDependencyContainer
+    /**
+     * Prefix for all routes.
+     * Default as /api/v1.
+     */
+    protected _urlPrefix: string
+
+    /**
+     * Instance of Express
+     */
+    protected _express: express.Express
+
+    //#endregion Protected
 
 
     //#region Getters / Setters
@@ -86,6 +129,13 @@ export class ExpressServerAddOn implements IServiceAddOn {
     }
 
     /**
+     * Gets HTTPS port number.
+     */
+    public get portSSL(): number {
+        return this._sslPort
+    }
+
+    /**
      * Gets URL prefix.
      */
     public get urlPrefix(): string {
@@ -95,7 +145,12 @@ export class ExpressServerAddOn implements IServiceAddOn {
     //#endregion Getters / Setters
 
 
-    constructor() {
+    constructor(
+        @inject(T.CONFIG_PROVIDER) protected _configProvider: IConfigurationProvider,
+        @inject(T.DEPENDENCY_CONTAINER) protected _depContainer: IDependencyContainer
+    ) {
+        Guard.assertArgDefined('_configProvider', _configProvider)
+        Guard.assertArgDefined('_depContainer', _depContainer)
         this._globalFilters = []
         this._globalErrorHandlers = []
         this._isAlive = false
@@ -138,8 +193,14 @@ export class ExpressServerAddOn implements IServiceAddOn {
      */
     public dispose(): Promise<void> {
         return <any>Promise.resolve().then(() => {
-            this._server.close()
-            this._server = null
+            if (this._server) {
+                this._server.close()
+                this._server = null
+            }
+            if (this._sslServer) {
+                this._sslServer.close()
+                this._sslServer = null
+            }
         })
     }
 
@@ -181,7 +242,7 @@ export class ExpressServerAddOn implements IServiceAddOn {
     }
 
     protected getCfg<TVal extends PrimitiveType>(name: string, defaultValue: any): TVal {
-        return this._cfgProvider.get(name).TryGetValue(defaultValue) as TVal
+        return this._configProvider.get(name).TryGetValue(defaultValue) as TVal
     }
 
     protected _setupExpress(): express.Express {
@@ -201,7 +262,7 @@ export class ExpressServerAddOn implements IServiceAddOn {
         this._useFilterMiddleware(this._globalFilters.filter((f, i) => i == FilterPriority.HIGH), app)
 
         const corsOptions: cors.CorsOptions = {
-            origin: this._cfgProvider.get(W.WEB_CORS).TryGetValue(false) as string | boolean,
+            origin: this.getCfg<string | boolean>(W.WEB_CORS, false),
             optionsSuccessStatus: 200,
         }
         app.use(cors(corsOptions))
@@ -268,8 +329,8 @@ export class ExpressServerAddOn implements IServiceAddOn {
 
     protected _readKeyPairs(): [string, string] {
         return [
-            this._sslKey || fs.readFileSync(this._sslKeyFile, 'utf8'),
-            this._sslCert || fs.readFileSync(this._sslCertFile, 'utf8'),
+            fs.readFileSync(this._sslKeyFile, 'utf8'),
+            fs.readFileSync(this._sslCertFile, 'utf8'),
         ]
     }
 

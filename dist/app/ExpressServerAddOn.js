@@ -8,6 +8,9 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const fs = require("fs");
 const path = require("path");
@@ -31,11 +34,15 @@ var ControllerCreationStrategy;
 })(ControllerCreationStrategy = exports.ControllerCreationStrategy || (exports.ControllerCreationStrategy = {}));
 let ExpressServerAddOn = class ExpressServerAddOn {
     //#endregion Getters / Setters
-    constructor() {
+    constructor(_configProvider, _depContainer) {
+        this._configProvider = _configProvider;
+        this._depContainer = _depContainer;
         /**
          * Gets this add-on's name.
          */
         this.name = 'ExpressServerAddOn';
+        common_1.Guard.assertArgDefined('_configProvider', _configProvider);
+        common_1.Guard.assertArgDefined('_depContainer', _depContainer);
         this._globalFilters = [];
         this._globalErrorHandlers = [];
         this._isAlive = false;
@@ -44,6 +51,7 @@ let ExpressServerAddOn = class ExpressServerAddOn {
         this._express = express();
         this.controllerCreation = ControllerCreationStrategy.TRANSIENT;
     }
+    //#endregion Protected
     //#region Getters / Setters
     /**
      * Gets express instance.
@@ -56,6 +64,12 @@ let ExpressServerAddOn = class ExpressServerAddOn {
      */
     get port() {
         return this._port;
+    }
+    /**
+     * Gets HTTPS port number.
+     */
+    get portSSL() {
+        return this._sslPort;
     }
     /**
      * Gets URL prefix.
@@ -91,8 +105,14 @@ let ExpressServerAddOn = class ExpressServerAddOn {
      */
     dispose() {
         return Promise.resolve().then(() => {
-            this._server.close();
-            this._server = null;
+            if (this._server) {
+                this._server.close();
+                this._server = null;
+            }
+            if (this._sslServer) {
+                this._sslServer.close();
+                this._sslServer = null;
+            }
         });
     }
     //#endregion General public methods
@@ -127,7 +147,7 @@ let ExpressServerAddOn = class ExpressServerAddOn {
         this._sslKeyFile = this.getCfg(W.WEB_SSL_KEY_FILE, '');
     }
     getCfg(name, defaultValue) {
-        return this._cfgProvider.get(name).TryGetValue(defaultValue);
+        return this._configProvider.get(name).TryGetValue(defaultValue);
     }
     _setupExpress() {
         const app = this._express;
@@ -143,7 +163,7 @@ let ExpressServerAddOn = class ExpressServerAddOn {
         // Binds filters with priority HIGH
         this._useFilterMiddleware(this._globalFilters.filter((f, i) => i == filter_1.FilterPriority.HIGH), app);
         const corsOptions = {
-            origin: this._cfgProvider.get(W.WEB_CORS).TryGetValue(false),
+            origin: this.getCfg(W.WEB_CORS, false),
             optionsSuccessStatus: 200,
         };
         app.use(cors(corsOptions));
@@ -202,8 +222,8 @@ let ExpressServerAddOn = class ExpressServerAddOn {
     }
     _readKeyPairs() {
         return [
-            this._sslKey || fs.readFileSync(this._sslKeyFile, 'utf8'),
-            this._sslCert || fs.readFileSync(this._sslCertFile, 'utf8'),
+            fs.readFileSync(this._sslKeyFile, 'utf8'),
+            fs.readFileSync(this._sslCertFile, 'utf8'),
         ];
     }
     //#endregion Init
@@ -406,17 +426,11 @@ let ExpressServerAddOn = class ExpressServerAddOn {
         }
     }
 };
-__decorate([
-    common_1.lazyInject(common_1.Types.CONFIG_PROVIDER),
-    __metadata("design:type", Object)
-], ExpressServerAddOn.prototype, "_cfgProvider", void 0);
-__decorate([
-    common_1.lazyInject(common_1.Types.DEPENDENCY_CONTAINER),
-    __metadata("design:type", Object)
-], ExpressServerAddOn.prototype, "_depContainer", void 0);
 ExpressServerAddOn = __decorate([
     common_1.injectable(),
-    __metadata("design:paramtypes", [])
+    __param(0, common_1.inject(common_1.Types.CONFIG_PROVIDER)),
+    __param(1, common_1.inject(common_1.Types.DEPENDENCY_CONTAINER)),
+    __metadata("design:paramtypes", [Object, Object])
 ], ExpressServerAddOn);
 exports.ExpressServerAddOn = ExpressServerAddOn;
 //# sourceMappingURL=ExpressServerAddOn.js.map

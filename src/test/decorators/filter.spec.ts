@@ -21,7 +21,7 @@ class MockConfigurationProvider implements IConfigurationProvider {
     public enableRemote: boolean = false
     public enableCors: boolean = false
 
-    public get(key: string): Maybe<string | number | boolean | any[]> {
+    public get(key: string): Maybe<PrimitiveType | any[]> {
         return new Maybe
     }
 

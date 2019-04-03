@@ -32,7 +32,7 @@ class MockConfigurationProvider implements IConfigurationProvider {
 
     public enableRemote: boolean = false
 
-    public get(key: string): Maybe<string | number | boolean | any[]> {
+    public get(key: string): Maybe<PrimitiveType | any[]> {
         switch (key) {
             case S.AUTH_SECRET:
                 return new Maybe(AUTH_SECRET)

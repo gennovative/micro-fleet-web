@@ -153,6 +153,8 @@ declare module '@micro-fleet/web/dist/app/ExpressServerAddOn' {
 	    TRANSIENT = 1
 	}
 	export class ExpressServerAddOn implements IServiceAddOn {
+	    protected _configProvider: IConfigurationProvider;
+	    protected _depContainer: IDependencyContainer;
 	    /**
 	     * Gets this add-on's name.
 	     */
@@ -165,23 +167,57 @@ declare module '@micro-fleet/web/dist/app/ExpressServerAddOn' {
 	     * Gets or sets path to folder containing controller classes.
 	     */
 	    controllerPath: string;
-	    protected _server: http.Server;
-	    protected _express: express.Express;
-	    protected _port: number;
-	    protected _urlPrefix: string;
 	    protected _globalFilters: PrioritizedFilterArray;
 	    protected _globalErrorHandlers: Newable[];
+	    /**
+	     * The readiness to accept incoming requests.
+	     * This property should be set to `false` in "deadLetter" event so that
+	     * the server can finalized existing requests, but does not accept new ones.
+	     */
 	    protected _isAlive: boolean;
+	    /**
+	     * Whether to start HTTPS server
+	     */
 	    protected _sslEnabled: boolean;
+	    /**
+	     * Port listened by HTTPS server.
+	     * Default as 443.
+	     */
 	    protected _sslPort: number;
-	    protected _sslKey: string;
+	    /**
+	     * Path to SSL key file
+	     */
 	    protected _sslKeyFile: string;
-	    protected _sslCert: string;
+	    /**
+	     * Path to SSL certificate file
+	     */
 	    protected _sslCertFile: string;
+	    /**
+	     * Whether to start only HTTPS server, and not starting HTTP server
+	     */
 	    protected _sslOnly: boolean;
+	    /**
+	     * Instance of HTTPS server
+	     */
 	    protected _sslServer: http.Server;
-	    protected _cfgProvider: IConfigurationProvider;
-	    protected _depContainer: IDependencyContainer;
+	    /**
+	     * Instance of HTTP server
+	     */
+	    protected _server: http.Server;
+	    /**
+	     * Port listened by HTTPS server.
+	     * Default as 80.
+	     */
+	    protected _port: number;
+	    /**
+	     * Prefix for all routes.
+	     * Default as /api/v1.
+	     */
+	    protected _urlPrefix: string;
+	    /**
+	     * Instance of Express
+	     */
+	    protected _express: express.Express;
 	    /**
 	     * Gets express instance.
 	     */
@@ -191,10 +227,14 @@ declare module '@micro-fleet/web/dist/app/ExpressServerAddOn' {
 	     */
 	    readonly port: number;
 	    /**
+	     * Gets HTTPS port number.
+	     */
+	    readonly portSSL: number;
+	    /**
 	     * Gets URL prefix.
 	     */
 	    readonly urlPrefix: string;
-	    constructor();
+	    constructor(_configProvider: IConfigurationProvider, _depContainer: IDependencyContainer);
 	    /**
 	     * Registers a global-scoped filter which is called on every coming request.
 	     * @param FilterClass The filter class.
