@@ -1,6 +1,6 @@
 {
     "name": "@micro-fleet/web",
-    "version": "1.1.0",
+    "version": "1.1.1",
     "description": "Contains classes used by web and rest services.",
     "scripts": {
         "build": "npm run compile && npm run test",
@@ -14,7 +14,6 @@
         "lint": "tslint --fix 'src/**/*.ts'",
         "watch": "npm run clean && npm run lint && npm run copy-resources && tsc --watch --pretty",
         "linkPackages": "node ../../../scripts/linkPackages.js",
-        "postinstall": "npm run linkPackages",
         "prepublishOnly": "npm run release"
     },
     "dependencies": {
