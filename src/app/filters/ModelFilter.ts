@@ -45,7 +45,7 @@ export class ModelFilter
             const func: Function = (!!isPartial) ? translator.partial : translator.whole
             const rawModel = (request.body && request.body.model) ? request.body.model : modelPropFn(request)
             const model = func.call(translator, rawModel)
-            this.addReadonlyProp(request, 'model', model)
+            this.addReadonlyProp(request.extras, 'model', model)
             next()
         } catch (err) {
             console.error(err)

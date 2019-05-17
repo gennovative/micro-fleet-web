@@ -14,11 +14,13 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const common_1 = require("@micro-fleet/common");
 const cache_1 = require("@micro-fleet/cache");
+const ActionFilterBase_1 = require("./ActionFilterBase");
 /**
  * Provides method to look up tenant ID from tenant slug.
  */
-let TenantResolverFilter = class TenantResolverFilter {
+let TenantResolverFilter = class TenantResolverFilter extends ActionFilterBase_1.ActionFilterBase {
     constructor(_cache) {
+        super();
         this._cache = _cache;
         common_1.Guard.assertArgDefined('cache', _cache);
     }
@@ -42,8 +44,7 @@ let TenantResolverFilter = class TenantResolverFilter {
         // Mocking
         const tenant = { id: Math.random().toString().slice(2) };
         this._cache.setPrimitive(key, tenant.id, null, cache_1.CacheLevel.BOTH);
-        console.log('TenantResolver: from repo');
-        req.params['tenantId'] = tenant.id;
+        this.addReadonlyProp(req.extras, 'tenantId', tenant.id);
         next();
     }
 };

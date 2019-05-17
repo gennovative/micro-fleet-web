@@ -13,6 +13,7 @@ import { MetaData } from './constants/MetaData'
 import { ActionDescriptor } from './decorators/action'
 import { IActionErrorHandler, ActionInterceptor, PrioritizedFilterArray,
     FilterArray, FilterPriority, pushFilterToArray } from './decorators/filter'
+import { Request, Response } from './interfaces'
 import { webContext } from './WebContext'
 
 
@@ -249,17 +250,22 @@ export class ExpressServerAddOn implements IServiceAddOn {
         const app = this._express
 
         app.disable('x-powered-by')
-        // When `deadLetter()` is called, prevent all new requests.
         app.use((req, res, next) => {
+            // When `deadLetter()` is called, prevent all new requests.
             if (!this._isAlive) {
                 return res.sendStatus(410) // Gone, https://httpstatuses.com/410
             }
+            (<any>req)['extras'] = {}
             return next()
         })
 
         // Binds global filters as application-level middlewares to specified Express instance.
         // Binds filters with priority HIGH
-        this._useFilterMiddleware(this._globalFilters.filter((f, i) => i == FilterPriority.HIGH), app)
+        this._useFilterMiddleware(
+            this._globalFilters.filter((f, i) => i == FilterPriority.HIGH),
+            app,
+            this._urlPrefix
+        )
 
         const corsOptions: cors.CorsOptions = {
             origin: this.getCfg<string | boolean>(W.WEB_CORS, false),
@@ -271,7 +277,11 @@ export class ExpressServerAddOn implements IServiceAddOn {
 
         // Binds filters with priority from MEDIUM to LOW
         // All 3rd party middlewares have priority MEDIUM.
-        this._useFilterMiddleware(this._globalFilters.filter((f, i) => i == FilterPriority.MEDIUM || i == FilterPriority.LOW), app)
+        this._useFilterMiddleware(
+            this._globalFilters.filter((f, i) => i == FilterPriority.MEDIUM || i == FilterPriority.LOW),
+            app,
+            this._urlPrefix
+        )
 
         return app
     }
@@ -409,10 +419,15 @@ export class ExpressServerAddOn implements IServiceAddOn {
                 // Wrapper function that handles uncaught errors,
                 // so that controller actions don't need to call `next(error)` like said
                 // by https://expressjs.com/en/guide/error-handling.html
-                return function (this: any, req: express.Request, res: express.Response, next: express.NextFunction) {
+                return function (this: any, req: Request, res: Response, next: express.NextFunction) {
                     try {
-                        actionFunc.call(this, req, res)
+                        const call = actionFunc.call(this, req, res)
+                        // Catch async exception
+                        if (typeof call.catch === 'function') {
+                        call.catch(next)
+                    }
                     } catch (err) {
+                        // Catch normal exception
                         next(err)
                     }
                 }
@@ -469,7 +484,8 @@ export class ExpressServerAddOn implements IServiceAddOn {
 
     //#region Filter
 
-    protected _useFilterMiddleware(filters: PrioritizedFilterArray, appOrRouter: express.Express | express.Router): void {
+    protected _useFilterMiddleware(filters: PrioritizedFilterArray,
+            appOrRouter: express.Express | express.Router, routePath: string = '/'): void {
         if (!filters || !filters.length) { return }
 
         // Must make a clone to avoid mutating the original filter array in Reflect metadata.
@@ -486,7 +502,12 @@ export class ExpressServerAddOn implements IServiceAddOn {
                 return
             }
             for (const { FilterClass, filterParams } of samePriorityFilters) { // 1: [ FilterClass, FilterClass ]
-                appOrRouter.use(this._extractFilterExecuteFunc(FilterClass, filterParams) as express.RequestHandler)
+                appOrRouter.use(
+                    // This allows URL prefix to have route params
+                    // Eg: /api/v1/:tenant
+                    routePath,
+                    this._extractFilterExecuteFunc(FilterClass, filterParams) as express.RequestHandler
+                )
             }
         })
     }

@@ -121,6 +121,29 @@ declare module '@micro-fleet/web/dist/app/decorators/filter' {
 	export function pushFilterToArray<T extends ActionInterceptor>(filters: PrioritizedFilterArray, FilterClass: Newable<T>, priority?: FilterPriority, ...filterParams: any[]): void;
 
 }
+declare module '@micro-fleet/web/dist/app/interfaces' {
+	import * as express from 'express';
+	export type Request<TModel = object> = express.Request & {
+	    /**
+	     * Contains custom objects.
+	     *
+	     * If any @micro-fleet filter wants to attach new property(-es) to
+	     * request object, it should attach here.
+	     */
+	    readonly extras: object & {
+	        /**
+	         * Object attached by @model decorator (ModelFilter)
+	         */
+	        readonly model?: TModel;
+	        /**
+	         * Object attached by @tenant decorator (TenantResolverFilter)
+	         */
+	        readonly tenantId?: bigint;
+	    };
+	};
+	export type Response = express.Response;
+
+}
 declare module '@micro-fleet/web/dist/app/WebContext' {
 	/**
 	 * Serves as a global object for all web-related classes (controllers, policies...)
@@ -273,7 +296,7 @@ declare module '@micro-fleet/web/dist/app/ExpressServerAddOn' {
 	    protected _buildActionRoutesAndFilters(actionFunc: Function, actionName: string, CtrlClass: Newable, router: express.Router): void;
 	    protected _getActionFilters(CtrlClass: Function, actionName: string): FilterArray;
 	    protected _extractActionFromPrototype(prototype: any, name: string): Maybe<Function>;
-	    protected _useFilterMiddleware(filters: PrioritizedFilterArray, appOrRouter: express.Express | express.Router): void;
+	    protected _useFilterMiddleware(filters: PrioritizedFilterArray, appOrRouter: express.Express | express.Router, routePath?: string): void;
 	    protected _useErrorHandlerMiddleware(handlers: Newable[], appOrRouter: express.Express | express.Router): void;
 	    protected _extractFilterExecuteFunc<TFilter extends ActionInterceptor>(FilterClass: Newable<TFilter>, filterParams: any[], paramLength?: number): Function;
 	    protected _instantiateClass<TTarget extends ActionInterceptor>(TargetClass: Newable<TTarget>, isSingleton: boolean, arg1?: any, arg2?: any, arg3?: any, arg4?: any, arg5?: any): ActionInterceptor;
@@ -283,14 +306,6 @@ declare module '@micro-fleet/web/dist/app/ExpressServerAddOn' {
 	    protected _assertValidController(ctrlName: string, CtrlClass: Newable): void;
 	}
 	export {};
-
-}
-declare module '@micro-fleet/web/dist/app/interfaces' {
-	import * as express from 'express';
-	export type Request<TModel = object> = express.Request & {
-	    readonly model: TModel;
-	};
-	export type Response = express.Response;
 
 }
 declare module '@micro-fleet/web/dist/app/RestControllerBase' {
@@ -526,10 +541,11 @@ declare module '@micro-fleet/web/dist/app/filters/TenantResolverFilter' {
 	import { CacheProvider } from '@micro-fleet/cache';
 	import { IActionFilter } from '@micro-fleet/web/dist/app/decorators/filter';
 	import { Request, Response } from '@micro-fleet/web/dist/app/interfaces';
+	import { ActionFilterBase } from '@micro-fleet/web/dist/app/filters/ActionFilterBase';
 	/**
 	 * Provides method to look up tenant ID from tenant slug.
 	 */
-	export class TenantResolverFilter implements IActionFilter {
+	export class TenantResolverFilter extends ActionFilterBase implements IActionFilter {
 	    protected _cache: CacheProvider;
 	    constructor(_cache: CacheProvider);
 	    execute(req: Request, res: Response, next: Function): Promise<void>;

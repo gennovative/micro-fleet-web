@@ -16,9 +16,11 @@ export class SampleModel {
 
 
 const validator = SampleModel.validator = JoiModelValidator.create({
-    name: joi.string().min(1).max(30).required(),
-    age: joi.number().greater(18).required(),
-    position: joi.string().min(1).optional(),
+    schemaMapModel: {
+        name: joi.string().min(1).max(30).required(),
+        age: joi.number().greater(18).required(),
+        position: joi.string().min(1).optional(),
+    },
 })
 
 SampleModel.translator = new ModelAutoMapper(SampleModel, validator)

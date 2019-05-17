@@ -3,17 +3,22 @@ import { CacheProvider, CacheLevel, Types as CaT } from '@micro-fleet/cache'
 
 import { IActionFilter } from '../decorators/filter'
 import { Request, Response } from '../interfaces'
+import { ActionFilterBase } from './ActionFilterBase'
+
 
 /**
  * Provides method to look up tenant ID from tenant slug.
  */
 @injectable()
-export class TenantResolverFilter implements IActionFilter {
+export class TenantResolverFilter
+    extends ActionFilterBase
+    implements IActionFilter {
 
     constructor(
             @inject(CaT.CACHE_PROVIDER) protected _cache: CacheProvider,
             // @inject(GvT.TENANT_PROVIDER) protected _tenantProvider: ITenantProvider
         ) {
+        super()
         Guard.assertArgDefined('cache', _cache)
     }
 
@@ -43,8 +48,7 @@ export class TenantResolverFilter implements IActionFilter {
         const tenant = { id: Math.random().toString().slice(2) }
         this._cache.setPrimitive(key, tenant.id, null, CacheLevel.BOTH)
 
-        console.log('TenantResolver: from repo')
-        req.params['tenantId'] = tenant.id
+        this.addReadonlyProp(req.extras, 'tenantId', tenant.id)
         next()
     }
 }

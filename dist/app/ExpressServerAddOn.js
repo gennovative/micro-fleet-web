@@ -152,16 +152,17 @@ let ExpressServerAddOn = class ExpressServerAddOn {
     _setupExpress() {
         const app = this._express;
         app.disable('x-powered-by');
-        // When `deadLetter()` is called, prevent all new requests.
         app.use((req, res, next) => {
+            // When `deadLetter()` is called, prevent all new requests.
             if (!this._isAlive) {
                 return res.sendStatus(410); // Gone, https://httpstatuses.com/410
             }
+            req['extras'] = {};
             return next();
         });
         // Binds global filters as application-level middlewares to specified Express instance.
         // Binds filters with priority HIGH
-        this._useFilterMiddleware(this._globalFilters.filter((f, i) => i == filter_1.FilterPriority.HIGH), app);
+        this._useFilterMiddleware(this._globalFilters.filter((f, i) => i == filter_1.FilterPriority.HIGH), app, this._urlPrefix);
         const corsOptions = {
             origin: this.getCfg(W.WEB_CORS, false),
             optionsSuccessStatus: 200,
@@ -171,7 +172,7 @@ let ExpressServerAddOn = class ExpressServerAddOn {
         app.use(express.json()); // Parse requests with JSON payloads
         // Binds filters with priority from MEDIUM to LOW
         // All 3rd party middlewares have priority MEDIUM.
-        this._useFilterMiddleware(this._globalFilters.filter((f, i) => i == filter_1.FilterPriority.MEDIUM || i == filter_1.FilterPriority.LOW), app);
+        this._useFilterMiddleware(this._globalFilters.filter((f, i) => i == filter_1.FilterPriority.MEDIUM || i == filter_1.FilterPriority.LOW), app, this._urlPrefix);
         return app;
     }
     _startServers(app) {
@@ -293,9 +294,14 @@ let ExpressServerAddOn = class ExpressServerAddOn {
             // by https://expressjs.com/en/guide/error-handling.html
             return function (req, res, next) {
                 try {
-                    actionFunc.call(this, req, res);
+                    const call = actionFunc.call(this, req, res);
+                    // Catch async exception
+                    if (typeof call.catch === 'function') {
+                        call.catch(next);
+                    }
                 }
                 catch (err) {
+                    // Catch normal exception
                     next(err);
                 }
             };
@@ -344,7 +350,7 @@ let ExpressServerAddOn = class ExpressServerAddOn {
     }
     //#endregion Action
     //#region Filter
-    _useFilterMiddleware(filters, appOrRouter) {
+    _useFilterMiddleware(filters, appOrRouter, routePath = '/') {
         if (!filters || !filters.length) {
             return;
         }
@@ -361,7 +367,10 @@ let ExpressServerAddOn = class ExpressServerAddOn {
                 return;
             }
             for (const { FilterClass, filterParams } of samePriorityFilters) { // 1: [ FilterClass, FilterClass ]
-                appOrRouter.use(this._extractFilterExecuteFunc(FilterClass, filterParams));
+                appOrRouter.use(
+                // This allows URL prefix to have route params
+                // Eg: /api/v1/:tenant
+                routePath, this._extractFilterExecuteFunc(FilterClass, filterParams));
             }
         });
     }

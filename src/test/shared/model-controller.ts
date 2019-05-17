@@ -21,7 +21,7 @@ class ModelController {
         ModelClass: SampleModel,
     })
     public doValid(req: Request<SampleModel>, res: Response) {
-        const result = req.model
+        const result = req.extras.model
         this.spyFn(result.constructor.name, result.name, result.age, result.position)
         res.sendStatus(200)
     }
@@ -32,7 +32,7 @@ class ModelController {
         modelPropFn: (req) => req.body,
     })
     public doCustom(req: Request<SampleModel>, res: Response) {
-        const result: any = req.model
+        const result: any = req.extras.model
         this.spyFn(result.constructor.name, result.name, result.age, result.position)
         res.sendStatus(200)
     }
@@ -43,7 +43,7 @@ class ModelController {
         isPartial: true,
     })
     public doPartial(req: Request<SampleModel>, res: Response) {
-        const result: any = req.model
+        const result: any = req.extras.model
         this.spyFn(result.constructor.name, result.name, result.age, result.position)
         res.sendStatus(200)
     }
