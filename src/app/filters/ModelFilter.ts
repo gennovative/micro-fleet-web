@@ -1,5 +1,5 @@
 import * as joi from 'joi'
-import { Guard, ModelAutoMapper } from '@micro-fleet/common'
+import { Guard, ModelAutoMapper, MinorException } from '@micro-fleet/common'
 
 import { IActionFilter } from '../decorators/filter'
 import { Request, Response } from '../interfaces'
@@ -28,7 +28,13 @@ export type ModelFilterOptions = {
     /**
      * Custom validation rule for arbitrary object.
      */
-    customValidationRule?: joi.SchemaMap
+    customValidationRule?: joi.SchemaMap,
+
+    /**
+     * If true, this filter attaches tenantId to result object.
+     * tenantId should be resolved by `TenantResolverFilter`.
+     */
+    hasTenantId?: boolean
 }
 
 export class ModelFilter
@@ -38,12 +44,24 @@ export class ModelFilter
     public execute(request: Request, response: Response, next: Function,
             options: ModelFilterOptions): void {
         try {
-            const { ModelClass, isPartial, modelPropFn } = options
+            const { ModelClass, isPartial, modelPropFn, hasTenantId } = options
             Guard.assertArgDefined('ModelClass', ModelClass)
             Guard.assertArgDefined(`${ModelClass}.translator`, ModelClass['translator'])
             const translator: ModelAutoMapper<any> = ModelClass['translator']
             const func: Function = (!!isPartial) ? translator.partial : translator.whole
-            const rawModel = (request.body && request.body.model) ? request.body.model : modelPropFn(request)
+            let rawModel
+            if (request.body && request.body.model) {
+                rawModel = request.body.model
+            }
+            else if (typeof modelPropFn === 'function') {
+                rawModel = modelPropFn(request)
+            }
+            else {
+                throw new MinorException('Request body must have property "model".')
+            }
+            if (hasTenantId && typeof rawModel === 'object') {
+                rawModel.tenantId = request.extras.tenantId
+            }
             const model = func.call(translator, rawModel)
             this.addReadonlyProp(request.extras, 'model', model)
             next()

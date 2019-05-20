@@ -429,6 +429,11 @@ declare module '@micro-fleet/web/dist/app/filters/ModelFilter' {
 	     * Custom validation rule for arbitrary object.
 	     */
 	    customValidationRule?: joi.SchemaMap;
+	    /**
+	     * If true, this filter attaches tenantId to result object.
+	     * tenantId should be resolved by `TenantResolverFilter`.
+	     */
+	    hasTenantId?: boolean;
 	};
 	export class ModelFilter extends ActionFilterBase implements IActionFilter {
 	    execute(request: Request, response: Response, next: Function, options: ModelFilterOptions): void;

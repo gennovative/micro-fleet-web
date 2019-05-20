@@ -423,9 +423,9 @@ export class ExpressServerAddOn implements IServiceAddOn {
                     try {
                         const call = actionFunc.call(this, req, res)
                         // Catch async exception
-                        if (typeof call.catch === 'function') {
-                        call.catch(next)
-                    }
+                        if (call && typeof call.catch === 'function') {
+                            call.catch(next)
+                        }
                     } catch (err) {
                         // Catch normal exception
                         next(err)

@@ -5,12 +5,25 @@ const ActionFilterBase_1 = require("./ActionFilterBase");
 class ModelFilter extends ActionFilterBase_1.ActionFilterBase {
     execute(request, response, next, options) {
         try {
-            const { ModelClass, isPartial, modelPropFn } = options;
+            const { ModelClass, isPartial, modelPropFn, hasTenantId } = options;
             common_1.Guard.assertArgDefined('ModelClass', ModelClass);
             common_1.Guard.assertArgDefined(`${ModelClass}.translator`, ModelClass['translator']);
             const translator = ModelClass['translator'];
             const func = (!!isPartial) ? translator.partial : translator.whole;
-            const rawModel = (request.body && request.body.model) ? request.body.model : modelPropFn(request);
+            // const rawModel = (request.body && request.body.model) ? request.body.model : modelPropFn(request)
+            let rawModel;
+            if (request.body && request.body.model) {
+                rawModel = request.body.model;
+            }
+            else if (typeof modelPropFn === 'function') {
+                rawModel = modelPropFn(request);
+            }
+            else {
+                throw new common_1.MinorException('Request body must have property "model".');
+            }
+            if (hasTenantId && typeof rawModel === 'object') {
+                rawModel.tenantId = request.extras.tenantId;
+            }
             const model = func.call(translator, rawModel);
             this.addReadonlyProp(request.extras, 'model', model);
             next();

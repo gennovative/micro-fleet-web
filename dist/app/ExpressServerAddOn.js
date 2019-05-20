@@ -296,7 +296,7 @@ let ExpressServerAddOn = class ExpressServerAddOn {
                 try {
                     const call = actionFunc.call(this, req, res);
                     // Catch async exception
-                    if (typeof call.catch === 'function') {
+                    if (call && typeof call.catch === 'function') {
                         call.catch(next);
                     }
                 }

@@ -4,6 +4,8 @@
 - Added `request.extras` property as attachment point for filters.
 - [#4](https://github.com/gennovative/micro-fleet-web/issues/4) - Global ErrorHandlerFilter cannot catch async exception from action method
 - [#5](https://github.com/gennovative/micro-fleet-web/issues/5) - Should allow route param in URL prefix setting
+- [#7](https://github.com/gennovative/micro-fleet-web/issues/7) - `ModelFilter` attaches tenantId to result.
+- [#8](https://github.com/gennovative/micro-fleet-web/issues/8) - Improved `ModelFilter` error message
 
 ### 1.1.1
 - Remove script "postinstall" from `package.json`.
