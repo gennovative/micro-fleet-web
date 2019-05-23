@@ -32,7 +32,7 @@ let TenantResolverFilter = class TenantResolverFilter extends ActionFilterBase_1
             return next();
         }
         const key = `common-web::tenant::${tenantSlug}`;
-        const tenantId = await this._cache.getPrimitive(key, false, false);
+        const tenantId = await this._cache.getPrimitive(key);
         if (tenantId.hasValue) {
             console.log('TenantResolver: from cache');
             req.params['tenantId'] = tenantId;
@@ -43,7 +43,7 @@ let TenantResolverFilter = class TenantResolverFilter extends ActionFilterBase_1
         // if (!tenant) { return null }
         // Mocking
         const tenant = { id: Math.random().toString().slice(2) };
-        this._cache.setPrimitive(key, tenant.id, null, cache_1.CacheLevel.BOTH);
+        this._cache.setPrimitive(key, tenant.id, { level: cache_1.CacheLevel.BOTH });
         this.addReadonlyProp(req.extras, 'tenantId', tenant.id);
         next();
     }

@@ -32,7 +32,7 @@ export class TenantResolverFilter
         }
 
         const key = `common-web::tenant::${tenantSlug}`
-        const tenantId = await this._cache.getPrimitive(key, false, false) as Maybe<BigInt>
+        const tenantId = await this._cache.getPrimitive(key) as Maybe<BigInt>
 
         if (tenantId.hasValue) {
             console.log('TenantResolver: from cache')
@@ -46,7 +46,7 @@ export class TenantResolverFilter
 
         // Mocking
         const tenant = { id: Math.random().toString().slice(2) }
-        this._cache.setPrimitive(key, tenant.id, null, CacheLevel.BOTH)
+        this._cache.setPrimitive(key, tenant.id, { level: CacheLevel.BOTH })
 
         this.addReadonlyProp(req.extras, 'tenantId', tenant.id)
         next()

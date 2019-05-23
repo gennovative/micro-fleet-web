@@ -534,7 +534,7 @@ declare module '@micro-fleet/web/dist/app/filters/ErrorHandlerFilter' {
 	import { IActionErrorHandler } from '@micro-fleet/web/dist/app/decorators/filter';
 	import { Request, Response } from '@micro-fleet/web/dist/app/interfaces';
 	/**
-	 * Provides method to look up tenant ID from tenant slug.
+	 * Catches unhandled exceptions from action methods.
 	 */
 	export class ErrorHandlerFilter implements IActionErrorHandler {
 	    constructor();

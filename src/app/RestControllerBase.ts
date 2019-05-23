@@ -135,9 +135,13 @@ export abstract class RestControllerBase {
      * @param statusCode HTTP status code. Default is 200.
      */
     protected send(res: Response, data: any, statusCode: number): Response {
-        if (typeof data == 'number') {
+        res = res.status(statusCode)
+        if (typeof data == 'object') {
+            return res.json(data)
+        }
+        else if (typeof data == 'number' || typeof data == 'bigint') {
             data += <any>''
         }
-        return res.status(statusCode).send(data)
+        return res.send(data)
     }
 }

@@ -12,6 +12,8 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+/// <reference types="debug" />
+const debug = require('debug')('@micro-fleet/web:ExpressServerAddOn');
 const fs = require("fs");
 const path = require("path");
 const http = require("http");
@@ -197,7 +199,7 @@ let ExpressServerAddOn = class ExpressServerAddOn {
             this._server = server
                 .on('listening', () => {
                 this._isAlive = true;
-                console.log('HTTP listening on: ', this._port);
+                debug('HTTP listening on: %d', this._port);
                 resolve();
             })
                 .on('error', reject)
@@ -214,7 +216,7 @@ let ExpressServerAddOn = class ExpressServerAddOn {
             this._sslServer = https.createServer(sslOptions, app)
                 .on('listening', () => {
                 this._isAlive = true;
-                console.log('HTTPS listening on: ', this._sslPort);
+                debug('HTTPS listening on: %d', this._sslPort);
                 resolve();
             })
                 .on('error', reject)
@@ -286,15 +288,12 @@ let ExpressServerAddOn = class ExpressServerAddOn {
         // If Controller Creation Strategy is SINGLETON, then the same controller instance will handle all requests.
         // Otherwise, a new controller instance will be created for each request.
         return common_1.HandlerContainer.instance.register(actionFunc.name, CtrlClass.name, (ctrlInstance, actionName) => {
-            if (actionName !== actionFunc.name) {
-                return null;
-            }
             // Wrapper function that handles uncaught errors,
             // so that controller actions don't need to call `next(error)` like said
             // by https://expressjs.com/en/guide/error-handling.html
             return function (req, res, next) {
                 try {
-                    const call = actionFunc.call(this, req, res);
+                    const call = ctrlInstance[actionName](req, res);
                     // Catch async exception
                     if (call && typeof call.catch === 'function') {
                         call.catch(next);

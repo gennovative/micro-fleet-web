@@ -4,7 +4,7 @@ import { IActionErrorHandler } from '../decorators/filter'
 import { Request, Response } from '../interfaces'
 
 /**
- * Provides method to look up tenant ID from tenant slug.
+ * Catches unhandled exceptions from action methods.
  */
 @injectable()
 export class ErrorHandlerFilter implements IActionErrorHandler {
@@ -16,11 +16,39 @@ export class ErrorHandlerFilter implements IActionErrorHandler {
     }
 
     public execute(error: Error, req: Request, res: Response, next: Function): void {
-        if (res.headersSent || !(error instanceof ValidationError)) {
-            // Delegate to Express default error handler
-            return next(error)
-        }
+        const isDebugMode = Boolean(process.env['DEBUG'])
+        //
         // TODO: Write error to file or logging service.
-        res.status(412).send(error['details'] || error)
+        //
+        if (res.headersSent) {
+            res.status(500).send(JSON.stringify(error, stringifyError))
+            return
+        }
+        res.setHeader('Content-Type', 'application/json')
+        if (error instanceof ValidationError) {
+            // https://httpstatuses.com/422 (UNPROCESSABLE ENTITY)
+            res.status(422).send(JSON.stringify(error['details'] || error, stringifyError))
+        }
+        else if (isDebugMode) {
+            res.status(500).send(JSON.stringify(error, stringifyError))
+            console.log(error)
+        }
+        else {
+            res.status(500).end()
+        }
+        next()
     }
+}
+
+function stringifyError(key: string, value: any) {
+    if (! (value instanceof Error)) {
+        return value
+    }
+    const error = {}
+
+    Object.getOwnPropertyNames(value).forEach(function (prop) {
+        error[prop] = value[prop]
+    })
+
+    return error
 }

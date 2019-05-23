@@ -6,6 +6,8 @@
 - [#5](https://github.com/gennovative/micro-fleet-web/issues/5) - Should allow route param in URL prefix setting
 - [#7](https://github.com/gennovative/micro-fleet-web/issues/7) - `ModelFilter` attaches tenantId to result.
 - [#8](https://github.com/gennovative/micro-fleet-web/issues/8) - Improved `ModelFilter` error message
+- [#9](https://github.com/gennovative/micro-fleet-web/issues/9) - Cannot spy on action method when unit testing
+- `ErrorHandlerFilter` only responds with server-side errors in DEBUG mode.
 
 ### 1.1.1
 - Remove script "postinstall" from `package.json`.

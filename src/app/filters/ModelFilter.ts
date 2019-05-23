@@ -66,7 +66,6 @@ export class ModelFilter
             this.addReadonlyProp(request.extras, 'model', model)
             next()
         } catch (err) {
-            console.error(err)
             next(err)
         }
     }

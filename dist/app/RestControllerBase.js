@@ -112,10 +112,14 @@ let RestControllerBase = class RestControllerBase {
      * @param statusCode HTTP status code. Default is 200.
      */
     send(res, data, statusCode) {
-        if (typeof data == 'number') {
+        res = res.status(statusCode);
+        if (typeof data == 'object') {
+            return res.json(data);
+        }
+        else if (typeof data == 'number' || typeof data == 'bigint') {
             data += '';
         }
-        return res.status(statusCode).send(data);
+        return res.send(data);
     }
 };
 RestControllerBase = __decorate([

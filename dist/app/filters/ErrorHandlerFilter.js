@@ -11,7 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const common_1 = require("@micro-fleet/common");
 /**
- * Provides method to look up tenant ID from tenant slug.
+ * Catches unhandled exceptions from action methods.
  */
 let ErrorHandlerFilter = class ErrorHandlerFilter {
     constructor(
@@ -20,12 +20,27 @@ let ErrorHandlerFilter = class ErrorHandlerFilter {
         // Empty
     }
     execute(error, req, res, next) {
-        if (res.headersSent || !(error instanceof common_1.ValidationError)) {
-            // Delegate to Express default error handler
-            return next(error);
-        }
+        const isDebugMode = Boolean(process.env['DEBUG']);
+        //
         // TODO: Write error to file or logging service.
-        res.status(412).send(error['details'] || error);
+        //
+        if (res.headersSent) {
+            res.status(500).send(JSON.stringify(error, stringifyError));
+            return;
+        }
+        res.setHeader('Content-Type', 'application/json');
+        if (error instanceof common_1.ValidationError) {
+            // https://httpstatuses.com/422 (UNPROCESSABLE ENTITY)
+            res.status(422).send(JSON.stringify(error['details'] || error, stringifyError));
+        }
+        else if (isDebugMode) {
+            res.status(500).send(JSON.stringify(error, stringifyError));
+            console.log(error);
+        }
+        else {
+            res.status(500).end();
+        }
+        next();
     }
 };
 ErrorHandlerFilter = __decorate([
@@ -33,4 +48,14 @@ ErrorHandlerFilter = __decorate([
     __metadata("design:paramtypes", [])
 ], ErrorHandlerFilter);
 exports.ErrorHandlerFilter = ErrorHandlerFilter;
+function stringifyError(key, value) {
+    if (!(value instanceof Error)) {
+        return value;
+    }
+    const error = {};
+    Object.getOwnPropertyNames(value).forEach(function (prop) {
+        error[prop] = value[prop];
+    });
+    return error;
+}
 //# sourceMappingURL=ErrorHandlerFilter.js.map

@@ -10,7 +10,6 @@ class ModelFilter extends ActionFilterBase_1.ActionFilterBase {
             common_1.Guard.assertArgDefined(`${ModelClass}.translator`, ModelClass['translator']);
             const translator = ModelClass['translator'];
             const func = (!!isPartial) ? translator.partial : translator.whole;
-            // const rawModel = (request.body && request.body.model) ? request.body.model : modelPropFn(request)
             let rawModel;
             if (request.body && request.body.model) {
                 rawModel = request.body.model;
@@ -29,7 +28,6 @@ class ModelFilter extends ActionFilterBase_1.ActionFilterBase {
             next();
         }
         catch (err) {
-            console.error(err);
             next(err);
         }
     }
