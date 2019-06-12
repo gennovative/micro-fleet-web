@@ -29,7 +29,7 @@ let ErrorHandlerFilter = class ErrorHandlerFilter {
             return;
         }
         res.setHeader('Content-Type', 'application/json');
-        if (error instanceof common_1.ValidationError) {
+        if (error.name === 'ValidationError') {
             // https://httpstatuses.com/422 (UNPROCESSABLE ENTITY)
             res.status(422).send(JSON.stringify(error['details'] || error, stringifyError));
         }

@@ -40,6 +40,15 @@ export abstract class RestControllerBase {
     }
 
     /**
+     * Responds as No Content with status code 204 and optional data.
+     * @param res Express response object.
+     * @param data Data to optionally return to client.
+     */
+    protected noContent(res: Response, data?: any): void {
+        this.send(res, data, 204)
+    }
+
+    /**
      * Responds as OK with status code 200 and optional data.
      * @param res Express response object.
      * @param data Data to optionally return to client.

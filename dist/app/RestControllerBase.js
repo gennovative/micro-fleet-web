@@ -32,6 +32,14 @@ let RestControllerBase = class RestControllerBase {
         this.send(res, data, 201);
     }
     /**
+     * Responds as No Content with status code 204 and optional data.
+     * @param res Express response object.
+     * @param data Data to optionally return to client.
+     */
+    noContent(res, data) {
+        this.send(res, data, 204);
+    }
+    /**
      * Responds as OK with status code 200 and optional data.
      * @param res Express response object.
      * @param data Data to optionally return to client.

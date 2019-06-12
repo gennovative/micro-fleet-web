@@ -1,5 +1,9 @@
 ## VERSIONS
 
+### 1.1.3
+- Added `RestControllerBase.noContent` which returns 204-code response.
+- Removed native BigInt type, using string instead.
+
 ### 1.1.2
 - Added `request.extras` property as attachment point for filters.
 - [#4](https://github.com/gennovative/micro-fleet-web/issues/4) - Global ErrorHandlerFilter cannot catch async exception from action method

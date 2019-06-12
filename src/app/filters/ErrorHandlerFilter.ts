@@ -1,4 +1,4 @@
-import { injectable, ValidationError } from '@micro-fleet/common'
+import { injectable } from '@micro-fleet/common'
 
 import { IActionErrorHandler } from '../decorators/filter'
 import { Request, Response } from '../interfaces'
@@ -25,7 +25,7 @@ export class ErrorHandlerFilter implements IActionErrorHandler {
             return
         }
         res.setHeader('Content-Type', 'application/json')
-        if (error instanceof ValidationError) {
+        if (error.name === 'ValidationError') {
             // https://httpstatuses.com/422 (UNPROCESSABLE ENTITY)
             res.status(422).send(JSON.stringify(error['details'] || error, stringifyError))
         }

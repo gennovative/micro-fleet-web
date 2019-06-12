@@ -16,7 +16,7 @@ export type Request<TModel = object> = express.Request & {
         /**
          * Object attached by @tenant decorator (TenantResolverFilter)
          */
-        readonly tenantId?: bigint,
+        readonly tenantId?: string,
     },
 }
 

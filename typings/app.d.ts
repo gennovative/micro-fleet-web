@@ -138,7 +138,7 @@ declare module '@micro-fleet/web/dist/app/interfaces' {
 	        /**
 	         * Object attached by @tenant decorator (TenantResolverFilter)
 	         */
-	        readonly tenantId?: bigint;
+	        readonly tenantId?: string;
 	    };
 	};
 	export type Response = express.Response;
@@ -330,6 +330,12 @@ declare module '@micro-fleet/web/dist/app/RestControllerBase' {
 	     * @param data Data to optionally return to client.
 	     */
 	    protected created(res: Response, data?: any): void;
+	    /**
+	     * Responds as No Content with status code 204 and optional data.
+	     * @param res Express response object.
+	     * @param data Data to optionally return to client.
+	     */
+	    protected noContent(res: Response, data?: any): void;
 	    /**
 	     * Responds as OK with status code 200 and optional data.
 	     * @param res Express response object.
