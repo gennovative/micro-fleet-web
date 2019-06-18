@@ -1,34 +1,34 @@
 import * as chai from 'chai'
 
-import { IActionFilter, decorators, FilterPriority, Request, Response } from '../../app'
-const { filter, controller, GET } = decorators
+import { decorators as d, IActionFilter, FilterPriority,
+    Request, Response } from '../../app'
 
 
 class FirstFilter implements IActionFilter {
-    public execute(request: any, response: any, next: Function): void {
+    public execute(request: Request, response: Response, next: Function): void {
         global['callOrder'].push(3)
         next()
     }
 }
 
 class SecondFilter implements IActionFilter {
-    public execute(request: any, response: any, next: Function): void {
+    public execute(request: Request, response: Response, next: Function): void {
         global['callOrder'].push(2)
         next()
     }
 }
 
 class ThirdFilter implements IActionFilter {
-    public execute(request: any, response: any, next: Function): void {
+    public execute(request: Request, response: Response, next: Function): void {
         global['callOrder'].push(1)
         next()
     }
 }
 
-@filter(ThirdFilter)
-@filter(SecondFilter)
-@filter(FirstFilter)
-@controller('/same')
+@d.filter(ThirdFilter)
+@d.filter(SecondFilter)
+@d.filter(FirstFilter)
+@d.controller('/same')
 class SamePriorityController {
 
     public spyFn: Function
@@ -39,8 +39,8 @@ class SamePriorityController {
         this.count = 0
     }
 
-    @GET('/')
-    public doGet(req: Request, res: Response) {
+    @d.GET('/')
+    public doGet(@d.response() res: Response) {
         this.spyFn()
         this.count++
         global['callOrder'].push(0)
@@ -49,10 +49,10 @@ class SamePriorityController {
 }
 
 
-@filter(FirstFilter, FilterPriority.HIGH)
-@filter(ThirdFilter, FilterPriority.LOW)
-@filter(SecondFilter, FilterPriority.MEDIUM)
-@controller('priority')
+@d.filter(FirstFilter, FilterPriority.HIGH)
+@d.filter(ThirdFilter, FilterPriority.LOW)
+@d.filter(SecondFilter, FilterPriority.MEDIUM)
+@d.controller('priority')
 class PrioritizedController {
 
     public spyFn: Function
@@ -61,8 +61,8 @@ class PrioritizedController {
         this.spyFn = chai.spy()
     }
 
-    @GET('/')
-    public doGet(req: Request, res: Response) {
+    @d.GET('/')
+    public doGet(@d.response() res: Response) {
         this.spyFn()
         global['callOrder'].push(0)
         res.sendStatus(200)

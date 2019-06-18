@@ -33,7 +33,7 @@ let TenantResolverFilter = class TenantResolverFilter extends ActionFilterBase_1
         }
         const key = `common-web::tenant::${tenantSlug}`;
         const tenantId = await this._cache.getPrimitive(key);
-        if (tenantId.hasValue) {
+        if (tenantId.isJust) {
             console.log('TenantResolver: from cache');
             req.params['tenantId'] = tenantId;
             return next();

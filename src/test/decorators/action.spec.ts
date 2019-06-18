@@ -28,9 +28,9 @@ class MockConfigurationProvider implements IConfigurationProvider {
     public get(key: string): Maybe<PrimitiveType | any[]> {
         switch (key) {
             case W.WEB_CORS:
-                return this.enableCors ? new Maybe(ALLOW_ORIGIN) : new Maybe
+                return this.enableCors ? Maybe.Just(ALLOW_ORIGIN) : Maybe.Nothing()
         }
-        return new Maybe
+        return Maybe.Nothing()
     }
 
     public init = () => Promise.resolve()
@@ -63,11 +63,13 @@ describe('@action()', function() {
         container.dispose()
         await server.dispose()
         container = server = null
+        serviceContext.setDependencyContainer(null)
     })
 
     describe('Single HTTP verb', () => {
         it('Should automatically parse action name to create route path', (done: Function) => {
             // Arrange
+            let error: any
             server.controllerPath = path.join(process.cwd(), 'dist', 'test', 'shared', 'default-controller')
             server.init()
                 .then(() => {
@@ -94,16 +96,17 @@ describe('@action()', function() {
                     expect(responses[5]['content-type']).to.exist
                     expect(responses[6]).to.equal('DefaultController.doOptions')
                 })
-                .catch((error: any) => {
+                .catch((err: any) => {
                     // Unexpectedly Assert
-                    console.error(error)
+                    console.error(error = err)
                     expect(false, 'Should never come here!').to.be.true
                 })
-                .finally(() => done())
+                .finally(() => done(error))
         })
 
         it('Should accept custom route path', (done: Function) => {
             // Arrange
+            let error: any
             server.controllerPath = path.join(process.cwd(), 'dist', 'test', 'shared', 'custom-controller')
             server.init()
                 .then(() => {
@@ -130,16 +133,17 @@ describe('@action()', function() {
                     expect(responses[5]['content-type']).to.exist
                     expect(responses[6]).to.equal('CustomController.doOptions')
                 })
-                .catch((error: any) => {
+                .catch((err: any) => {
                     // Unexpectedly Assert
-                    console.error(error)
+                    console.error(error = err)
                     expect(false, 'Should never come here!').to.be.true
                 })
-                .finally(() => done())
+                .finally(() => done(error))
         })
 
         it('Should only expose decorated actions', (done: Function) => {
             // Arrange
+            let error: any
             const URL = `${BASE_URL}/default`
             server.controllerPath = path.join(process.cwd(), 'dist', 'test', 'shared', 'default-controller')
             server.init()
@@ -159,20 +163,21 @@ describe('@action()', function() {
                     // Unexpectedly Assert
                     expect(false, 'Should never come here!').to.be.true
                 })
-                .catch((error: any) => {
+                .catch((err: any) => {
                     // Assert
-                    if (error instanceof StatusCodeError) {
-                        expect(error.statusCode).to.equal(404)
+                    if (err instanceof StatusCodeError) {
+                        expect(err.statusCode).to.equal(404)
                     } else {
-                        console.error(error)
+                        console.error(error = err)
                         expect(false, 'Should never throw this kind of error!').to.be.true
                     }
                 })
-                .finally(() => done())
+                .finally(() => done(error))
         })
 
         it('Should disable CORS by default (allow all requests)', (done: Function) => {
             // Arrange
+            let error: any
             const URL = `${BASE_URL}/default`
             server.controllerPath = path.join(process.cwd(), 'dist', 'test', 'shared', 'default-controller')
             server.init()
@@ -193,16 +198,17 @@ describe('@action()', function() {
                     expect(headers['access-control-allow-methods']).not.to.exist
                     expect(headers['access-control-allow-origin']).not.to.exist
                 })
-                .catch((error: any) => {
+                .catch((err: any) => {
                     // Unexpectedly Assert
-                    console.error(error)
+                    console.error(error = err)
                     expect(false, 'Should never come here!').to.be.true
                 })
-                .finally(() => done())
+                .finally(() => done(error))
         })
 
         it('Should restrict origin with CORS', (done: Function) => {
             // Arrange
+            let error: any
             const config: MockConfigurationProvider = container.resolve(CmT.CONFIG_PROVIDER)
             config.enableCors = true
 
@@ -226,22 +232,23 @@ describe('@action()', function() {
                     expect(headers['access-control-allow-methods']).to.exist
                     expect(headers['access-control-allow-origin']).to.equal(ALLOW_ORIGIN)
                 })
-                .catch((error: any) => {
+                .catch((err: any) => {
                     // Assert
                     if (error instanceof StatusCodeError) {
                         expect(error.statusCode).to.equal(404)
                     } else {
-                        console.error(error)
+                        console.error(error = err)
                         expect(false, 'Should never throw this kind of error!').to.be.true
                     }
                 })
-                .finally(() => done())
+                .finally(() => done(error))
         })
     }) // END describe('Single HTTP verb')
 
     describe('Multiple HTTP verbs', () => {
         it('Should automatically parse action name to create route paths', (done: Function) => {
             // Arrange
+            let error: any
             server.controllerPath = path.join(process.cwd(), 'dist', 'test', 'shared', 'default-controller')
             server.init()
                 .then(() => {
@@ -268,16 +275,17 @@ describe('@action()', function() {
                     expect(responses[5]['content-type']).to.exist
                     expect(responses[6]).to.equal('DefaultController.doMany')
                 })
-                .catch((error: any) => {
+                .catch((err: any) => {
                     // Unexpectedly Assert
-                    console.error(error)
+                    console.error(error = err)
                     expect(false, 'Should never come here!').to.be.true
                 })
-                .finally(() => done())
+                .finally(() => done(error))
         })
 
         it('Should accept custom route paths', (done: Function) => {
             // Arrange
+            let error: any
             server.controllerPath = path.join(process.cwd(), 'dist', 'test', 'shared', 'custom-controller')
             server.init()
                 .then(() => {
@@ -304,12 +312,12 @@ describe('@action()', function() {
                     expect(responses[5]['content-type']).to.exist
                     expect(responses[6]).to.equal('CustomController.doMany')
                 })
-                .catch((error: any) => {
+                .catch((err: any) => {
                     // Unexpectedly Assert
-                    console.error(error)
+                    console.error(error = err)
                     expect(false, 'Should never come here!').to.be.true
                 })
-                .finally(() => done())
+                .finally(() => done(error))
         })
     }) // END describe('Multiple HTTP verbs')
 
@@ -321,6 +329,7 @@ describe('@action()', function() {
 
         it('Should automatically parse action name to create route paths', (done: Function) => {
             // Arrange
+            let error: any
             server.controllerPath = path.join(process.cwd(), 'dist', 'test', 'shared', 'default-controller')
             server.init()
                 .then(() => {
@@ -335,16 +344,17 @@ describe('@action()', function() {
                         expect(responses[i]).to.equal('DefaultController.doAll')
                     }
                 })
-                .catch((error: any) => {
+                .catch((err: any) => {
                     // Unexpectedly Assert
-                    console.error(error)
+                    console.error(error = err)
                     expect(false, 'Should never come here!').to.be.true
                 })
-                .finally(() => done())
+                .finally(() => done(error))
         })
 
         it('Should accept custom route paths', (done: Function) => {
             // Arrange
+            let error: any
             server.controllerPath = path.join(process.cwd(), 'dist', 'test', 'shared', 'custom-controller')
             server.init()
                 .then(() => {
@@ -359,12 +369,12 @@ describe('@action()', function() {
                         expect(responses[i]).to.equal('CustomController.doAll')
                     }
                 })
-                .catch((error: any) => {
+                .catch((err: any) => {
                     // Unexpectedly Assert
-                    console.error(error)
+                    console.error(error = err)
                     expect(false, 'Should never come here!').to.be.true
                 })
-                .finally(() => done())
+                .finally(() => done(error))
         })
     }) // END describe('All HTTP verbs')
 })

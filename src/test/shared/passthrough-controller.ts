@@ -1,7 +1,7 @@
 import * as chai from 'chai'
-import { decorators as dec, Request, Response } from '../../app'
+import { decorators as d, Request, Response } from '../../app'
 
-@dec.controller('/')
+@d.controller('/')
 class PassthroughController {
     public spyFn: Function
 
@@ -9,8 +9,8 @@ class PassthroughController {
         this.spyFn = chai.spy()
     }
 
-    @dec.GET('/')
-    public getSample(req: Request, res: Response): void {
+    @d.GET('/')
+    public getSample(@d.request() req: Request, @d.response() res: Response): void {
         this.spyFn(req['user'].accountId, req['user'].username)
         res.sendStatus(200)
     }

@@ -1,11 +1,12 @@
 import * as joi from 'joi'
 
-import { ModelAutoMapper, JoiModelValidator } from '@micro-fleet/common'
+import { ModelAutoMapper, JoiModelValidator,
+    IModelAutoMapper, IModelValidator } from '@micro-fleet/common'
 
 
 export class SampleModel {
-    public static validator: JoiModelValidator<SampleModel>
-    public static translator: ModelAutoMapper<SampleModel>
+    public static validator: IModelValidator<SampleModel>
+    public static translator: IModelAutoMapper<SampleModel>
 
     public readonly name: string = undefined
 

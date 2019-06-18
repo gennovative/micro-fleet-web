@@ -1,62 +1,62 @@
-import { decorators as dec, Request, Response } from '../../app'
+import { decorators as d, Response } from '../../app'
 
-@dec.controller()
+@d.controller()
 class DefaultController {
-    @dec.GET()
-    public doGet(req: Request, res: Response): void {
+    @d.GET()
+    public doGet(@d.response() res: Response): void {
         res.send('DefaultController.doGet')
     }
 
-    @dec.POST()
-    public doPost(req: Request, res: Response): void {
+    @d.POST()
+    public doPost(@d.response() res: Response): void {
         res.send('DefaultController.doPost')
     }
 
-    @dec.PATCH()
-    public doPatch(req: Request, res: Response): void {
+    @d.PATCH()
+    public doPatch(@d.response() res: Response): void {
         res.send('DefaultController.doPatch')
     }
 
-    @dec.PUT()
-    public doPut(req: Request, res: Response): void {
+    @d.PUT()
+    public doPut(@d.response() res: Response): void {
         res.send('DefaultController.doPut')
     }
 
-    @dec.DELETE()
-    public doDelete(req: Request, res: Response): void {
+    @d.DELETE()
+    public doDelete(@d.response() res: Response): void {
         res.send('DefaultController.doDelete')
     }
 
-    @dec.HEAD()
-    public doHead(req: Request, res: Response): void {
+    @d.HEAD()
+    public doHead(@d.response() res: Response): void {
         res.send('DefaultController.doHead')
     }
 
-    @dec.OPTIONS()
-    public doOptions(req: Request, res: Response): void {
+    @d.OPTIONS()
+    public doOptions(@d.response() res: Response): void {
         res.send('DefaultController.doOptions')
     }
 
-    @dec.GET()
-    @dec.POST()
-    @dec.PATCH()
-    @dec.PUT()
-    @dec.DELETE()
-    @dec.HEAD()
-    @dec.OPTIONS()
-    public doMany(req: Request, res: Response): void {
+    @d.GET()
+    @d.POST()
+    @d.PATCH()
+    @d.PUT()
+    @d.DELETE()
+    @d.HEAD()
+    @d.OPTIONS()
+    public doMany(@d.response() res: Response): void {
         res.send('DefaultController.doMany')
     }
 
-    @dec.ALL()
-    public doAll(req: Request, res: Response): void {
+    @d.ALL()
+    public doAll(@d.response() res: Response): void {
         res.send('DefaultController.doAll')
     }
 
     /**
      * Intentionally no action decorator
      */
-    public doSecret(req: Request, res: Response): void {
+    public doSecret(@d.response() res: Response): void {
         res.send('DefaultController.doSecret')
     }
 }

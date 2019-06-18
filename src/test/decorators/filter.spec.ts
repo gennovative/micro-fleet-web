@@ -22,7 +22,7 @@ class MockConfigurationProvider implements IConfigurationProvider {
     public enableCors: boolean = false
 
     public get(key: string): Maybe<PrimitiveType | any[]> {
-        return new Maybe
+        return Maybe.Nothing()
     }
 
     public init = () => Promise.resolve()
@@ -31,15 +31,6 @@ class MockConfigurationProvider implements IConfigurationProvider {
     public onUpdate = (listener: (changedKeys: string[]) => void) => {/* Empty */}
     public fetch = () => Promise.resolve(true)
 }
-
-// function isSortedAsc(arr: number[]): boolean {
-//     for (let i = 0 i < arr.length i++) {
-//         if (i > 0 && arr[i] < arr[i - 1]) {
-//             return false
-//         }
-//     }
-//     return true
-// }
 
 function isSortedDesc(arr: number[]): boolean {
     for (let i = 0; i < arr.length; i++) {
@@ -67,18 +58,21 @@ describe('@filter()', function() {
 
         server = container.resolve(T.WEBSERVER_ADDON)
         server.controllerCreation = ControllerCreationStrategy.SINGLETON
+        server.controllerPath = path.join(process.cwd(), 'dist',
+            'test', 'shared', 'filter-controller')
     })
 
     afterEach(async () => {
         container.dispose()
         await server.dispose()
         container = server = null
+        serviceContext.setDependencyContainer(null)
     })
 
     describe('', () => {
         it('Should invoke same-priority filters in the order they are attached', (done: Function) => {
             // Arrange
-            server.controllerPath = path.join(process.cwd(), 'dist', 'test', 'shared', 'filter-controller')
+            let error: any
             server.init()
                 .then(() => {
                     return request(`${BASE_URL}/same`, { method: 'GET' })
@@ -88,17 +82,17 @@ describe('@filter()', function() {
                     expect(controller['spyFn']).to.be.called.once
                     expect(isSortedDesc(global['callOrder'])).to.be.true
                 })
-                .catch((error: any) => {
+                .catch((err: any) => {
                     // Unexpectedly Assert
-                    console.error(error)
+                    console.error(error = err)
                     expect(false, 'Should never come here!').to.be.true
                 })
-                .finally(() => done())
+                .finally(() => done(error))
         })
 
         it('Should invoke filters by priority regardless the order they are attached', (done: Function) => {
             // Arrange
-            server.controllerPath = path.join(process.cwd(), 'dist', 'test', 'shared', 'filter-controller')
+            let error: any
             server.init()
                 .then(() => {
                     return request(`${BASE_URL}/priority`, { method: 'GET' })
@@ -108,12 +102,12 @@ describe('@filter()', function() {
                     expect(controller['spyFn']).to.be.called.once
                     expect(isSortedDesc(global['callOrder'])).to.be.true
                 })
-                .catch((error: any) => {
+                .catch((err: any) => {
                     // Unexpectedly Assert
-                    console.error(error)
+                    console.error(error = err)
                     expect(false, 'Should never come here!').to.be.true
                 })
-                .finally(() => done())
+                .finally(() => done(error))
         })
     })
 })

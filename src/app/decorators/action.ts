@@ -12,12 +12,12 @@ export type ActionDescriptor = {
 
 /**
  * Used to decorate action function of REST controller class.
- * @param {string} method Case-insensitive HTTP verb supported by Express
+ * @param {string} verb Case-insensitive HTTP verb supported by Express
      *         (see full list at https://expressjs.com/en/4x/api.html#routing-methods)
  * @param {string} path Segment of URL pointing to this action.
  *         If not specified, it is default to be the action's function name.
  */
-export function action(method: string, path?: string): Function {
+export function action(verb: string, path?: string): Function {
     return function (proto: any, funcName: string): Function {
         if (!path) {
             path = `/${funcName}`
@@ -35,10 +35,10 @@ export function action(method: string, path?: string): Function {
         let actionDesc: ActionDescriptor
         if (Reflect.hasOwnMetadata(MetaData.ACTION, proto.constructor, funcName)) {
             actionDesc = Reflect.getOwnMetadata(MetaData.ACTION, proto.constructor, funcName)
-            actionDesc[method.toLowerCase()] = path
+            actionDesc[verb.toLowerCase()] = path
         } else {
             actionDesc = {
-                [method.toLowerCase()]: path,
+                [verb.toLowerCase()]: path,
             }
         }
         Reflect.defineMetadata(MetaData.ACTION, actionDesc, proto.constructor, funcName)

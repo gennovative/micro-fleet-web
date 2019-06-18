@@ -1,10 +1,10 @@
-import { decorators as dec, Request, Response } from '../../app'
+import { decorators as d, Response } from '../../app'
 
 
-@dec.controller('/')
+@d.controller('/')
 class SampleController {
-    @dec.GET('/')
-    public getSample(req: Request, res: Response): void {
+    @d.GET('/')
+    public getSample(@d.response() res: Response): void {
         res.send('SampleController.getSample')
     }
 }

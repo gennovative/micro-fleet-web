@@ -18,6 +18,7 @@ import { IActionErrorHandler, ActionInterceptor, PrioritizedFilterArray,
     FilterArray, FilterPriority, pushFilterToArray } from './decorators/filter'
 import { Request, Response } from './interfaces'
 import { webContext } from './WebContext'
+import { ParamDecorDescriptor } from './decorators/param-decor-base'
 
 
 const INVERSIFY_INJECTABLE = 'inversify:paramtypes'
@@ -161,7 +162,7 @@ export class ExpressServerAddOn implements IServiceAddOn {
         this._urlPrefix = ''
         this._port = 0
         this._express = express()
-        this.controllerCreation = ControllerCreationStrategy.TRANSIENT
+        this.controllerCreation = ControllerCreationStrategy.SINGLETON
     }
 
 
@@ -246,7 +247,7 @@ export class ExpressServerAddOn implements IServiceAddOn {
     }
 
     protected getCfg<TVal extends PrimitiveType>(name: string, defaultValue: any): TVal {
-        return this._configProvider.get(name).TryGetValue(defaultValue) as TVal
+        return this._configProvider.get(name).tryGetValue(defaultValue) as TVal
     }
 
     protected _setupExpress(): express.Express {
@@ -363,6 +364,12 @@ export class ExpressServerAddOn implements IServiceAddOn {
             this._assertValidController(ctrlName, CtrlClass)
             const router = this._buildControllerRoutes(CtrlClass, app)
             this._buildControllerFilters(CtrlClass, router)
+
+            const bound = this._depContainer.bind(CtrlClass.name, CtrlClass)
+            if (this.controllerCreation == ControllerCreationStrategy.SINGLETON) {
+                bound.asSingleton()
+            }
+
             this._initActions(CtrlClass, router)
         }
     }
@@ -393,7 +400,7 @@ export class ExpressServerAddOn implements IServiceAddOn {
                 if (allFunctions.has(actionName)) { continue }
 
                 const actionFunc = this._extractActionFromPrototype(proto, actionName)
-                if (!actionFunc.hasValue) { continue }
+                if (actionFunc.isNothing) { continue }
 
                 allFunctions.set(actionName, actionFunc.value)
             }
@@ -407,25 +414,22 @@ export class ExpressServerAddOn implements IServiceAddOn {
     }
 
     protected _proxyActionFunc(actionFunc: Function, CtrlClass: Newable): Function {
-        const bound = this._depContainer.bind(CtrlClass.name, CtrlClass)
-        if (this.controllerCreation == ControllerCreationStrategy.SINGLETON) {
-            bound.asSingleton()
-        }
-
         // Returns a proxy function that resolves the actual action function in EVERY incomming request.
         // If Controller Creation Strategy is SINGLETON, then the same controller instance will handle all requests.
         // Otherwise, a new controller instance will be created for each request.
         return HandlerContainer.instance.register(actionFunc.name, CtrlClass.name,
             (ctrlInstance, actionName) => {
+                const thisAddon = this
                 // Wrapper function that handles uncaught errors,
                 // so that controller actions don't need to call `next(error)` like said
                 // by https://expressjs.com/en/guide/error-handling.html
-                return function (this: any, req: Request, res: Response, next: express.NextFunction) {
+                return async function (this: any, req: Request, res: Response, next: express.NextFunction) {
                     try {
-                        const call = ctrlInstance[actionName](req, res)
+                        const args = await thisAddon._resolveParamValues(CtrlClass, actionName, req, res)
+                        const task = ctrlInstance[actionName].apply(ctrlInstance, args)
                         // Catch async exception
-                        if (call && typeof call.catch === 'function') {
-                            call.catch(next)
+                        if (task && typeof task.catch === 'function') {
+                            task.catch(next)
                         }
                     } catch (err) {
                         // Catch normal exception
@@ -433,6 +437,22 @@ export class ExpressServerAddOn implements IServiceAddOn {
                     }
                 }
             }) as Function
+    }
+
+    protected async _resolveParamValues(CtrlClass: Newable, actionName: string, req: Request, res: Response): Promise<any[]> {
+        const paramDecors: ParamDecorDescriptor = this._getMetadata(MetaData.PARAM_DECOR, CtrlClass, actionName)
+        const args: any = []
+        if (paramDecors) {
+            for (let i = 0; i < paramDecors.length; ++i) {
+                if (typeof paramDecors[i] === 'function') {
+                    const result: any = paramDecors[i].call(this, req, res)
+                    args[i] = await result
+                } else {
+                    args[i] = undefined
+                }
+            }
+        }
+        return args
     }
 
     protected _buildActionRoutesAndFilters(actionFunc: Function, actionName: string, CtrlClass: Newable, router: express.Router): void {
@@ -467,7 +487,7 @@ export class ExpressServerAddOn implements IServiceAddOn {
     }
 
     protected _extractActionFromPrototype(prototype: any, name: string): Maybe<Function> {
-        if (!prototype || !name) { return new Maybe }
+        if (!prototype || !name) { return Maybe.Nothing() }
 
         const isGetSetter = (proto: any, funcName: string) => {
             const desc = Object.getOwnPropertyDescriptor(proto, funcName)
@@ -476,7 +496,7 @@ export class ExpressServerAddOn implements IServiceAddOn {
         const func = prototype[name]
         const isPureFunction = (name !== 'constructor') && (typeof func === 'function') && !isGetSetter(prototype, name)
         const isDecorated = Reflect.hasMetadata(MetaData.ACTION, prototype.constructor, name)
-        return isPureFunction && isDecorated ? new Maybe(func) : new Maybe
+        return isPureFunction && isDecorated ? Maybe.Just(func) : Maybe.Nothing()
     }
 
 

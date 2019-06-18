@@ -1,13 +1,12 @@
 import * as chai from 'chai'
 
-import { decorators, Request, Response } from '../../app'
-const { model, controller, POST, PATCH, PUT, response, request } = decorators
+import { decorators as d, Request, Response } from '../../app'
 
 import { SampleModel } from './SampleModel'
 
 
-@controller('/model')
-class ModelController {
+@d.controller('/param-decor')
+class ParamDecorController {
 
     public spyFn: Function
     public count: number
@@ -17,61 +16,69 @@ class ModelController {
         this.count = 0
     }
 
-    @POST('/first')
+    @d.POST('/first/:org')
     public first(
-            @model(SampleModel) result: SampleModel,
-            @response() res: Response,
+            @d.model(SampleModel) result: SampleModel,
+            @d.param('org') company: string,
+            @d.header('host') host: string,
+            @d.query('dept') department: string,
+            @d.response() res: Response,
         ) {
-        this.spyFn(result.constructor.name, result.name, result.age, result.position)
+        this.spyFn(
+            result.constructor.name,
+            company,
+            host,
+            department
+        )
         res.sendStatus(200)
     }
 
-    @POST('/valid')
+    @d.POST('/valid')
     public doValid(
             req: Request<SampleModel>,
-            @response() res: Response,
-            @model(SampleModel) result: SampleModel,
+            @d.response() res: Response,
+            @d.model(SampleModel) result: SampleModel,
         ) {
         this.spyFn(result.constructor.name, result.name, result.age, result.position)
         res.sendStatus(200)
     }
 
-    @PATCH('/custom')
+    @d.PATCH('/custom')
     public doCustom(
-            @request() req: Request<SampleModel>,
-            @model({
+            @d.request() req: Request<SampleModel>,
+            @d.model({
                 ModelClass: SampleModel,
                 modelPropFn: (r: Request) => r.body,
             })
             result: SampleModel,
-            @response() res: Response
+            @d.response() res: Response
         ) {
         this.spyFn(result.constructor.name, result.name, result.age, result.position)
         res.sendStatus(200)
     }
 
-    @PUT('/partial')
+    @d.PUT('/partial')
     public doPartial(
             req: Request<SampleModel>,
-            @model({
+            @d.model({
                 ModelClass: SampleModel,
                 isPartial: true,
             })
             result: SampleModel,
-            @response() res: Response
+            @d.response() res: Response
         ) {
         this.spyFn(result.constructor.name, result.name, result.age, result.position)
         res.sendStatus(200)
     }
 
-    @POST('/invalid')
-    // @filter(ModelFilter, FilterPriority.MEDIUM, {
+    @d.POST('/invalid')
+    // @d.filter(ModelFilter, FilterPriority.MEDIUM, {
     //     ModelClass: SampleModel,
     //     modelPropFn: (req: any) => req.body,
     // })
     public doInvalid(
-            @model(SampleModel) result: SampleModel,
-            @response() res: Response,
+            @d.model(SampleModel) result: SampleModel,
+            @d.response() res: Response,
         ) {
         this.spyFn()
         res.sendStatus(200)
@@ -79,5 +86,5 @@ class ModelController {
 }
 
 module.exports = {
-    ModelController,
+    ParamDecorController,
 }

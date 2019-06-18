@@ -1,55 +1,56 @@
-import { decorators as dec, Request, Response } from '../../app'
+import { decorators as d, Response } from '../../app'
 
-@dec.controller('custom')
+
+@d.controller('custom')
 class CustomController {
-    @dec.GET('get-it')
-    public doGet(req: Request, res: Response): void {
+    @d.GET('get-it')
+    public doGet(@d.response() res: Response): void {
         res.send('CustomController.doGet')
     }
 
-    @dec.POST('post-it/')
-    public doPost(req: Request, res: Response): void {
+    @d.POST('post-it/')
+    public doPost(@d.response() res: Response): void {
         res.send('CustomController.doPost')
     }
 
-    @dec.PATCH('/patch-it')
-    public doPatch(req: Request, res: Response): void {
+    @d.PATCH('/patch-it')
+    public doPatch(@d.response() res: Response): void {
         res.send('CustomController.doPatch')
     }
 
-    @dec.PUT('/put-it/')
-    public doPut(req: Request, res: Response): void {
+    @d.PUT('/put-it/')
+    public doPut(@d.response() res: Response): void {
         res.send('CustomController.doPut')
     }
 
-    @dec.DELETE('/del-it/')
-    public doDelete(req: Request, res: Response): void {
+    @d.DELETE('/del-it/')
+    public doDelete(@d.response() res: Response): void {
         res.send('CustomController.doDelete')
     }
 
-    @dec.HEAD('head-it')
-    public doHead(req: Request, res: Response): void {
+    @d.HEAD('head-it')
+    public doHead(@d.response() res: Response): void {
         res.send('CustomController.doHead')
     }
 
-    @dec.OPTIONS('/opt-it')
-    public doOptions(req: Request, res: Response): void {
+    @d.OPTIONS('/opt-it')
+    public doOptions(@d.response() res: Response): void {
         res.send('CustomController.doOptions')
     }
 
-    @dec.GET('get-many')
-    @dec.POST('post-many/')
-    @dec.PATCH('/patch-many')
-    @dec.PUT('/put-many/')
-    @dec.DELETE('/del-many/')
-    @dec.HEAD('head-many')
-    @dec.OPTIONS('/opt-many')
-    public doMany(req: Request, res: Response): void {
+    @d.GET('get-many')
+    @d.POST('post-many/')
+    @d.PATCH('/patch-many')
+    @d.PUT('/put-many/')
+    @d.DELETE('/del-many/')
+    @d.HEAD('head-many')
+    @d.OPTIONS('/opt-many')
+    public doMany(@d.response() res: Response): void {
         res.send('CustomController.doMany')
     }
 
-    @dec.ALL('/do-all')
-    public doAll(req: Request, res: Response): void {
+    @d.ALL('/do-all')
+    public doAll(@d.response() res: Response): void {
         res.send('CustomController.doAll')
     }
 }

@@ -17,10 +17,13 @@ import { StatusCodeError } from 'request-promise/errors'
 
 
 const PORT = 31000
-const CONTROLLER_NAME = 'ModelController'
+const CONTROLLER_NAME = 'ParamDecorController'
 const BASE_URL = `http://localhost:${PORT}/model`
 const { WebSettingKeys: W } = constants
 
+const ORG_NAME = 'gennova'
+const DEPT_NAME = 'tech'
+const HEADER_HOST = 'Host'
 
 @injectable()
 class MockConfigurationProvider implements IConfigurationProvider {
@@ -46,7 +49,7 @@ class MockConfigurationProvider implements IConfigurationProvider {
 }
 
 
-describe('@model()', function() {
+describe.skip('param-decor', function() {
     this.timeout(5000)
     // this.timeout(60000) // For debugging
 
@@ -64,7 +67,7 @@ describe('@model()', function() {
         server = container.resolve(T.WEBSERVER_ADDON)
         server.controllerCreation = ControllerCreationStrategy.SINGLETON
         server.controllerPath = path.join(process.cwd(), 'dist',
-            'test', 'shared', 'model-controller')
+            'test', 'shared', 'param-decor-controller')
     })
 
     afterEach(async () => {
@@ -86,10 +89,13 @@ describe('@model()', function() {
             let error: any
             server.init()
                 .then(() => {
-                    return request(`${BASE_URL}/first`, {
+                    return request(`${BASE_URL}/first/${ORG_NAME}?dept=${DEPT_NAME}`, {
                         method: 'POST',
                         body: { model: payload },
                         json: true,
+                        headers: {
+                            [HEADER_HOST]: BASE_URL,
+                        },
                     })
                 })
                 .then(() => {
@@ -226,4 +232,4 @@ describe('@model()', function() {
         })
     }) // describe 'translating'
 
-}) // describe '@model()'
+}) // describe 'param-decor'

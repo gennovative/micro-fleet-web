@@ -51,7 +51,7 @@ let ExpressServerAddOn = class ExpressServerAddOn {
         this._urlPrefix = '';
         this._port = 0;
         this._express = express();
-        this.controllerCreation = ControllerCreationStrategy.TRANSIENT;
+        this.controllerCreation = ControllerCreationStrategy.SINGLETON;
     }
     //#endregion Protected
     //#region Getters / Setters
@@ -149,7 +149,7 @@ let ExpressServerAddOn = class ExpressServerAddOn {
         this._sslKeyFile = this.getCfg(W.WEB_SSL_KEY_FILE, '');
     }
     getCfg(name, defaultValue) {
-        return this._configProvider.get(name).TryGetValue(defaultValue);
+        return this._configProvider.get(name).tryGetValue(defaultValue);
     }
     _setupExpress() {
         const app = this._express;
@@ -241,6 +241,10 @@ let ExpressServerAddOn = class ExpressServerAddOn {
             this._assertValidController(ctrlName, CtrlClass);
             const router = this._buildControllerRoutes(CtrlClass, app);
             this._buildControllerFilters(CtrlClass, router);
+            const bound = this._depContainer.bind(CtrlClass.name, CtrlClass);
+            if (this.controllerCreation == ControllerCreationStrategy.SINGLETON) {
+                bound.asSingleton();
+            }
             this._initActions(CtrlClass, router);
         }
     }
@@ -266,7 +270,7 @@ let ExpressServerAddOn = class ExpressServerAddOn {
                     continue;
                 }
                 const actionFunc = this._extractActionFromPrototype(proto, actionName);
-                if (!actionFunc.hasValue) {
+                if (actionFunc.isNothing) {
                     continue;
                 }
                 allFunctions.set(actionName, actionFunc.value);
@@ -280,23 +284,21 @@ let ExpressServerAddOn = class ExpressServerAddOn {
         }
     }
     _proxyActionFunc(actionFunc, CtrlClass) {
-        const bound = this._depContainer.bind(CtrlClass.name, CtrlClass);
-        if (this.controllerCreation == ControllerCreationStrategy.SINGLETON) {
-            bound.asSingleton();
-        }
         // Returns a proxy function that resolves the actual action function in EVERY incomming request.
         // If Controller Creation Strategy is SINGLETON, then the same controller instance will handle all requests.
         // Otherwise, a new controller instance will be created for each request.
         return common_1.HandlerContainer.instance.register(actionFunc.name, CtrlClass.name, (ctrlInstance, actionName) => {
+            const thisAddon = this;
             // Wrapper function that handles uncaught errors,
             // so that controller actions don't need to call `next(error)` like said
             // by https://expressjs.com/en/guide/error-handling.html
-            return function (req, res, next) {
+            return async function (req, res, next) {
                 try {
-                    const call = ctrlInstance[actionName](req, res);
+                    const args = await thisAddon._resolveParamValues(CtrlClass, actionName, req, res);
+                    const task = ctrlInstance[actionName].apply(ctrlInstance, args);
                     // Catch async exception
-                    if (call && typeof call.catch === 'function') {
-                        call.catch(next);
+                    if (task && typeof task.catch === 'function') {
+                        task.catch(next);
                     }
                 }
                 catch (err) {
@@ -305,6 +307,22 @@ let ExpressServerAddOn = class ExpressServerAddOn {
                 }
             };
         });
+    }
+    async _resolveParamValues(CtrlClass, actionName, req, res) {
+        const paramDecors = this._getMetadata(MetaData_1.MetaData.PARAM_DECOR, CtrlClass, actionName);
+        const args = [];
+        if (paramDecors) {
+            for (let i = 0; i < paramDecors.length; ++i) {
+                if (typeof paramDecors[i] === 'function') {
+                    const result = paramDecors[i].call(this, req, res);
+                    args[i] = await result;
+                }
+                else {
+                    args[i] = undefined;
+                }
+            }
+        }
+        return args;
     }
     _buildActionRoutesAndFilters(actionFunc, actionName, CtrlClass, router) {
         const actionDesc = this._getMetadata(MetaData_1.MetaData.ACTION, CtrlClass, actionName);
@@ -336,7 +354,7 @@ let ExpressServerAddOn = class ExpressServerAddOn {
     }
     _extractActionFromPrototype(prototype, name) {
         if (!prototype || !name) {
-            return new common_1.Maybe;
+            return common_1.Maybe.Nothing();
         }
         const isGetSetter = (proto, funcName) => {
             const desc = Object.getOwnPropertyDescriptor(proto, funcName);
@@ -345,7 +363,7 @@ let ExpressServerAddOn = class ExpressServerAddOn {
         const func = prototype[name];
         const isPureFunction = (name !== 'constructor') && (typeof func === 'function') && !isGetSetter(prototype, name);
         const isDecorated = Reflect.hasMetadata(MetaData_1.MetaData.ACTION, prototype.constructor, name);
-        return isPureFunction && isDecorated ? new common_1.Maybe(func) : new common_1.Maybe;
+        return isPureFunction && isDecorated ? common_1.Maybe.Just(func) : common_1.Maybe.Nothing();
     }
     //#endregion Action
     //#region Filter

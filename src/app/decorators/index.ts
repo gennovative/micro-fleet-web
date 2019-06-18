@@ -3,10 +3,16 @@ if (!Reflect || typeof Reflect['hasOwnMetadata'] !== 'function') {
     require('reflect-metadata')
 }
 
+import * as act from './action'
 import { controller, ControllerDecorator } from './controller'
 import { model, ModelDecorator } from './model'
 import { filter, FilterDecorator } from './filter'
-import * as act from './action'
+import { header, HeaderDecorator } from './header'
+import { request, RequestDecorator } from './request'
+import { response, ResponseDecorator } from './response'
+import { tenantId, TenantIdDecorator } from './tenantId'
+import { param, ParamDecorator } from './param'
+import { query, QueryDecorator } from './query'
 
 
 export type Decorators = {
@@ -92,7 +98,44 @@ export type Decorators = {
      */
     filter: FilterDecorator,
 
+    header: HeaderDecorator,
+
+    /**
+     * For action parameter decoration.
+     * Attempts to translate request body to desired model class,
+     * then attaches to the parameter's value.
+     */
     model: ModelDecorator,
+
+    /**
+     * For action parameter decoration.
+     * Resolves the parameter's value with the current request object
+     */
+    request: RequestDecorator,
+
+    /**
+     * For action parameter decoration.
+     * Resolves the parameter's value with the current response object
+     */
+    response: ResponseDecorator,
+
+    /**
+     * For action parameter decoration.
+     * Will resolve the parameter's value with a route params from `request.params`.
+     */
+    param: ParamDecorator,
+
+    /**
+     * For action parameter decoration.
+     * Will resolve the parameter's value with query string value from `request.params`.
+     */
+    query: QueryDecorator,
+
+    /**
+     * For action parameter decoration.
+     * Resolves the parameter's value with tenantId from request params.
+     */
+    tenantId: TenantIdDecorator,
 }
 
 export const decorators: Decorators = {
@@ -107,5 +150,11 @@ export const decorators: Decorators = {
     action: act.action,
     controller,
     filter,
+    header,
     model,
+    request,
+    response,
+    param,
+    query,
+    tenantId,
 }

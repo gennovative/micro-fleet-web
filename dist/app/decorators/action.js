@@ -4,12 +4,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const MetaData_1 = require("../constants/MetaData");
 /**
  * Used to decorate action function of REST controller class.
- * @param {string} method Case-insensitive HTTP verb supported by Express
+ * @param {string} verb Case-insensitive HTTP verb supported by Express
      *         (see full list at https://expressjs.com/en/4x/api.html#routing-methods)
  * @param {string} path Segment of URL pointing to this action.
  *         If not specified, it is default to be the action's function name.
  */
-function action(method, path) {
+function action(verb, path) {
     return function (proto, funcName) {
         if (!path) {
             path = `/${funcName}`;
@@ -27,11 +27,11 @@ function action(method, path) {
         let actionDesc;
         if (Reflect.hasOwnMetadata(MetaData_1.MetaData.ACTION, proto.constructor, funcName)) {
             actionDesc = Reflect.getOwnMetadata(MetaData_1.MetaData.ACTION, proto.constructor, funcName);
-            actionDesc[method.toLowerCase()] = path;
+            actionDesc[verb.toLowerCase()] = path;
         }
         else {
             actionDesc = {
-                [method.toLowerCase()]: path,
+                [verb.toLowerCase()]: path,
             };
         }
         Reflect.defineMetadata(MetaData_1.MetaData.ACTION, actionDesc, proto.constructor, funcName);

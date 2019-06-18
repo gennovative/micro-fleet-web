@@ -27,9 +27,9 @@ class MockConfigurationProvider implements IConfigurationProvider {
     public get(key: string): Maybe<PrimitiveType | any[]> {
         switch (key) {
             case W.WEB_CORS:
-                return this.enableCors ? new Maybe(ALLOW_ORIGIN) : new Maybe
+                return this.enableCors ? Maybe.Just(ALLOW_ORIGIN) : Maybe.Nothing()
         }
-        return new Maybe
+        return Maybe.Nothing()
     }
 
     public init = () => Promise.resolve()
@@ -64,10 +64,12 @@ describe('@controller()', function() {
             container.dispose()
             await server.dispose()
             container = server = null
+            serviceContext.setDependencyContainer(null)
         })
 
         it('Should automatically parse controller name to create route path', (done: Function) => {
             // Arrange
+            let error: any
             server.controllerPath = path.join(process.cwd(), 'dist', 'test', 'shared', 'default-controller')
             server.init()
                 .then(() => {
@@ -77,16 +79,17 @@ describe('@controller()', function() {
                     // Assert
                     expect(res).to.equal('DefaultController.doGet')
                 })
-                .catch((error: any) => {
+                .catch((err: any) => {
                     // Unexpectedly Assert
-                    console.error(error)
+                    console.error(error = err)
                     expect(false, 'Should never come here!').to.be.true
                 })
-                .finally(() => done())
+                .finally(() => done(error))
         })
 
         it('Should accept custom route path', (done: Function) => {
             // Arrange
+            let error: any
             server.controllerPath = path.join(process.cwd(), 'dist', 'test', 'shared', 'custom-controller')
             server.init()
                 .then(() => {
@@ -97,12 +100,12 @@ describe('@controller()', function() {
                     // Assert
                     expect(res).to.equal('CustomController.doGet')
                 })
-                .catch((error: any) => {
+                .catch((err: any) => {
                     // Unexpectedly Assert
-                    console.error(error)
+                    console.error(error = err)
                     expect(false, 'Should never come here!').to.be.true
                 })
-                .finally(() => done())
+                .finally(() => done(error))
         })
     }) // END describe
 

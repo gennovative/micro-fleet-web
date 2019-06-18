@@ -1,5 +1,10 @@
 ## VERSIONS
 
+### 1.2.0
+- Converted action decorators `@model` to param decorator.
+- Added parameters decorators for action methods.
+- Upgraded to new version of `@micro-fleet/common` with breaking change.
+
 ### 1.1.3
 - Added `RestControllerBase.noContent` which returns 204-code response.
 - Removed native BigInt type, using string instead.

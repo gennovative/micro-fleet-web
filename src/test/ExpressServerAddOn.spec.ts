@@ -32,7 +32,7 @@ class MockConfigurationProvider implements IConfigurationProvider {
     }
 
     public get(key: string): Maybe<PrimitiveType | any[]> {
-        return this._config.hasOwnProperty(key) ? new Maybe(this._config[key]) : new Maybe
+        return this._config.hasOwnProperty(key) ? Maybe.Just(this._config[key]) : Maybe.Nothing()
     }
 
     public init = () => Promise.resolve()
