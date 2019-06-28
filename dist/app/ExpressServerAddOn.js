@@ -25,6 +25,7 @@ const { WebSettingKeys: W } = common_1.constants;
 const MetaData_1 = require("./constants/MetaData");
 const filter_1 = require("./decorators/filter");
 const WebContext_1 = require("./WebContext");
+const response_1 = require("./decorators/response");
 const INVERSIFY_INJECTABLE = 'inversify:paramtypes';
 const DEFAULT_PORT = 80;
 const DEFAULT_URL_PREFIX = '';
@@ -295,11 +296,8 @@ let ExpressServerAddOn = class ExpressServerAddOn {
             return async function (req, res, next) {
                 try {
                     const args = await thisAddon._resolveParamValues(CtrlClass, actionName, req, res);
-                    const task = ctrlInstance[actionName].apply(ctrlInstance, args);
-                    // Catch async exception
-                    if (task && typeof task.catch === 'function') {
-                        task.catch(next);
-                    }
+                    const actionResult = await ctrlInstance[actionName].apply(ctrlInstance, args);
+                    thisAddon._autoRespond(actionResult, res, next);
                 }
                 catch (err) {
                     // Catch normal exception
@@ -323,6 +321,23 @@ let ExpressServerAddOn = class ExpressServerAddOn {
             }
         }
         return args;
+    }
+    _autoRespond(actionResult, res, next) {
+        // Skip if response object is injected with @response
+        if (res[response_1.RES_INJECTED]) {
+            return;
+        }
+        res = res.status(200);
+        switch (typeof actionResult) {
+            case 'object':
+                res.json(actionResult);
+                break;
+            case 'undefined':
+                res.end();
+                break;
+            default:
+                res.send(actionResult);
+        }
     }
     _buildActionRoutesAndFilters(actionFunc, actionName, CtrlClass, router) {
         const actionDesc = this._getMetadata(MetaData_1.MetaData.ACTION, CtrlClass, actionName);

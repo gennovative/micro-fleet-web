@@ -14,7 +14,9 @@ import { ExpressServerAddOn, Types as T } from '../../app'
 import { StatusCodeError } from 'request-promise/errors'
 import { IncomingMessage } from 'http'
 
-const BASE_URL = 'http://localhost'
+
+const PORT = 31000
+const BASE_URL = `http://localhost:${PORT}`
 const ALLOW_ORIGIN = 'http://allow.localhost'
 const { WebSettingKeys: W } = constants
 
@@ -29,6 +31,8 @@ class MockConfigurationProvider implements IConfigurationProvider {
         switch (key) {
             case W.WEB_CORS:
                 return this.enableCors ? Maybe.Just(ALLOW_ORIGIN) : Maybe.Nothing()
+            case W.WEB_PORT:
+                return Maybe.Just(PORT)
         }
         return Maybe.Nothing()
     }

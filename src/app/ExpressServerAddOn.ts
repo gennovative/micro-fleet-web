@@ -19,6 +19,7 @@ import { IActionErrorHandler, ActionInterceptor, PrioritizedFilterArray,
 import { Request, Response } from './interfaces'
 import { webContext } from './WebContext'
 import { ParamDecorDescriptor } from './decorators/param-decor-base'
+import { RES_INJECTED } from './decorators/response'
 
 
 const INVERSIFY_INJECTABLE = 'inversify:paramtypes'
@@ -426,11 +427,8 @@ export class ExpressServerAddOn implements IServiceAddOn {
                 return async function (this: any, req: Request, res: Response, next: express.NextFunction) {
                     try {
                         const args = await thisAddon._resolveParamValues(CtrlClass, actionName, req, res)
-                        const task = ctrlInstance[actionName].apply(ctrlInstance, args)
-                        // Catch async exception
-                        if (task && typeof task.catch === 'function') {
-                            task.catch(next)
-                        }
+                        const actionResult = await ctrlInstance[actionName].apply(ctrlInstance, args)
+                        thisAddon._autoRespond(actionResult, res, next)
                     } catch (err) {
                         // Catch normal exception
                         next(err)
@@ -453,6 +451,25 @@ export class ExpressServerAddOn implements IServiceAddOn {
             }
         }
         return args
+    }
+
+    protected _autoRespond(actionResult: any, res: Response, next: Function): void {
+        // Skip if response object is injected with @response
+        if (res[RES_INJECTED]) {
+            return
+        }
+
+        res = res.status(200)
+        switch (typeof actionResult) {
+            case 'object':
+                res.json(actionResult)
+                break
+            case 'undefined':
+                res.end()
+                break
+            default:
+                res.send(actionResult)
+        }
     }
 
     protected _buildActionRoutesAndFilters(actionFunc: Function, actionName: string, CtrlClass: Newable, router: express.Router): void {

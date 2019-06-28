@@ -1,10 +1,11 @@
 /// <reference path="./global.d.ts" />
 declare module '@micro-fleet/web/dist/app/constants/MetaData' {
-	export class MetaData {
-	    static readonly CONTROLLER = "micro-fleet-web:controller";
-	    static readonly CONTROLLER_FILTER = "micro-fleet-web:controllerFilter";
-	    static readonly ACTION = "micro-fleet-web:action";
-	    static readonly ACTION_FILTER = "micro-fleet-web:actionFilter";
+	export enum MetaData {
+	    CONTROLLER = "micro-fleet-web:controller",
+	    CONTROLLER_FILTER = "micro-fleet-web:controllerFilter",
+	    ACTION = "micro-fleet-web:action",
+	    ACTION_FILTER = "micro-fleet-web:actionFilter",
+	    PARAM_DECOR = "micro-fleet-web:paramDecor"
 	}
 
 }
@@ -16,12 +17,12 @@ declare module '@micro-fleet/web/dist/app/decorators/action' {
 	};
 	/**
 	 * Used to decorate action function of REST controller class.
-	 * @param {string} method Case-insensitive HTTP verb supported by Express
+	 * @param {string} verb Case-insensitive HTTP verb supported by Express
 	     *         (see full list at https://expressjs.com/en/4x/api.html#routing-methods)
 	 * @param {string} path Segment of URL pointing to this action.
 	 *         If not specified, it is default to be the action's function name.
 	 */
-	export function action(method: string, path?: string): Function;
+	export function action(verb: string, path?: string): Function;
 	/**
 	 * Used to decorate an action that accepts request of ALL verbs.
 	 * @param {string} path Segment of URL pointing to this action.
@@ -162,12 +163,40 @@ declare module '@micro-fleet/web/dist/app/WebContext' {
 	export const webContext: WebContext;
 
 }
+declare module '@micro-fleet/web/dist/app/decorators/param-decor-base' {
+	import { Request, Response } from '@micro-fleet/web/dist/app/interfaces';
+	export type ParseFunction = (input: string) => any;
+	export type DecorateParamOptions = {
+	    TargetClass: Newable;
+	    method: string;
+	    paramIndex: number;
+	    resolverFn: (req: Request, res: Response) => Promise<any> | any;
+	};
+	export type ParamDecorDescriptor = Function[];
+	/**
+	 * Stored the `resolverFn` for later use to resolve value for
+	 * param `paramIndex` of the `method` of `TargetClass`.
+	 */
+	export function decorateParam(opts: DecorateParamOptions): void;
+
+}
+declare module '@micro-fleet/web/dist/app/decorators/response' {
+	export const RES_INJECTED: unique symbol;
+	export type ResponseDecorator = () => Function;
+	/**
+	 * For action parameter decoration.
+	 * Resolves the parameter's value with the current response object
+	 */
+	export function response(): Function;
+
+}
 declare module '@micro-fleet/web/dist/app/ExpressServerAddOn' {
 	/// <reference types="node" />
 	import * as http from 'http';
 	import * as express from 'express';
 	import { IDependencyContainer, Maybe, IConfigurationProvider } from '@micro-fleet/common';
-	import { IActionErrorHandler, ActionInterceptor, PrioritizedFilterArray, FilterArray, FilterPriority } from '@micro-fleet/web/dist/app/decorators/filter'; type ControllerExports = {
+	import { IActionErrorHandler, ActionInterceptor, PrioritizedFilterArray, FilterArray, FilterPriority } from '@micro-fleet/web/dist/app/decorators/filter';
+	import { Request, Response } from '@micro-fleet/web/dist/app/interfaces'; type ControllerExports = {
 	    [name: string]: Newable;
 	};
 	export enum ControllerCreationStrategy {
@@ -293,6 +322,8 @@ declare module '@micro-fleet/web/dist/app/ExpressServerAddOn' {
 	    protected _buildControllerFilters(CtrlClass: Function, router: express.Router): void;
 	    protected _initActions(CtrlClass: Newable, router: express.Router): void;
 	    protected _proxyActionFunc(actionFunc: Function, CtrlClass: Newable): Function;
+	    protected _resolveParamValues(CtrlClass: Newable, actionName: string, req: Request, res: Response): Promise<any[]>;
+	    protected _autoRespond(actionResult: any, res: Response, next: Function): void;
 	    protected _buildActionRoutesAndFilters(actionFunc: Function, actionName: string, CtrlClass: Newable, router: express.Router): void;
 	    protected _getActionFilters(CtrlClass: Function, actionName: string): FilterArray;
 	    protected _extractActionFromPrototype(prototype: any, name: string): Maybe<Function>;
@@ -446,20 +477,115 @@ declare module '@micro-fleet/web/dist/app/filters/ModelFilter' {
 	}
 
 }
-declare module '@micro-fleet/web/dist/app/decorators/model' {
-	import { ModelFilterOptions } from '@micro-fleet/web/dist/app/filters/ModelFilter';
-	export type ModelDecorator = (opts: ModelFilterOptions) => Function;
+declare module '@micro-fleet/web/dist/app/decorators/tenantId' {
+	import { Maybe } from '@micro-fleet/common';
+	import { Request } from '@micro-fleet/web/dist/app/interfaces';
+	export type TenantIdDecorator = () => Function;
 	/**
-	 * Attempts to translate request body to desired model class.
+	 * Attempts to get tenant ID from tenant slug in request params.
 	 */
-	export function model(opts: ModelFilterOptions): Function;
+	export function extractTenantId(req: Request): Promise<Maybe<string>>;
+	export function tenantId(): Function;
+
+}
+declare module '@micro-fleet/web/dist/app/decorators/model' {
+	import * as joi from 'joi';
+	import { ModelFilterOptions } from '@micro-fleet/web/dist/app/filters/ModelFilter';
+	import { Request } from '@micro-fleet/web/dist/app/interfaces';
+	export type ModelDecorator = (opts: Newable | ModelFilterOptions) => Function;
+	export type ModelDecoratorOptions = {
+	    /**
+	     * Result object will be instance of this class.
+	     */
+	    ModelClass?: Newable;
+	    /**
+	     * Whether this request contains just some properties of model class.
+	     * Default: false (request contains all props)
+	     */
+	    isPartial?: boolean;
+	    /**
+	     * Function to extract model object from request body.
+	     * As default, model object is extracted from `request.body.model`.
+	     */
+	    modelPropFn?: <T extends object = object>(request: Request<T>) => any;
+	    /**
+	     * Custom validation rule for arbitrary object.
+	     */
+	    customValidationRule?: joi.SchemaMap;
+	    /**
+	     * If true, will attempt to resolve tenantId from request.params
+	     * then attach to the result object.
+	     */
+	    hasTenantId?: boolean;
+	};
+	export function extractModel(req: Request, options: ModelFilterOptions): Promise<object>;
+	/**
+	 * For action parameter decoration.
+	 * Attempts to translate request body to desired model class,
+	 * then attaches to the parameter's value.
+	 * @param opts Can be the Model Class or option object.
+	 */
+	export function model(opts: Newable | ModelFilterOptions): Function;
+
+}
+declare module '@micro-fleet/web/dist/app/decorators/header' {
+	import { Request } from '@micro-fleet/web/dist/app/interfaces';
+	import { ParseFunction } from '@micro-fleet/web/dist/app/decorators/param-decor-base';
+	export type HeaderDecorator = (name: string, parseFn?: ParseFunction, listDelimiter?: string) => Function;
+	export function getHeader(req: Request, name: string, parseFn?: ParseFunction, listDelimiter?: string): string | string[];
+	/**
+	 * For action parameter decoration.
+	 * Will resolve the parameter's value with header value from `request.params`.
+	 * @param {string} name Case-insensitive header name
+	 * @param {ParseFunction} parseFn Function to parse the value or array item
+	 * @param {string} listDelimiter If provided, use this as delimiter to split
+	 *      the value to array or strings.
+	 */
+	export function header(name: string, parseFn?: ParseFunction, listDelimiter?: string): Function;
+
+}
+declare module '@micro-fleet/web/dist/app/decorators/request' {
+	export type RequestDecorator = () => Function;
+	/**
+	 * For action parameter decoration.
+	 * Resolves the parameter's value with the current request object
+	 */
+	export function request(): Function;
+
+}
+declare module '@micro-fleet/web/dist/app/decorators/param' {
+	import { Request } from '@micro-fleet/web/dist/app/interfaces';
+	import { ParseFunction } from '@micro-fleet/web/dist/app/decorators/param-decor-base';
+	export type ParamDecorator = (name: string, parseFn?: ParseFunction) => Function;
+	export function getRouteParam(req: Request, name: string, parseFn?: ParseFunction): string;
+	/**
+	 * For action parameter decoration.
+	 * Will resolve the parameter's value with a route params from `request.params`.
+	 */
+	export function param(name: string, parseFn?: ParseFunction): Function;
+
+}
+declare module '@micro-fleet/web/dist/app/decorators/query' {
+	import { ParseFunction } from '@micro-fleet/web/dist/app/decorators/param-decor-base';
+	export type QueryDecorator = (name: string, parseFn?: ParseFunction) => Function;
+	/**
+	 * For action parameter decoration.
+	 * Will resolve the parameter's value with query string value from `request.params`.
+	 */
+	export function query(name: string, parseFn?: ParseFunction): Function;
 
 }
 declare module '@micro-fleet/web/dist/app/decorators/index' {
+	import * as act from '@micro-fleet/web/dist/app/decorators/action';
 	import { ControllerDecorator } from '@micro-fleet/web/dist/app/decorators/controller';
 	import { ModelDecorator } from '@micro-fleet/web/dist/app/decorators/model';
 	import { FilterDecorator } from '@micro-fleet/web/dist/app/decorators/filter';
-	import * as act from '@micro-fleet/web/dist/app/decorators/action';
+	import { HeaderDecorator } from '@micro-fleet/web/dist/app/decorators/header';
+	import { RequestDecorator } from '@micro-fleet/web/dist/app/decorators/request';
+	import { ResponseDecorator } from '@micro-fleet/web/dist/app/decorators/response';
+	import { TenantIdDecorator } from '@micro-fleet/web/dist/app/decorators/tenantId';
+	import { ParamDecorator } from '@micro-fleet/web/dist/app/decorators/param';
+	import { QueryDecorator } from '@micro-fleet/web/dist/app/decorators/query';
 	export type Decorators = {
 	    /**
 	     * Used to decorate an action that accepts request of ALL verbs.
@@ -531,7 +657,38 @@ declare module '@micro-fleet/web/dist/app/decorators/index' {
 	     * @param {number} priority A number from 0 to 10, filters with greater priority run before ones with less priority.
 	     */
 	    filter: FilterDecorator;
+	    header: HeaderDecorator;
+	    /**
+	     * For action parameter decoration.
+	     * Attempts to translate request body to desired model class,
+	     * then attaches to the parameter's value.
+	     */
 	    model: ModelDecorator;
+	    /**
+	     * For action parameter decoration.
+	     * Resolves the parameter's value with the current request object
+	     */
+	    request: RequestDecorator;
+	    /**
+	     * For action parameter decoration.
+	     * Resolves the parameter's value with the current response object
+	     */
+	    response: ResponseDecorator;
+	    /**
+	     * For action parameter decoration.
+	     * Will resolve the parameter's value with a route params from `request.params`.
+	     */
+	    param: ParamDecorator;
+	    /**
+	     * For action parameter decoration.
+	     * Will resolve the parameter's value with query string value from `request.params`.
+	     */
+	    query: QueryDecorator;
+	    /**
+	     * For action parameter decoration.
+	     * Resolves the parameter's value with tenantId from request params.
+	     */
+	    tenantId: TenantIdDecorator;
 	};
 	export const decorators: Decorators;
 

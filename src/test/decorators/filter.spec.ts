@@ -7,12 +7,14 @@ chai.use(spies)
 const expect = chai.expect
 import * as request from 'request-promise'
 import { injectable, DependencyContainer, serviceContext,
-    IConfigurationProvider, Maybe, Types as CmT } from '@micro-fleet/common'
+    IConfigurationProvider, Maybe, constants, Types as CmT } from '@micro-fleet/common'
 
 import { ExpressServerAddOn, ControllerCreationStrategy, Types as T } from '../../app'
 
-const BASE_URL = 'http://localhost'
 
+const PORT = 31000
+const BASE_URL = `http://localhost:${PORT}`
+const { WebSettingKeys: W } = constants
 
 @injectable()
 class MockConfigurationProvider implements IConfigurationProvider {
@@ -22,6 +24,10 @@ class MockConfigurationProvider implements IConfigurationProvider {
     public enableCors: boolean = false
 
     public get(key: string): Maybe<PrimitiveType | any[]> {
+        switch (key) {
+            case W.WEB_PORT:
+                return Maybe.Just(PORT)
+        }
         return Maybe.Nothing()
     }
 
