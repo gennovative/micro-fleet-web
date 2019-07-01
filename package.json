@@ -5,7 +5,7 @@
     "scripts": {
         "build": "npm run compile && npm run test",
         "clean": "rimraf dist coverage .nyc_output",
-        "definition": "node ../../../scripts/definition.js",
+        "definition": "node scripts/definition.js",
         "dedup": "rimraf node_modules/**/node_modules/**/typings",
         "compile": "npm run clean && npm run lint && tsc --pretty && npm run copy-resources",
         "copy-resources": "cpx \"src/test/shared/ssl/**/*.*\" dist/test/shared/ssl",

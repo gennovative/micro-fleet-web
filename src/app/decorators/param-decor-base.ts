@@ -7,9 +7,24 @@ import { Request, Response } from '../interfaces'
 export type ParseFunction = (input: string) => any
 
 export type DecorateParamOptions = {
+    /**
+     * The class that has the method to which the decorated parameter belongs.
+     */
     TargetClass: Newable,
+
+    /**
+     * The function name whose signature contains the decorated parameter.
+     */
     method: string,
+
+    /**
+     * Position of the decorated parameter in function signature.
+     */
     paramIndex: number,
+
+    /**
+     * The function to figure out the value for the decorated parameter
+     */
     resolverFn: (req: Request, res: Response) => Promise<any> | any,
 }
 

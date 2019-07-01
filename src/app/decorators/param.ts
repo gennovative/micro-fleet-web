@@ -5,7 +5,7 @@ import { decorateParam, ParseFunction } from './param-decor-base'
 export type ParamDecorator = (name: string, parseFn?: ParseFunction) => Function
 
 
-export function getRouteParam(req: Request, name: string, parseFn?: ParseFunction): string {
+function getRouteParam(req: Request, name: string, parseFn?: ParseFunction): string {
     return parseFn ? parseFn(req.params[name]) : req.params[name]
 }
 

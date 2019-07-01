@@ -1,12 +1,12 @@
 import * as chai from 'chai'
 
-import { decorators, Request, Response } from '../../app'
-const { model, controller, POST, PATCH, PUT, response, request } = decorators
+import { decorators as d, Request, Response } from '../../app'
+import { ModelDecoratorOptions } from '../../app/decorators'
 
 import { SampleModel } from './SampleModel'
 
 
-@controller('/model')
+@d.controller('/model')
 class ModelController {
 
     public spyFn: Function
@@ -17,61 +17,65 @@ class ModelController {
         this.count = 0
     }
 
-    @POST('/first')
+    @d.POST('/first')
     public first(
-            @model(SampleModel) result: SampleModel,
-            @response() res: Response,
+            @d.model(SampleModel) result: SampleModel,
+            @d.response() res: Response,
         ) {
         this.spyFn(result.constructor.name, result.name, result.age, result.position)
         res.sendStatus(200)
     }
 
-    @POST('/valid')
+    @d.POST('/valid')
     public doValid(
             req: Request<SampleModel>,
-            @response() res: Response,
-            @model(SampleModel) result: SampleModel,
+            @d.response() res: Response,
+            @d.model(SampleModel) result: SampleModel,
         ) {
         this.spyFn(result.constructor.name, result.name, result.age, result.position)
         res.sendStatus(200)
     }
 
-    @PATCH('/custom')
-    public doCustom(
-            @request() req: Request<SampleModel>,
-            @model({
+    @d.PATCH('/custom')
+    public doCustomExtract(
+            @d.request() req: Request<SampleModel>,
+            @d.model(<ModelDecoratorOptions> {
                 ModelClass: SampleModel,
-                modelPropFn: (r: Request) => r.body,
+                extractFn: (r: Request) => r.body.one,
             })
-            result: SampleModel,
-            @response() res: Response
+            modelOne: SampleModel,
+            @d.model({
+                ModelClass: SampleModel,
+                extractFn: (r: Request) => r.body.two,
+            })
+            modelTwo: SampleModel,
+            @d.response() res: Response
         ) {
-        this.spyFn(result.constructor.name, result.name, result.age, result.position)
+        this.spyFn(
+            modelOne.constructor.name, modelOne.name, modelOne.age, modelOne.position,
+            modelTwo.constructor.name, modelTwo.name, modelTwo.age, modelTwo.position,
+        )
         res.sendStatus(200)
     }
 
-    @PUT('/partial')
+    @d.PUT('/partial')
     public doPartial(
             req: Request<SampleModel>,
-            @model({
+            @d.model({
                 ModelClass: SampleModel,
                 isPartial: true,
             })
             result: SampleModel,
-            @response() res: Response
+            @d.response() res: Response
         ) {
         this.spyFn(result.constructor.name, result.name, result.age, result.position)
         res.sendStatus(200)
     }
 
-    @POST('/invalid')
-    // @filter(ModelFilter, FilterPriority.MEDIUM, {
-    //     ModelClass: SampleModel,
-    //     modelPropFn: (req: any) => req.body,
-    // })
+    @d.POST('/invalid')
     public doInvalid(
-            @model(SampleModel) result: SampleModel,
-            @response() res: Response,
+            @d.model(SampleModel) result: SampleModel,
+            @d.response() res: Response,
         ) {
         this.spyFn()
         res.sendStatus(200)

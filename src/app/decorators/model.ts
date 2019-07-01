@@ -1,13 +1,8 @@
 import * as joi from 'joi'
-import { Guard, ModelAutoMapper, MinorException } from '@micro-fleet/common'
+import { Guard, IModelAutoMapper, MinorException } from '@micro-fleet/common'
 
-import { ModelFilterOptions } from '../filters/ModelFilter'
 import { Request } from '../interfaces'
 import { decorateParam } from './param-decor-base'
-import { extractTenantId } from './tenantId'
-
-
-export type ModelDecorator = (opts: Newable | ModelFilterOptions) => Function
 
 
 /*
@@ -38,7 +33,7 @@ export type ModelDecoratorOptions = {
      * Function to extract model object from request body.
      * As default, model object is extracted from `request.body.model`.
      */
-    modelPropFn?: <T extends object = object>(request: Request<T>) => any
+    extractFn?: <T extends object = object>(request: Request<T>) => any
 
     /**
      * Custom validation rule for arbitrary object.
@@ -53,35 +48,52 @@ export type ModelDecoratorOptions = {
 }
 
 
-export async function extractModel(req: Request, options: ModelFilterOptions): Promise<object> {
-    const { ModelClass, isPartial, modelPropFn, hasTenantId } = options
-    Guard.assertArgDefined('ModelClass', ModelClass)
-    Guard.assertArgDefined(`${ModelClass}.translator`, ModelClass['translator'])
+export type ModelDecorator = (opts: Newable | ModelDecoratorOptions) => Function
 
-    const translator: ModelAutoMapper<any> = ModelClass['translator']
-    const func: Function = !translator
-        ? (m: any) => m // Noop function
-        : Boolean(isPartial)
-            ? translator.partial
-            : translator.whole
+export async function extractModel(req: Request, options: ModelDecoratorOptions): Promise<object> {
+    // const { ModelClass, isPartial, extractFn: modelPropFn, hasTenantId } = options
+    // Guard.assertArgDefined('ModelClass', ModelClass)
+    // Guard.assertArgDefined(`${ModelClass}.translator`, ModelClass['translator'])
 
-    let rawModel: object
-    if (req.body && req.body.model) {
-        rawModel = req.body.model
-    }
-    else if (typeof modelPropFn === 'function') {
-        rawModel = modelPropFn(req)
-    }
-    else {
-        throw new MinorException('Request body must have property "model". Otherwise, you must provide "modelPropFn" in decorator option.')
-    }
-    if (hasTenantId && typeof rawModel === 'object') {
-        (await extractTenantId(req))
-            .map(val => rawModel['tenantId'] = val)
-    }
+    // const translator: ModelAutoMapper<any> = ModelClass['translator']
+    // const func: Function = !translator
+    //     ? (m: any) => m // Noop function
+    //     : Boolean(isPartial)
+    //         ? translator.partial
+    //         : translator.whole
 
-    const resultModel = func.call(translator, rawModel)
-    return resultModel
+    // let rawModel: object
+    // if (req.body && req.body.model) {
+    //     rawModel = req.body.model
+    // }
+    // else if (typeof modelPropFn === 'function') {
+    //     rawModel = modelPropFn(req)
+    // }
+    // else {
+    //     throw new MinorException(
+        // 'Request body must have property "model". Otherwise, you must provide "modelPropFn" in decorator option.')
+    // }
+    // if (hasTenantId && typeof rawModel === 'object') {
+    //     (await extractTenantId(req))
+    //         .map(val => rawModel['tenantId'] = val)
+    // }
+
+    // const resultModel = func.call(translator, rawModel)
+    // return resultModel
+
+    const { ModelClass, isPartial, extractFn } = options
+    if (!extractFn && req.body.model == null) {
+        throw new MinorException('Request must have property "body.model". Otherwise, you must provide "extractFn" in decorator option.')
+    }
+    const rawModel = Boolean(extractFn) ? extractFn(req) : req.body.model
+
+    if (typeof rawModel === 'object' && ModelClass) {
+        Guard.assertArgDefined(`${ModelClass}.translator`, ModelClass['translator'])
+        const translator: IModelAutoMapper<any> = ModelClass['translator']
+        const func: Function = (!!isPartial) ? translator.partial : translator.whole
+        return func.call(translator, rawModel)
+    }
+    return rawModel
 }
 
 
@@ -91,7 +103,7 @@ export async function extractModel(req: Request, options: ModelFilterOptions): P
  * then attaches to the parameter's value.
  * @param opts Can be the Model Class or option object.
  */
-export function model(opts: Newable | ModelFilterOptions): Function {
+export function model(opts: Newable | ModelDecoratorOptions): Function {
     return function (proto: any, method: string, paramIndex: number): Function {
         if (typeof opts === 'function') {
             opts = {
@@ -102,7 +114,7 @@ export function model(opts: Newable | ModelFilterOptions): Function {
             TargetClass: proto.constructor,
             method,
             paramIndex,
-            resolverFn: (request) => extractModel(request, opts as ModelFilterOptions),
+            resolverFn: (request) => extractModel(request, opts as ModelDecoratorOptions),
         })
         return proto
     }

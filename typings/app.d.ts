@@ -167,9 +167,21 @@ declare module '@micro-fleet/web/dist/app/decorators/param-decor-base' {
 	import { Request, Response } from '@micro-fleet/web/dist/app/interfaces';
 	export type ParseFunction = (input: string) => any;
 	export type DecorateParamOptions = {
+	    /**
+	     * The class that has the method to which the decorated parameter belongs.
+	     */
 	    TargetClass: Newable;
+	    /**
+	     * The function name whose signature contains the decorated parameter.
+	     */
 	    method: string;
+	    /**
+	     * Position of the decorated parameter in function signature.
+	     */
 	    paramIndex: number;
+	    /**
+	     * The function to figure out the value for the decorated parameter
+	     */
 	    resolverFn: (req: Request, res: Response) => Promise<any> | any;
 	};
 	export type ParamDecorDescriptor = Function[];
@@ -435,64 +447,9 @@ declare module '@micro-fleet/web/dist/app/decorators/controller' {
 	export function controller(path?: string): Function;
 
 }
-declare module '@micro-fleet/web/dist/app/filters/ActionFilterBase' {
-	export abstract class ActionFilterBase {
-	    protected addReadonlyProp(obj: object, prop: string, value: any): void;
-	}
-
-}
-declare module '@micro-fleet/web/dist/app/filters/ModelFilter' {
-	import * as joi from 'joi';
-	import { IActionFilter } from '@micro-fleet/web/dist/app/decorators/filter';
-	import { Request, Response } from '@micro-fleet/web/dist/app/interfaces';
-	import { ActionFilterBase } from '@micro-fleet/web/dist/app/filters/ActionFilterBase';
-	export type ModelFilterOptions = {
-	    /**
-	     * Result object will be instance of this class.
-	     */
-	    ModelClass?: Newable;
-	    /**
-	     * Whether this request contains all properties of model class,
-	     * or just some of them.
-	     * Default: false
-	     */
-	    isPartial?: boolean;
-	    /**
-	     * Function to extract model object from request body.
-	     * As default, model object is extracted from `request.body.model`.
-	     */
-	    modelPropFn?: <T extends object = object>(request: Request<T>) => any;
-	    /**
-	     * Custom validation rule for arbitrary object.
-	     */
-	    customValidationRule?: joi.SchemaMap;
-	    /**
-	     * If true, this filter attaches tenantId to result object.
-	     * tenantId should be resolved by `TenantResolverFilter`.
-	     */
-	    hasTenantId?: boolean;
-	};
-	export class ModelFilter extends ActionFilterBase implements IActionFilter {
-	    execute(request: Request, response: Response, next: Function, options: ModelFilterOptions): void;
-	}
-
-}
-declare module '@micro-fleet/web/dist/app/decorators/tenantId' {
-	import { Maybe } from '@micro-fleet/common';
-	import { Request } from '@micro-fleet/web/dist/app/interfaces';
-	export type TenantIdDecorator = () => Function;
-	/**
-	 * Attempts to get tenant ID from tenant slug in request params.
-	 */
-	export function extractTenantId(req: Request): Promise<Maybe<string>>;
-	export function tenantId(): Function;
-
-}
 declare module '@micro-fleet/web/dist/app/decorators/model' {
 	import * as joi from 'joi';
-	import { ModelFilterOptions } from '@micro-fleet/web/dist/app/filters/ModelFilter';
 	import { Request } from '@micro-fleet/web/dist/app/interfaces';
-	export type ModelDecorator = (opts: Newable | ModelFilterOptions) => Function;
 	export type ModelDecoratorOptions = {
 	    /**
 	     * Result object will be instance of this class.
@@ -507,7 +464,7 @@ declare module '@micro-fleet/web/dist/app/decorators/model' {
 	     * Function to extract model object from request body.
 	     * As default, model object is extracted from `request.body.model`.
 	     */
-	    modelPropFn?: <T extends object = object>(request: Request<T>) => any;
+	    extractFn?: <T extends object = object>(request: Request<T>) => any;
 	    /**
 	     * Custom validation rule for arbitrary object.
 	     */
@@ -518,14 +475,15 @@ declare module '@micro-fleet/web/dist/app/decorators/model' {
 	     */
 	    hasTenantId?: boolean;
 	};
-	export function extractModel(req: Request, options: ModelFilterOptions): Promise<object>;
+	export type ModelDecorator = (opts: Newable | ModelDecoratorOptions) => Function;
+	export function extractModel(req: Request, options: ModelDecoratorOptions): Promise<object>;
 	/**
 	 * For action parameter decoration.
 	 * Attempts to translate request body to desired model class,
 	 * then attaches to the parameter's value.
 	 * @param opts Can be the Model Class or option object.
 	 */
-	export function model(opts: Newable | ModelFilterOptions): Function;
+	export function model(opts: Newable | ModelDecoratorOptions): Function;
 
 }
 declare module '@micro-fleet/web/dist/app/decorators/header' {
@@ -554,10 +512,8 @@ declare module '@micro-fleet/web/dist/app/decorators/request' {
 
 }
 declare module '@micro-fleet/web/dist/app/decorators/param' {
-	import { Request } from '@micro-fleet/web/dist/app/interfaces';
 	import { ParseFunction } from '@micro-fleet/web/dist/app/decorators/param-decor-base';
 	export type ParamDecorator = (name: string, parseFn?: ParseFunction) => Function;
-	export function getRouteParam(req: Request, name: string, parseFn?: ParseFunction): string;
 	/**
 	 * For action parameter decoration.
 	 * Will resolve the parameter's value with a route params from `request.params`.
@@ -575,17 +531,18 @@ declare module '@micro-fleet/web/dist/app/decorators/query' {
 	export function query(name: string, parseFn?: ParseFunction): Function;
 
 }
-declare module '@micro-fleet/web/dist/app/decorators/index' {
+declare module '@micro-fleet/web/dist/app/decorators' {
 	import * as act from '@micro-fleet/web/dist/app/decorators/action';
 	import { ControllerDecorator } from '@micro-fleet/web/dist/app/decorators/controller';
-	import { ModelDecorator } from '@micro-fleet/web/dist/app/decorators/model';
+	import * as m from '@micro-fleet/web/dist/app/decorators/model';
 	import { FilterDecorator } from '@micro-fleet/web/dist/app/decorators/filter';
 	import { HeaderDecorator } from '@micro-fleet/web/dist/app/decorators/header';
 	import { RequestDecorator } from '@micro-fleet/web/dist/app/decorators/request';
 	import { ResponseDecorator } from '@micro-fleet/web/dist/app/decorators/response';
-	import { TenantIdDecorator } from '@micro-fleet/web/dist/app/decorators/tenantId';
 	import { ParamDecorator } from '@micro-fleet/web/dist/app/decorators/param';
 	import { QueryDecorator } from '@micro-fleet/web/dist/app/decorators/query';
+	export * from '@micro-fleet/web/dist/app/decorators/param-decor-base';
+	export type ModelDecoratorOptions = m.ModelDecoratorOptions;
 	export type Decorators = {
 	    /**
 	     * Used to decorate an action that accepts request of ALL verbs.
@@ -663,7 +620,7 @@ declare module '@micro-fleet/web/dist/app/decorators/index' {
 	     * Attempts to translate request body to desired model class,
 	     * then attaches to the parameter's value.
 	     */
-	    model: ModelDecorator;
+	    model: m.ModelDecorator;
 	    /**
 	     * For action parameter decoration.
 	     * Resolves the parameter's value with the current request object
@@ -684,13 +641,14 @@ declare module '@micro-fleet/web/dist/app/decorators/index' {
 	     * Will resolve the parameter's value with query string value from `request.params`.
 	     */
 	    query: QueryDecorator;
-	    /**
-	     * For action parameter decoration.
-	     * Resolves the parameter's value with tenantId from request params.
-	     */
-	    tenantId: TenantIdDecorator;
 	};
 	export const decorators: Decorators;
+
+}
+declare module '@micro-fleet/web/dist/app/filters/ActionFilterBase' {
+	export abstract class ActionFilterBase {
+	    protected addReadonlyProp(obj: object, prop: string, value: any): void;
+	}
 
 }
 declare module '@micro-fleet/web/dist/app/filters/ErrorHandlerFilter' {
@@ -733,14 +691,12 @@ declare module '@micro-fleet/web/dist/app/register-addon' {
 
 }
 declare module '@micro-fleet/web' {
-	import decoratorObj = require('@micro-fleet/web/dist/app/decorators/index');
-	export const decorators: decoratorObj.Decorators;
+	export * from '@micro-fleet/web/dist/app/decorators';
 	export * from '@micro-fleet/web/dist/app/constants/MetaData';
 	export { IActionFilter, IActionErrorHandler, FilterPriority, addFilterToTarget, pushFilterToArray } from '@micro-fleet/web/dist/app/decorators/filter';
 	export * from '@micro-fleet/web/dist/app/interfaces';
 	export * from '@micro-fleet/web/dist/app/filters/ActionFilterBase';
 	export * from '@micro-fleet/web/dist/app/filters/ErrorHandlerFilter';
-	export * from '@micro-fleet/web/dist/app/filters/ModelFilter';
 	export * from '@micro-fleet/web/dist/app/filters/TenantResolverFilter';
 	export * from '@micro-fleet/web/dist/app/ExpressServerAddOn';
 	export * from '@micro-fleet/web/dist/app/RestControllerBase';
@@ -755,5 +711,16 @@ declare module '@micro-fleet/web/dist/app/constants/AuthConstant' {
 	    REFRESH = "jwt-refresh"
 	}
 	export { TokenType };
+
+}
+declare module '@micro-fleet/web/dist/app/decorators/tenantId' {
+	import { Maybe } from '@micro-fleet/common';
+	import { Request } from '@micro-fleet/web/dist/app/interfaces';
+	export type TenantIdDecorator = () => Function;
+	/**
+	 * Attempts to get tenant ID from tenant slug in request params.
+	 */
+	export function extractTenantId(req: Request): Promise<Maybe<string>>;
+	export function tenantId(): Function;
 
 }

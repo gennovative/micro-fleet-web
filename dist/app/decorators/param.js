@@ -4,7 +4,6 @@ const param_decor_base_1 = require("./param-decor-base");
 function getRouteParam(req, name, parseFn) {
     return parseFn ? parseFn(req.params[name]) : req.params[name];
 }
-exports.getRouteParam = getRouteParam;
 /**
  * For action parameter decoration.
  * Will resolve the parameter's value with a route params from `request.params`.

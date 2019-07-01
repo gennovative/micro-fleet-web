@@ -48,7 +48,7 @@ class ParamDecorController {
             @d.request() req: Request<SampleModel>,
             @d.model({
                 ModelClass: SampleModel,
-                modelPropFn: (r: Request) => r.body,
+                extractFn: (r: Request) => r.body,
             })
             result: SampleModel,
             @d.response() res: Response

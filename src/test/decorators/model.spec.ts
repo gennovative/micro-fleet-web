@@ -134,12 +134,19 @@ describe('@model()', function() {
                 .finally(() => done(error))
         })
 
-        it('Should get request payload from factory function then converting to model class', (done: Function) => {
+        it('Should extract raw model with custom function then converting to model class', (done: Function) => {
             // Arrange
-            const payload = <SampleModel> {
-                name: 'Valid name',
-                age: 20,
-                position: 'Coolie manager',
+            const payload = {
+                one: <SampleModel> {
+                    name: 'Valid name',
+                    age: 20,
+                    position: 'Coolie manager',
+                },
+                two: <SampleModel> {
+                    name: 'Another Valid name',
+                    age: 30,
+                    position: 'Real coolie here',
+                },
             }
             let error: any
             server.init()
@@ -153,7 +160,10 @@ describe('@model()', function() {
                 .then(() => {
                     const controller: any = container.resolve(CONTROLLER_NAME)
                     expect(controller['spyFn']).to.be.called.once
-                    expect(controller['spyFn']).to.be.called.with.exactly('SampleModel', payload.name, payload.age, payload.position)
+                    expect(controller['spyFn']).to.be.called.with.exactly(
+                        'SampleModel', payload.one.name, payload.one.age, payload.one.position,
+                        'SampleModel', payload.two.name, payload.two.age, payload.two.position,
+                    )
                 })
                 .catch((err: any) => {
                     // Unexpectedly Assert
@@ -166,8 +176,8 @@ describe('@model()', function() {
         it('Should convert just some properties of the model class', (done: Function) => {
             // Arrange
             const payload = <Partial<SampleModel>> {
-                name: 'Valid name',
                 age: 20,
+                position: 'Valid position',
             }
             let error: any
             server.init()
@@ -181,7 +191,12 @@ describe('@model()', function() {
                 .then(() => {
                     const controller: any = container.resolve(CONTROLLER_NAME)
                     expect(controller['spyFn']).to.be.called.once
-                    expect(controller['spyFn']).to.be.called.with.exactly('SampleModel', payload.name, payload.age, undefined)
+                    expect(controller['spyFn']).to.be.called.with.exactly(
+                        'SampleModel',
+                        undefined,
+                        payload.age,
+                        payload.position,
+                    )
                 })
                 .catch((err: any) => {
                     // Unexpectedly Assert

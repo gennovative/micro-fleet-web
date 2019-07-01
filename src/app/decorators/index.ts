@@ -2,18 +2,20 @@
 if (!Reflect || typeof Reflect['hasOwnMetadata'] !== 'function') {
     require('reflect-metadata')
 }
-
 import * as act from './action'
 import { controller, ControllerDecorator } from './controller'
-import { model, ModelDecorator } from './model'
+import * as m from './model'
 import { filter, FilterDecorator } from './filter'
 import { header, HeaderDecorator } from './header'
 import { request, RequestDecorator } from './request'
 import { response, ResponseDecorator } from './response'
-import { tenantId, TenantIdDecorator } from './tenantId'
 import { param, ParamDecorator } from './param'
 import { query, QueryDecorator } from './query'
 
+
+export * from './param-decor-base'
+
+export type ModelDecoratorOptions = m.ModelDecoratorOptions
 
 export type Decorators = {
 
@@ -105,7 +107,7 @@ export type Decorators = {
      * Attempts to translate request body to desired model class,
      * then attaches to the parameter's value.
      */
-    model: ModelDecorator,
+    model: m.ModelDecorator,
 
     /**
      * For action parameter decoration.
@@ -130,12 +132,6 @@ export type Decorators = {
      * Will resolve the parameter's value with query string value from `request.params`.
      */
     query: QueryDecorator,
-
-    /**
-     * For action parameter decoration.
-     * Resolves the parameter's value with tenantId from request params.
-     */
-    tenantId: TenantIdDecorator,
 }
 
 export const decorators: Decorators = {
@@ -151,10 +147,9 @@ export const decorators: Decorators = {
     controller,
     filter,
     header,
-    model,
+    model: m.model,
     request,
     response,
     param,
     query,
-    tenantId,
 }
