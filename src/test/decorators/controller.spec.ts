@@ -21,6 +21,7 @@ const { controller } = decorators
 @injectable()
 class MockConfigurationProvider implements IConfigurationProvider {
     public readonly name: string = 'MockConfigurationProvider'
+    public configFilePath: string
 
     public enableRemote: boolean = false
     public enableCors: boolean = false

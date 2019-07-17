@@ -474,6 +474,11 @@ declare module '@micro-fleet/web/dist/app/decorators/model' {
 	     * then attach to the result object.
 	     */
 	    hasTenantId?: boolean;
+	    /**
+	     * Turns on or off model validation before translating.
+	     * Default to use translator's `enableValidation` property.
+	     */
+	    enableValidation?: boolean;
 	};
 	export type ModelDecorator = (opts: Newable | ModelDecoratorOptions) => Function;
 	export function extractModel(req: Request, options: ModelDecoratorOptions): Promise<object>;

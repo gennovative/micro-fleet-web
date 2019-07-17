@@ -44,44 +44,24 @@ export type ModelDecoratorOptions = {
      * If true, will attempt to resolve tenantId from request.params
      * then attach to the result object.
      */
-    hasTenantId?: boolean
+    hasTenantId?: boolean,
+
+    /**
+     * Turns on or off model validation before translating.
+     * Default to use translator's `enableValidation` property.
+     */
+    enableValidation?: boolean,
 }
 
 
 export type ModelDecorator = (opts: Newable | ModelDecoratorOptions) => Function
 
 export async function extractModel(req: Request, options: ModelDecoratorOptions): Promise<object> {
-    // const { ModelClass, isPartial, extractFn: modelPropFn, hasTenantId } = options
-    // Guard.assertArgDefined('ModelClass', ModelClass)
-    // Guard.assertArgDefined(`${ModelClass}.translator`, ModelClass['translator'])
-
-    // const translator: ModelAutoMapper<any> = ModelClass['translator']
-    // const func: Function = !translator
-    //     ? (m: any) => m // Noop function
-    //     : Boolean(isPartial)
-    //         ? translator.partial
-    //         : translator.whole
-
-    // let rawModel: object
-    // if (req.body && req.body.model) {
-    //     rawModel = req.body.model
-    // }
-    // else if (typeof modelPropFn === 'function') {
-    //     rawModel = modelPropFn(req)
-    // }
-    // else {
-    //     throw new MinorException(
-        // 'Request body must have property "model". Otherwise, you must provide "modelPropFn" in decorator option.')
-    // }
-    // if (hasTenantId && typeof rawModel === 'object') {
-    //     (await extractTenantId(req))
-    //         .map(val => rawModel['tenantId'] = val)
-    // }
-
-    // const resultModel = func.call(translator, rawModel)
-    // return resultModel
 
     const { ModelClass, isPartial, extractFn } = options
+    const translateOpt = (options.enableValidation != null)
+        ? { enableValidation: options.enableValidation}
+        : null
     if (!extractFn && req.body.model == null) {
         throw new MinorException('Request must have property "body.model". Otherwise, you must provide "extractFn" in decorator option.')
     }
@@ -91,7 +71,7 @@ export async function extractModel(req: Request, options: ModelDecoratorOptions)
         Guard.assertArgDefined(`${ModelClass}.translator`, ModelClass['translator'])
         const translator: IModelAutoMapper<any> = ModelClass['translator']
         const func: Function = (!!isPartial) ? translator.partial : translator.whole
-        return func.call(translator, rawModel)
+        return func.call(translator, rawModel, translateOpt)
     }
     return rawModel
 }
