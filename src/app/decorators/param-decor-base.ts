@@ -1,4 +1,5 @@
 /// <reference types="reflect-metadata" />
+import { Newable } from '@micro-fleet/common'
 
 import { MetaData } from '../constants/MetaData'
 import { Request, Response } from '../interfaces'

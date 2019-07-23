@@ -1,5 +1,5 @@
 import * as joi from 'joi'
-import { Guard, IModelAutoMapper, MinorException } from '@micro-fleet/common'
+import { Guard, IModelAutoMapper, MinorException, Newable } from '@micro-fleet/common'
 
 import { Request } from '../interfaces'
 import { decorateParam } from './param-decor-base'

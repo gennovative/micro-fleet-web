@@ -1,5 +1,5 @@
 import { injectable, inject, Maybe, Guard } from '@micro-fleet/common'
-import { CacheProvider, CacheLevel, Types as CaT } from '@micro-fleet/cache'
+import { ICacheProvider, CacheLevel, Types as CaT } from '@micro-fleet/cache'
 
 import { IActionFilter } from '../decorators/filter'
 import { Request, Response } from '../interfaces'
@@ -15,7 +15,7 @@ export class TenantResolverFilter
     implements IActionFilter {
 
     constructor(
-            @inject(CaT.CACHE_PROVIDER) protected _cache: CacheProvider,
+            @inject(CaT.CACHE_PROVIDER) protected _cache: ICacheProvider,
             // @inject(GvT.TENANT_PROVIDER) protected _tenantProvider: ITenantProvider
         ) {
         super()

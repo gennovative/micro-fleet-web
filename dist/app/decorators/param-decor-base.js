@@ -1,5 +1,4 @@
 "use strict";
-/// <reference types="reflect-metadata" />
 Object.defineProperty(exports, "__esModule", { value: true });
 const MetaData_1 = require("../constants/MetaData");
 /**

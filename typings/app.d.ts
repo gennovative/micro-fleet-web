@@ -74,6 +74,7 @@ declare module '@micro-fleet/web/dist/app/decorators/action' {
 
 }
 declare module '@micro-fleet/web/dist/app/decorators/filter' {
+	import { Newable } from '@micro-fleet/common';
 	/**
 	 * Provides operations to intercept HTTP requests to a controller.
 	 */
@@ -164,6 +165,7 @@ declare module '@micro-fleet/web/dist/app/WebContext' {
 
 }
 declare module '@micro-fleet/web/dist/app/decorators/param-decor-base' {
+	import { Newable } from '@micro-fleet/common';
 	import { Request, Response } from '@micro-fleet/web/dist/app/interfaces';
 	export type ParseFunction = (input: string) => any;
 	export type DecorateParamOptions = {
@@ -206,7 +208,7 @@ declare module '@micro-fleet/web/dist/app/ExpressServerAddOn' {
 	/// <reference types="node" />
 	import * as http from 'http';
 	import * as express from 'express';
-	import { IDependencyContainer, Maybe, IConfigurationProvider } from '@micro-fleet/common';
+	import { IDependencyContainer, Maybe, IConfigurationProvider, Newable, IServiceAddOn, PrimitiveType } from '@micro-fleet/common';
 	import { IActionErrorHandler, ActionInterceptor, PrioritizedFilterArray, FilterArray, FilterPriority } from '@micro-fleet/web/dist/app/decorators/filter';
 	import { Request, Response } from '@micro-fleet/web/dist/app/interfaces'; type ControllerExports = {
 	    [name: string]: Newable;
@@ -449,6 +451,7 @@ declare module '@micro-fleet/web/dist/app/decorators/controller' {
 }
 declare module '@micro-fleet/web/dist/app/decorators/model' {
 	import * as joi from 'joi';
+	import { Newable } from '@micro-fleet/common';
 	import { Request } from '@micro-fleet/web/dist/app/interfaces';
 	export type ModelDecoratorOptions = {
 	    /**
@@ -669,7 +672,7 @@ declare module '@micro-fleet/web/dist/app/filters/ErrorHandlerFilter' {
 
 }
 declare module '@micro-fleet/web/dist/app/filters/TenantResolverFilter' {
-	import { CacheProvider } from '@micro-fleet/cache';
+	import { ICacheProvider } from '@micro-fleet/cache';
 	import { IActionFilter } from '@micro-fleet/web/dist/app/decorators/filter';
 	import { Request, Response } from '@micro-fleet/web/dist/app/interfaces';
 	import { ActionFilterBase } from '@micro-fleet/web/dist/app/filters/ActionFilterBase';
@@ -677,8 +680,8 @@ declare module '@micro-fleet/web/dist/app/filters/TenantResolverFilter' {
 	 * Provides method to look up tenant ID from tenant slug.
 	 */
 	export class TenantResolverFilter extends ActionFilterBase implements IActionFilter {
-	    protected _cache: CacheProvider;
-	    constructor(_cache: CacheProvider);
+	    protected _cache: ICacheProvider;
+	    constructor(_cache: ICacheProvider);
 	    execute(req: Request, res: Response, next: Function): Promise<void>;
 	}
 
