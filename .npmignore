@@ -3,6 +3,7 @@
 coverage
 dist/test
 dist/**/*.map
+scripts
 src
 .editorconfig
 .gitignore
