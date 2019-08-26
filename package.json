@@ -1,6 +1,6 @@
 {
     "name": "@micro-fleet/web",
-    "version": "1.2.0-rc2",
+    "version": "1.2.0",
     "description": "Contains classes used by web and rest services.",
     "scripts": {
         "build": "npm run compile && npm run test",
@@ -13,7 +13,6 @@
         "test": "nyc --reporter=json --reporter=html --include dist/app/**/*.js mocha --recursive dist/test",
         "lint": "tslint --fix 'src/**/*.ts'",
         "watch": "npm run clean && npm run lint && npm run copy-resources && tsc --watch --pretty",
-        "linkPackages": "node ../../../scripts/linkPackages.js",
         "prepublishOnly": "npm run release"
     },
     "dependencies": {
@@ -32,15 +31,15 @@
         "@types/joi": "~14.3",
         "@types/mocha": "~5.2",
         "@types/node": "~10.14",
-        "@types/request-promise": "~4.1",
+        "@types/request-promise-native": "~1.0",
         "chai": "~4.1",
         "chai-spies": "git://github.com/chaijs/chai-spies.git#b11aeebf",
         "cpx": "~1.5",
         "joi": "~13.0",
         "mocha": "~5.2",
-        "nyc": "~13.3",
+        "nyc": "~14.1",
         "request": "~2.87",
-        "request-promise": "~4.2",
+        "request-promise-native": "~1.0",
         "rimraf": "~2.6",
         "ts-declarator": "~1.0",
         "tslint": "~5.11",

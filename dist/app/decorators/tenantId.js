@@ -12,7 +12,7 @@ async function extractTenantId(req) {
     }
     const container = common_1.serviceContext.dependencyContainer;
     const tenantSvc = container.resolve('');
-    const maybeId = await tenantSvc.getIdBySlug(req.params.tenant);
+    const maybeId = await tenantSvc.getIdBySlug(req.params['tenant']);
     return maybeId;
 }
 exports.extractTenantId = extractTenantId;

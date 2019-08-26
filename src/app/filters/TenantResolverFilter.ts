@@ -23,7 +23,7 @@ export class TenantResolverFilter
     }
 
     public async execute(req: Request, res: Response, next: Function): Promise<void> {
-        const { tenantSlug } = req.params
+        const { tenantSlug } = req.params as any
 
         // Preserved slug, specially for system services.
         if (tenantSlug == '_') {

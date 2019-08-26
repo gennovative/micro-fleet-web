@@ -17,7 +17,7 @@ export async function extractTenantId(req: Request): Promise<Maybe<string>> {
     }
     const container = serviceContext.dependencyContainer
     const tenantSvc: any = container.resolve('')
-    const maybeId = await tenantSvc.getIdBySlug(req.params.tenant)
+    const maybeId = await tenantSvc.getIdBySlug(req.params['tenant'])
 
     return maybeId
 }

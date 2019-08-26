@@ -4,7 +4,7 @@ import * as chai from 'chai'
 import * as spies from 'chai-spies'
 chai.use(spies)
 const expect = chai.expect
-import * as request from 'request-promise'
+import * as request from 'request-promise-native'
 import { injectable, DependencyContainer, serviceContext,
     IConfigurationProvider, Maybe, Types as CmT, constants } from '@micro-fleet/common'
 

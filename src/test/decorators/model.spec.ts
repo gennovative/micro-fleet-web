@@ -4,7 +4,7 @@ import * as chai from 'chai'
 import * as spies from 'chai-spies'
 chai.use(spies)
 const expect = chai.expect
-import * as request from 'request-promise'
+import * as request from 'request-promise-native'
 import { injectable, DependencyContainer, serviceContext, constants,
     IConfigurationProvider, Maybe, Types as CmT } from '@micro-fleet/common'
 
@@ -13,7 +13,7 @@ import { ExpressServerAddOn, ControllerCreationStrategy, ErrorHandlerFilter,
 import { SampleModel } from '../shared/SampleModel'
 
 // For typing only
-import { StatusCodeError } from 'request-promise/errors'
+import { StatusCodeError } from 'request-promise-native/errors'
 
 
 const PORT = 31000

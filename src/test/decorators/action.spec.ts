@@ -4,14 +4,14 @@ import * as chai from 'chai'
 import * as spies from 'chai-spies'
 chai.use(spies)
 const expect = chai.expect
-import * as request from 'request-promise'
+import * as request from 'request-promise-native'
 import { injectable, DependencyContainer, serviceContext,
     IConfigurationProvider, Maybe, Types as CmT, constants } from '@micro-fleet/common'
 
 import { ExpressServerAddOn, Types as T } from '../../app'
 
 // For typing only
-import { StatusCodeError } from 'request-promise/errors'
+import { StatusCodeError } from 'request-promise-native/errors'
 import { IncomingMessage } from 'http'
 
 

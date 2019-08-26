@@ -5,8 +5,8 @@ import * as chai from 'chai'
 import * as spies from 'chai-spies'
 chai.use(spies)
 const expect = chai.expect
-import * as request from 'request-promise'
-import { StatusCodeError } from 'request-promise/errors'
+import * as request from 'request-promise-native'
+import { StatusCodeError } from 'request-promise-native/errors'
 import { injectable, DependencyContainer, serviceContext, /* CriticalException, */
     IConfigurationProvider, Maybe, Types as CmT, constants } from '@micro-fleet/common'
 
