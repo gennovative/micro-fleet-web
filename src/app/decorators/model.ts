@@ -58,7 +58,7 @@ export type ModelDecorator = (opts: Newable | ModelDecoratorOptions) => Function
 
 export async function extractModel(req: Request, options: ModelDecoratorOptions): Promise<object> {
 
-    const { ModelClass, isPartial, extractFn } = options
+    const { ModelClass, isPartial, extractFn, hasTenantId } = options
     const translateOpt = (options.enableValidation != null)
         ? { enableValidation: options.enableValidation}
         : null
@@ -66,11 +66,12 @@ export async function extractModel(req: Request, options: ModelDecoratorOptions)
         throw new MinorException('Request must have property "body.model". Otherwise, you must provide "extractFn" in decorator option.')
     }
     const rawModel = Boolean(extractFn) ? extractFn(req) : req.body.model
+    hasTenantId && (rawModel.tenantId = req.extras.tenantId)
 
     if (typeof rawModel === 'object' && ModelClass) {
         Guard.assertArgDefined(`${ModelClass}.translator`, ModelClass['translator'])
         const translator: IModelAutoMapper<any> = ModelClass['translator']
-        const func: Function = (!!isPartial) ? translator.partial : translator.whole
+        const func: Function = Boolean(isPartial) ? translator.partial : translator.whole
         return func.call(translator, rawModel, translateOpt)
     }
     return rawModel

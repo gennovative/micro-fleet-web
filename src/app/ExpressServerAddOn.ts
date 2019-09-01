@@ -10,7 +10,7 @@ import * as express from 'express'
 import * as cors from 'cors'
 import { injectable, inject, CriticalException, IDependencyContainer, Guard,
     Maybe, IConfigurationProvider, Types as T, constants,
-    HandlerContainer, Newable, IServiceAddOn, PrimitiveType } from '@micro-fleet/common'
+    HandlerContainer, Newable, IServiceAddOn, PrimitiveType, ObjectUtil } from '@micro-fleet/common'
 const { WebSettingKeys: W } = constants
 
 import { MetaData } from './constants/MetaData'
@@ -463,7 +463,8 @@ export class ExpressServerAddOn implements IServiceAddOn {
         res = res.status(200)
         switch (typeof actionResult) {
             case 'object':
-                res.json(actionResult)
+                const isSerializable = ObjectUtil.isSerializable(actionResult)
+                res.json(isSerializable ? actionResult.toJSON() : actionResult)
                 break
             case 'undefined':
                 res.end()

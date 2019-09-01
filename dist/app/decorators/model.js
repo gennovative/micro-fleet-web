@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const common_1 = require("@micro-fleet/common");
 const param_decor_base_1 = require("./param-decor-base");
 async function extractModel(req, options) {
-    const { ModelClass, isPartial, extractFn } = options;
+    const { ModelClass, isPartial, extractFn, hasTenantId } = options;
     const translateOpt = (options.enableValidation != null)
         ? { enableValidation: options.enableValidation }
         : null;
@@ -11,10 +11,11 @@ async function extractModel(req, options) {
         throw new common_1.MinorException('Request must have property "body.model". Otherwise, you must provide "extractFn" in decorator option.');
     }
     const rawModel = Boolean(extractFn) ? extractFn(req) : req.body.model;
+    hasTenantId && (rawModel.tenantId = req.extras.tenantId);
     if (typeof rawModel === 'object' && ModelClass) {
         common_1.Guard.assertArgDefined(`${ModelClass}.translator`, ModelClass['translator']);
         const translator = ModelClass['translator'];
-        const func = (!!isPartial) ? translator.partial : translator.whole;
+        const func = Boolean(isPartial) ? translator.partial : translator.whole;
         return func.call(translator, rawModel, translateOpt);
     }
     return rawModel;
