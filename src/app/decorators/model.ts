@@ -5,18 +5,6 @@ import { Request } from '../interfaces'
 import { decorateParam } from './param-decor-base'
 
 
-/*
- * Attempts to translate request body to desired model class.
- * @deprecated
- */
-// function modelAction(opts: ModelFilterOptions): Function {
-//     return function (TargetClass: Newable, key: string): Function {
-//         TargetClass = addFilterToTarget<ModelFilter>(ModelFilter, TargetClass, key, FilterPriority.MEDIUM, opts) as Newable
-//         return TargetClass
-//     }
-// }
-
-
 export type ModelDecoratorOptions = {
     /**
      * Result object will be instance of this class.

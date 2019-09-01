@@ -284,6 +284,7 @@ let ExpressServerAddOn = class ExpressServerAddOn {
             this._buildActionRoutesAndFilters(proxyFn, actFn.name, CtrlClass, router);
         }
     }
+    // TODO: In case Controller Creation Strategy is SINGLETON we should optimize to let Express call action method directly.
     _proxyActionFunc(actionFunc, CtrlClass) {
         // Returns a proxy function that resolves the actual action function in EVERY incomming request.
         // If Controller Creation Strategy is SINGLETON, then the same controller instance will handle all requests.
@@ -313,6 +314,8 @@ let ExpressServerAddOn = class ExpressServerAddOn {
             for (let i = 0; i < paramDecors.length; ++i) {
                 if (typeof paramDecors[i] === 'function') {
                     const result = paramDecors[i].call(this, req, res);
+                    // TODO: This is generalization, we should only await for async calls, not sync calls.
+                    // Awaiting sync calls negatively affects the speed.
                     args[i] = await result;
                 }
                 else {
@@ -330,7 +333,8 @@ let ExpressServerAddOn = class ExpressServerAddOn {
         res = res.status(200);
         switch (typeof actionResult) {
             case 'object':
-                res.json(actionResult);
+                const isSerializable = common_1.ObjectUtil.isSerializable(actionResult);
+                res.json(isSerializable ? actionResult.toJSON() : actionResult);
                 break;
             case 'undefined':
                 res.end();

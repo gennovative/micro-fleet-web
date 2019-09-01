@@ -32,7 +32,7 @@ export class TenantResolverFilter
         }
 
         const key = `common-web::tenant::${tenantSlug}`
-        const tenantId = await this._cache.getPrimitive(key) as Maybe<BigInt>
+        const tenantId = await this._cache.getPrimitive(key) as Maybe<string>
 
         if (tenantId.isJust) {
             console.log('TenantResolver: from cache')

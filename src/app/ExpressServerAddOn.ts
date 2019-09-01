@@ -415,6 +415,7 @@ export class ExpressServerAddOn implements IServiceAddOn {
         }
     }
 
+    // TODO: In case Controller Creation Strategy is SINGLETON we should optimize to let Express call action method directly.
     protected _proxyActionFunc(actionFunc: Function, CtrlClass: Newable): Function {
         // Returns a proxy function that resolves the actual action function in EVERY incomming request.
         // If Controller Creation Strategy is SINGLETON, then the same controller instance will handle all requests.
@@ -445,6 +446,8 @@ export class ExpressServerAddOn implements IServiceAddOn {
             for (let i = 0; i < paramDecors.length; ++i) {
                 if (typeof paramDecors[i] === 'function') {
                     const result: any = paramDecors[i].call(this, req, res)
+                    // TODO: This is generalization, we should only await for async calls, not sync calls.
+                    // Awaiting sync calls negatively affects the speed.
                     args[i] = await result
                 } else {
                     args[i] = undefined
