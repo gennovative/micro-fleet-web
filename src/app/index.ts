@@ -1,7 +1,3 @@
-
-// import decoratorObj = require('./decorators/index')
-// export const decorators = decoratorObj.decorators
-
 export * from './decorators'
 export * from './constants/MetaData'
 export { IActionFilter, IActionErrorHandler, FilterPriority,

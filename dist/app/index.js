@@ -1,6 +1,4 @@
 "use strict";
-// import decoratorObj = require('./decorators/index')
-// export const decorators = decoratorObj.decorators
 function __export(m) {
     for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
 }

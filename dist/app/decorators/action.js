@@ -1,6 +1,7 @@
 "use strict";
-/// <reference types="reflect-metadata" />
 Object.defineProperty(exports, "__esModule", { value: true });
+/// <reference types="reflect-metadata" />
+const common_1 = require("@micro-fleet/common");
 const MetaData_1 = require("../constants/MetaData");
 /**
  * Used to decorate action function of REST controller class.
@@ -11,6 +12,7 @@ const MetaData_1 = require("../constants/MetaData");
  */
 function action(verb, path) {
     return function (proto, funcName) {
+        common_1.Guard.assertIsTruthy(funcName, 'This decorator is for action method inside controller class');
         if (!path) {
             path = `/${funcName}`;
         }

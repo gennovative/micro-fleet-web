@@ -3,6 +3,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const param_decor_base_1 = require("./param-decor-base");
 function getQueryString(req, name, parseFn) {
     const parseItem = (r) => parseFn ? parseFn(r) : r;
+    if (!name) {
+        return req.query;
+    }
     const raw = req.query[name];
     if (Array.isArray(raw)) {
         return raw.map(parseItem);

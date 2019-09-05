@@ -3,14 +3,15 @@ if (!Reflect || typeof Reflect['hasOwnMetadata'] !== 'function') {
     require('reflect-metadata')
 }
 import * as act from './action'
-import { controller, ControllerDecorator } from './controller'
+import { controller } from './controller'
 import * as m from './model'
-import { filter, FilterDecorator } from './filter'
-import { header, HeaderDecorator } from './header'
-import { request, RequestDecorator } from './request'
-import { response, ResponseDecorator } from './response'
-import { param, ParamDecorator } from './param'
-import { query, QueryDecorator } from './query'
+import { extras } from './extras'
+import { filter } from './filter'
+import { header } from './header'
+import { request } from './request'
+import { response } from './response'
+import { param } from './param'
+import { query } from './query'
 
 
 export * from './param-decor-base'
@@ -24,56 +25,56 @@ export type Decorators = {
      * @param {string} path Segment of URL pointing to this action.
      *         If not specified, it is default to be the action's function name.
      */
-    ALL: act.ActionVerbDecorator,
+    ALL: typeof act.ALL,
 
     /**
      * Used to decorate an action that accepts DELETE request.
      * @param {string} path Segment of URL pointing to this action.
      *         If not specified, it is default to be the action's function name.
      */
-    DELETE: act.ActionVerbDecorator,
+    DELETE: typeof act.DELETE,
 
     /**
      * Used to decorate an action that accepts GET request.
      * @param {string} path Segment of URL pointing to this action.
      *         If not specified, it is default to be the action's function name.
      */
-    GET: act.ActionVerbDecorator,
+    GET: typeof act.GET,
 
     /**
      * Used to decorate an action that accepts POST request.
      * @param {string} path Segment of URL pointing to this action.
      *         If not specified, it is default to be the action's function name.
      */
-    POST: act.ActionVerbDecorator,
+    POST: typeof act.POST,
 
     /**
      * Used to decorate an action that accepts PATCH request.
      * @param {string} path Segment of URL pointing to this action.
      *         If not specified, it is default to be the action's function name.
      */
-    PATCH: act.ActionVerbDecorator,
+    PATCH: typeof act.PATCH,
 
     /**
      * Used to decorate an action that accepts PUT request.
      * @param {string} path Segment of URL pointing to this action.
      *         If not specified, it is default to be the action's function name.
      */
-    PUT: act.ActionVerbDecorator,
+    PUT: typeof act.PUT,
 
     /**
      * Used to decorate an action that accepts HEAD request.
      * @param {string} path Segment of URL pointing to this action.
      *         If not specified, it is default to be the action's function name.
      */
-    HEAD: act.ActionVerbDecorator,
+    HEAD: typeof act.HEAD,
 
     /**
      * Used to decorate an action that accepts OPTIONS request.
      * @param {string} path Segment of URL pointing to this action.
      *         If not specified, it is default to be the action's function name.
      */
-    OPTIONS: act.ActionVerbDecorator,
+    OPTIONS: typeof act.OPTIONS,
 
     /**
      * Used to decorate action function of REST controller class.
@@ -82,14 +83,14 @@ export type Decorators = {
      * @param {string} path Segment of URL pointing to this action.
      *         If not specified, it is default to be the action's function name.
      */
-    action: act.ActionDecorator,
+    action: typeof act.action,
 
     /**
      * Used to decorate REST controller class.
      * @param {string} path Segment of URL pointing to this controller,
      *         if not specified, it is extract from controller class name: {path}Controller.
      */
-    controller: ControllerDecorator,
+    controller: typeof controller,
 
     /**
      * Used to add filter to controller class and controller action.
@@ -98,40 +99,64 @@ export type Decorators = {
      *         This array function won't be executed, but is used to extract filter function name.
      * @param {number} priority A number from 0 to 10, filters with greater priority run before ones with less priority.
      */
-    filter: FilterDecorator,
+    filter: typeof filter,
 
-    header: HeaderDecorator,
+    /**
+     * For action parameter decoration.
+     *
+     * Will resolve the parameter's value with selected property from `request.extras`.
+     *
+     * @param {string} name A key whose value will be extracted from `request.extras`.
+     *     If not specified, the whole object will be returned, equivalent to `request.extras`.
+     * @param {Function} parseFn Function to parse extracted value to expected data type.
+     *     This parameter is ignored if `name` is not specified.
+     */
+    extras: typeof extras,
+
+    header: typeof header,
 
     /**
      * For action parameter decoration.
      * Attempts to translate request body to desired model class,
      * then attaches to the parameter's value.
      */
-    model: m.ModelDecorator,
+    model: typeof m.model,
 
     /**
      * For action parameter decoration.
      * Resolves the parameter's value with the current request object
      */
-    request: RequestDecorator,
+    request: typeof request,
 
     /**
      * For action parameter decoration.
      * Resolves the parameter's value with the current response object
      */
-    response: ResponseDecorator,
+    response: typeof response,
 
     /**
      * For action parameter decoration.
+     *
      * Will resolve the parameter's value with a route params from `request.params`.
+     *
+     * @param {string} name A key whose value will be extracted from route params.
+     *     If not specified, the deserialized params object will be returned, equivalent to `request.params`.
+     * @param {Function} parseFn Function to parse extracted value to expected data type.
+     *     This parameter is ignored if `name` is not specified.
      */
-    param: ParamDecorator,
+    param: typeof param,
 
     /**
      * For action parameter decoration.
-     * Will resolve the parameter's value with query string value from `request.params`.
+     *
+     * Will resolve the parameter's value with query string value from `request.query`.
+     *
+     * @param {string} name A key whose value will be extracted from query string.
+     *     If not specified, the deserialized query object will be returned, equivalent to `request.query`.
+     * @param {Function} parseFn Function to parse extracted value to expected data type.
+     *     This parameter is ignored if `name` is not specified.
      */
-    query: QueryDecorator,
+    query: typeof query,
 }
 
 export const decorators: Decorators = {
@@ -146,6 +171,7 @@ export const decorators: Decorators = {
     action: act.action,
     controller,
     filter,
+    extras,
     header,
     model: m.model,
     request,

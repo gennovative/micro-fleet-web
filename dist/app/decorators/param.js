@@ -2,6 +2,9 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const param_decor_base_1 = require("./param-decor-base");
 function getRouteParam(req, name, parseFn) {
+    if (!name) {
+        return req.params;
+    }
     return parseFn ? parseFn(req.params[name]) : req.params[name];
 }
 /**

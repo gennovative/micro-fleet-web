@@ -1,5 +1,5 @@
 /// <reference types="reflect-metadata" />
-import { Newable } from '@micro-fleet/common'
+import { Newable, Guard } from '@micro-fleet/common'
 
 import { MetaData } from '../constants/MetaData'
 import { Request, Response } from '../interfaces'
@@ -36,6 +36,7 @@ export type ParamDecorDescriptor = Function[]
  * param `paramIndex` of the `method` of `TargetClass`.
  */
 export function decorateParam(opts: DecorateParamOptions) {
+    Guard.assertIsTruthy(opts.method, 'This decorator is for action method inside controller class')
     const args: any = [MetaData.PARAM_DECOR, opts.TargetClass, opts.method]
     let paramDesc: ParamDecorDescriptor
     if (Reflect.hasOwnMetadata.apply(Reflect, args)) {

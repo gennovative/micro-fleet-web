@@ -1,4 +1,5 @@
 /// <reference types="reflect-metadata" />
+import { Guard } from '@micro-fleet/common'
 
 import { MetaData } from '../constants/MetaData'
 
@@ -19,6 +20,7 @@ export type ActionDescriptor = {
  */
 export function action(verb: string, path?: string): Function {
     return function (proto: any, funcName: string): Function {
+        Guard.assertIsTruthy(funcName, 'This decorator is for action method inside controller class')
         if (!path) {
             path = `/${funcName}`
         } else if (path.length > 1) {

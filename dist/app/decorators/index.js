@@ -10,6 +10,7 @@ if (!Reflect || typeof Reflect['hasOwnMetadata'] !== 'function') {
 const act = require("./action");
 const controller_1 = require("./controller");
 const m = require("./model");
+const extras_1 = require("./extras");
 const filter_1 = require("./filter");
 const header_1 = require("./header");
 const request_1 = require("./request");
@@ -29,6 +30,7 @@ exports.decorators = {
     action: act.action,
     controller: controller_1.controller,
     filter: filter_1.filter,
+    extras: extras_1.extras,
     header: header_1.header,
     model: m.model,
     request: request_1.request,
