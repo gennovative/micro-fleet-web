@@ -6,8 +6,8 @@ import { ModelDecoratorOptions } from '../../app/decorators'
 import { SampleModel } from './SampleModel'
 
 
-@d.controller('/model')
-class ModelController {
+@d.controller('/model-manual')
+class ModelManualController {
 
     public spyFn: Function
     public count: number
@@ -19,9 +19,9 @@ class ModelController {
 
     @d.POST('/first')
     public first(
-            @d.model(SampleModel) result: SampleModel,
-            @d.response() res: Response,
-        ) {
+        @d.model(SampleModel) result: SampleModel,
+        @d.response() res: Response,
+    ) {
         this.spyFn(result.constructor.name, result.name, result.age, result.position)
         res.sendStatus(200)
     }
@@ -40,12 +40,12 @@ class ModelController {
     public doCustomExtract(
             @d.request() req: Request<SampleModel>,
             @d.model(<ModelDecoratorOptions> {
-                ModelClass: SampleModel,
+                ItemClass: SampleModel,
                 extractFn: (r: Request) => r.body.one,
             })
             modelOne: SampleModel,
             @d.model({
-                ModelClass: SampleModel,
+                ItemClass: SampleModel,
                 extractFn: (r: Request) => r.body.two,
             })
             modelTwo: SampleModel,
@@ -62,7 +62,7 @@ class ModelController {
     public doPartial(
             req: Request<SampleModel>,
             @d.model({
-                ModelClass: SampleModel,
+                ItemClass: SampleModel,
                 isPartial: true,
             })
             result: SampleModel,
@@ -83,5 +83,5 @@ class ModelController {
 }
 
 module.exports = {
-    ModelController,
+    ModelManualController,
 }

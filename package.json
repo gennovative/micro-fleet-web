@@ -1,6 +1,6 @@
 {
     "name": "@micro-fleet/web",
-    "version": "1.2.1",
+    "version": "2.3.0-rc1",
     "description": "Contains classes used by web and rest services.",
     "scripts": {
         "build": "npm run compile && npm run test",
@@ -42,11 +42,12 @@
         "request-promise-native": "~1.0",
         "rimraf": "~2.6",
         "ts-declarator": "~1.0",
+        "ts-mockito": "~2.4",
         "tslint": "~5.11",
         "typescript": "~3.3"
     },
     "peerDependencies": {
-        "@micro-fleet/common": "~1.4"
+        "@micro-fleet/common": "=2.3.0-rc1"
     },
     "publishConfig": {
         "access": "public"

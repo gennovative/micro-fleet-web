@@ -2,7 +2,9 @@ import * as chai from 'chai'
 import * as spies from 'chai-spies'
 chai.use(spies)
 const expect = chai.expect
-import { IDependencyContainer, DependencyContainer, serviceContext } from '@micro-fleet/common'
+import { mock, instance } from 'ts-mockito'
+import { IDependencyContainer, DependencyContainer, serviceContext,
+    IConfigurationProvider, Types as cmT } from '@micro-fleet/common'
 
 import { registerWebAddOn, ExpressServerAddOn, Types as T } from '../app'
 
@@ -15,6 +17,8 @@ describe('registerDbAddOn', function () {
     beforeEach(() => {
         depCon = new DependencyContainer()
         serviceContext.setDependencyContainer(depCon)
+        depCon.bindConstant(cmT.CONFIG_PROVIDER, instance(mock<IConfigurationProvider>()))
+        depCon.bindConstant(cmT.DEPENDENCY_CONTAINER, depCon)
     })
 
     afterEach(() => {

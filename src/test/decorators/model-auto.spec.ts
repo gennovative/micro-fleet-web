@@ -5,24 +5,23 @@ import * as spies from 'chai-spies'
 chai.use(spies)
 const expect = chai.expect
 import * as request from 'request-promise-native'
-import { injectable, DependencyContainer, serviceContext, constants,
+import { DependencyContainer, serviceContext, constants, decorators as d,
     IConfigurationProvider, Maybe, Types as CmT } from '@micro-fleet/common'
 
-import { ExpressServerAddOn, ControllerCreationStrategy, ErrorHandlerFilter,
-    Types as T } from '../../app'
+import { ExpressServerAddOn, ControllerCreationStrategy,
+    ErrorHandlerFilter, Types as T } from '../../app'
 import { SampleModel } from '../shared/SampleModel'
 
-// For typing only
-import { StatusCodeError } from 'request-promise-native/errors'
 
 
 const PORT = 31000
-const CONTROLLER_NAME = 'ModelController'
-const BASE_URL = `http://localhost:${PORT}/model`
-const { WebSettingKeys: W } = constants
+const CONTROLLER_NAME = 'ModelAutoController'
+const CONTROLLER_FILE = 'model-auto-controller'
+const BASE_URL = `http://localhost:${PORT}/model-auto`
+const { Web: W } = constants
 
 
-@injectable()
+@d.injectable()
 class MockConfigurationProvider implements IConfigurationProvider {
     public readonly name: string = 'MockConfigurationProvider'
     public configFilePath: string
@@ -47,7 +46,7 @@ class MockConfigurationProvider implements IConfigurationProvider {
 }
 
 
-describe('@model()', function() {
+describe('@model() - auto', function() {
     this.timeout(5000)
     // this.timeout(60000) // For debugging
 
@@ -65,7 +64,8 @@ describe('@model()', function() {
         server = container.resolve(T.WEBSERVER_ADDON)
         server.controllerCreation = ControllerCreationStrategy.SINGLETON
         server.controllerPath = path.join(process.cwd(), 'dist',
-            'test', 'shared', 'model-controller')
+            'test', 'shared', CONTROLLER_FILE)
+        server.addGlobalErrorHandler(ErrorHandlerFilter)
     })
 
     afterEach(async () => {
@@ -77,7 +77,7 @@ describe('@model()', function() {
 
     describe('translation', () => {
 
-        it('Should resolve as first param', (done: Function) => {
+        it('Should infer type of single model', (done: Function) => {
             // Arrange
             const payload = <SampleModel> {
                 name: 'Valid name',
@@ -87,14 +87,14 @@ describe('@model()', function() {
             let error: any
             server.init()
                 .then(() => {
-                    return request(`${BASE_URL}/first`, {
+                    return request(`${BASE_URL}/single`, {
                         method: 'POST',
-                        body: { model: payload },
+                        body: payload,
                         json: true,
                     })
                 })
                 .then(() => {
-                    // Unexpectedly Assert
+                    // Expected Assert
                     const controller: any = container.resolve(CONTROLLER_NAME)
                     expect(controller['spyFn']).to.be.called.once
                     expect(controller['spyFn']).to.be.called.with.exactly('SampleModel', payload.name, payload.age, payload.position)
@@ -106,7 +106,7 @@ describe('@model()', function() {
                 .finally(() => done(error))
         })
 
-        it('Should convert whole request.body.model to model class', (done: Function) => {
+        it('Should resolve a model with given type then wrap in array', (done: Function) => {
             // Arrange
             const payload = <SampleModel> {
                 name: 'Valid name',
@@ -116,16 +116,58 @@ describe('@model()', function() {
             let error: any
             server.init()
                 .then(() => {
-                    return request(`${BASE_URL}/valid`, {
-                        method: 'POST',
-                        body: { model: payload },
+                    return request(`${BASE_URL}/array-one-item`, {
+                        method: 'PUT',
+                        body: payload,
                         json: true,
                     })
                 })
                 .then(() => {
                     const controller: any = container.resolve(CONTROLLER_NAME)
                     expect(controller['spyFn']).to.be.called.once
-                    expect(controller['spyFn']).to.be.called.with.exactly('SampleModel', payload.name, payload.age, payload.position)
+                    expect(controller['spyFn']).to.be.called.with.exactly(1, 'SampleModel', payload.name, payload.age, payload.position)
+                })
+                .catch((err: any) => {
+                    // Unexpectedly Assert
+                    console.error(error = err)
+                    expect(false, 'Should never come here!').to.be.true
+                })
+                .finally(() => done(error))
+        })
+
+        it('Should infer an array of models with given type', (done: Function) => {
+            // Arrange
+            const payload = [
+                <SampleModel> {
+                    name: 'One',
+                    age: 100,
+                },
+                <SampleModel> {
+                    name: 'Two',
+                    age: 200,
+                },
+                <SampleModel> {
+                    name: 'Three',
+                    age: 300,
+                },
+            ]
+            let error: any
+            server.init()
+                .then(() => {
+                    return request(`${BASE_URL}/array-many-item`, {
+                        method: 'PUT',
+                        body: payload,
+                        json: true,
+                    })
+                })
+                .then(() => {
+                    const controller: any = container.resolve(CONTROLLER_NAME)
+                    expect(controller['spyFn']).to.be.called.once
+                    expect(controller['spyFn']).to.be.called.with.exactly(payload.length,
+                        'SampleModel', payload[0].name, payload[0].age,
+                        'SampleModel', payload[1].name, payload[1].age,
+                        'SampleModel', payload[2].name, payload[2].age,
+                    )
                 })
                 .catch((err: any) => {
                     // Unexpectedly Assert
@@ -137,24 +179,28 @@ describe('@model()', function() {
 
         it('Should extract raw model with custom function then converting to model class', (done: Function) => {
             // Arrange
-            const payload = {
-                one: <SampleModel> {
+            const payloadQuery = {
+                name: 'Valid name',
+                age: 20,
+                position: 'Coolie manager',
+            }
+            const queryParam: string = Object.entries(payloadQuery)
+                .map(([k, v]) => `${k}=${v}`)
+                .join('&')
+
+            const payloadBody = {
+                model: <SampleModel> {
                     name: 'Valid name',
                     age: 20,
                     position: 'Coolie manager',
                 },
-                two: <SampleModel> {
-                    name: 'Another Valid name',
-                    age: 30,
-                    position: 'Real coolie here',
-                },
             }
             let error: any
             server.init()
                 .then(() => {
-                    return request(`${BASE_URL}/custom`, {
+                    return request(`${BASE_URL}/custom?${queryParam}`, {
                         method: 'PATCH',
-                        body: payload,
+                        body: payloadBody,
                         json: true,
                     })
                 })
@@ -162,41 +208,8 @@ describe('@model()', function() {
                     const controller: any = container.resolve(CONTROLLER_NAME)
                     expect(controller['spyFn']).to.be.called.once
                     expect(controller['spyFn']).to.be.called.with.exactly(
-                        'SampleModel', payload.one.name, payload.one.age, payload.one.position,
-                        'SampleModel', payload.two.name, payload.two.age, payload.two.position,
-                    )
-                })
-                .catch((err: any) => {
-                    // Unexpectedly Assert
-                    console.error(error = err)
-                    expect(false, 'Should never come here!').to.be.true
-                })
-                .finally(() => done(error))
-        })
-
-        it('Should convert just some properties of the model class', (done: Function) => {
-            // Arrange
-            const payload = <Partial<SampleModel>> {
-                age: 20,
-                position: 'Valid position',
-            }
-            let error: any
-            server.init()
-                .then(() => {
-                    return request(`${BASE_URL}/partial`, {
-                        method: 'PUT',
-                        body: { model: payload },
-                        json: true,
-                    })
-                })
-                .then(() => {
-                    const controller: any = container.resolve(CONTROLLER_NAME)
-                    expect(controller['spyFn']).to.be.called.once
-                    expect(controller['spyFn']).to.be.called.with.exactly(
-                        'SampleModel',
-                        undefined,
-                        payload.age,
-                        payload.position,
+                        'SampleModel', payloadQuery.name, payloadQuery.age, payloadQuery.position,
+                        'SampleModel', payloadBody.model.name, payloadBody.model.age, payloadBody.model.position,
                     )
                 })
                 .catch((err: any) => {
@@ -207,39 +220,4 @@ describe('@model()', function() {
                 .finally(() => done(error))
         })
     }) // describe 'translating'
-
-    describe('validation', () => {
-        it('Should respond with 422 status code if there is validation error.', (done: Function) => {
-            // Arrange
-            const payload = <SampleModel> {
-                name: '',
-                age: 18,
-            }
-            let error: any
-            server.addGlobalErrorHandler(ErrorHandlerFilter)
-            server.init()
-                .then(() => {
-                    return request(`${BASE_URL}/invalid`, {
-                        method: 'POST',
-                        body: { model: payload },
-                        json: true,
-                    })
-                })
-                .then(() => {
-                    const controller: any = container.resolve(CONTROLLER_NAME)
-                    expect(controller['spyFn']).have.been.called.below(1)
-                })
-                .catch((err: any) => {
-                    // Assert
-                    if (err instanceof StatusCodeError) {
-                        expect(err.statusCode).to.equal(422) // error: UNPROCESSABLE ENTITY
-                    } else {
-                        console.error(error = err)
-                        expect(false, 'Should never throw this kind of error!').to.be.true
-                    }
-                })
-                .finally(() => done(error))
-        })
-    }) // describe 'translating'
-
-}) // describe '@model()'
+}) // describe '@model() - auto'

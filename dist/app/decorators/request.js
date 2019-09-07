@@ -13,7 +13,6 @@ function request() {
             paramIndex,
             resolverFn: (req) => req,
         });
-        return proto;
     };
 }
 exports.request = request;

@@ -80,15 +80,15 @@ class QueryController {
     public multi(
             @d.query('org') orgName: string,
             @d.request() req: Request,
-            @d.query('dept') deptName: string,
+            @d.query('year') year: number,
             @d.response() res: Response,
-            @d.query('emp') employeeName: string,
+            @d.query('selected') isSelected: boolean,
             nothing: any,
         ) {
         this.spyFn(
-            orgName, req.query['org'],
-            deptName, req.query['dept'],
-            employeeName, req.query['emp'],
+            typeof orgName, req.query['org'],
+            typeof year, req.query['year'],
+            typeof isSelected, req.query['selected'],
             nothing,
         )
         res.sendStatus(200)

@@ -1,6 +1,14 @@
 import { Request } from '../interfaces'
-import { decorateParam, ParseFunction } from './param-decor-base'
+import { decorateParam, ParseFunction, primitiveParserFactory } from './param-decor-base'
 
+
+function getQueryString(req: Request, name?: string, parseFn?: ParseFunction): any {
+    const raw: string | string[] = req.query[name]
+    if (Array.isArray(raw)) {
+        return raw.map(parseFn)
+    }
+    return parseFn(raw)
+}
 
 /**
  * For action parameter decoration.
@@ -12,32 +20,19 @@ import { decorateParam, ParseFunction } from './param-decor-base'
  * @param {Function} parseFn Function to parse extracted value to expected data type.
  *     This parameter is ignored if `name` is not specified.
  */
-export type QueryDecorator = (name?: string, parseFn?: ParseFunction) => Function
+export function query(name?: string, parseFn?: ParseFunction): ParameterDecorator {
+    return function (proto: any, method: string | symbol, paramIndex: number): void {
+        function resolverFn(request: Request) {
+            parseFn = parseFn || primitiveParserFactory(proto, method, paramIndex)
+            return getQueryString(request, name, parseFn)
+        }
 
-
-function getQueryString(req: Request, name?: string, parseFn?: ParseFunction): any {
-    const parseItem = (r: string) => parseFn ? parseFn(r) : r
-    if (!name) { return req.query }
-
-    const raw: string | string[] = req.query[name]
-    if (Array.isArray(raw)) {
-        return raw.map(parseItem)
-    }
-    return parseItem(raw)
-}
-
-/**
- * For action parameter decoration.
- * Will resolve the parameter's value with query string value from `request.params`.
- */
-export function query(name?: string, parseFn?: ParseFunction): Function {
-    return function (proto: any, method: string, paramIndex: number): Function {
         decorateParam({
             TargetClass: proto.constructor,
             method,
             paramIndex,
-            resolverFn: (request) => getQueryString(request, name, parseFn),
+            // resolverFn: (request) => getQueryString(request, name, parseFn),
+            resolverFn: Boolean(name) ? resolverFn : req => req.query,
         })
-        return proto
     }
 }

@@ -1,6 +1,6 @@
 /// <reference types="reflect-metadata" />
 
-import { CriticalException, Guard, decorate, injectable } from '@micro-fleet/common'
+import { CriticalException, Guard, decorators as d } from '@micro-fleet/common'
 
 import { MetaData } from '../constants/MetaData'
 
@@ -19,7 +19,7 @@ export function controller(path?: string): Function {
         if (Reflect.hasOwnMetadata(MetaData.CONTROLLER, targetClass)) {
             throw new CriticalException('Duplicate controller decorator')
         }
-        decorate(injectable(), targetClass)
+        d.decorate(d.injectable(), targetClass)
 
         if (!path) {
             // Extract path from controller name.

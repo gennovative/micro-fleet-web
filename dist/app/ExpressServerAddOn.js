@@ -21,7 +21,7 @@ const https = require("https");
 const express = require("express");
 const cors = require("cors");
 const common_1 = require("@micro-fleet/common");
-const { WebSettingKeys: W } = common_1.constants;
+const { Web: W } = common_1.constants;
 const MetaData_1 = require("./constants/MetaData");
 const filter_1 = require("./decorators/filter");
 const WebContext_1 = require("./WebContext");
@@ -333,8 +333,7 @@ let ExpressServerAddOn = class ExpressServerAddOn {
         res = res.status(200);
         switch (typeof actionResult) {
             case 'object':
-                const isSerializable = common_1.ObjectUtil.isSerializable(actionResult);
-                res.json(isSerializable ? actionResult.toJSON() : actionResult);
+                res.json(common_1.isSerializable(actionResult) ? actionResult.toJSON() : actionResult);
                 break;
             case 'undefined':
                 res.end();
@@ -472,9 +471,9 @@ let ExpressServerAddOn = class ExpressServerAddOn {
     }
 };
 ExpressServerAddOn = __decorate([
-    common_1.injectable(),
-    __param(0, common_1.inject(common_1.Types.CONFIG_PROVIDER)),
-    __param(1, common_1.inject(common_1.Types.DEPENDENCY_CONTAINER)),
+    common_1.decorators.injectable(),
+    __param(0, common_1.decorators.inject(common_1.Types.CONFIG_PROVIDER)),
+    __param(1, common_1.decorators.inject(common_1.Types.DEPENDENCY_CONTAINER)),
     __metadata("design:paramtypes", [Object, Object])
 ], ExpressServerAddOn);
 exports.ExpressServerAddOn = ExpressServerAddOn;

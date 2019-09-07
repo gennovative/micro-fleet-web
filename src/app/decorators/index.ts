@@ -108,8 +108,6 @@ export type Decorators = {
      *
      * @param {string} name A key whose value will be extracted from `request.extras`.
      *     If not specified, the whole object will be returned, equivalent to `request.extras`.
-     * @param {Function} parseFn Function to parse extracted value to expected data type.
-     *     This parameter is ignored if `name` is not specified.
      */
     extras: typeof extras,
 

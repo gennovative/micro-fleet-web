@@ -47,7 +47,7 @@ class ParamDecorController {
     public doCustom(
             @d.request() req: Request<SampleModel>,
             @d.model({
-                ModelClass: SampleModel,
+                ItemClass: SampleModel,
                 extractFn: (r: Request) => r.body,
             })
             result: SampleModel,
@@ -61,7 +61,7 @@ class ParamDecorController {
     public doPartial(
             req: Request<SampleModel>,
             @d.model({
-                ModelClass: SampleModel,
+                ItemClass: SampleModel,
                 isPartial: true,
             })
             result: SampleModel,

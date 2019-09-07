@@ -44,7 +44,7 @@ let ErrorHandlerFilter = class ErrorHandlerFilter {
     }
 };
 ErrorHandlerFilter = __decorate([
-    common_1.injectable(),
+    common_1.decorators.injectable(),
     __metadata("design:paramtypes", [])
 ], ErrorHandlerFilter);
 exports.ErrorHandlerFilter = ErrorHandlerFilter;

@@ -6,7 +6,7 @@ import * as spies from 'chai-spies'
 chai.use(spies)
 const expect = chai.expect
 import * as request from 'request-promise-native'
-import { injectable, DependencyContainer, serviceContext, CriticalException,
+import { DependencyContainer, serviceContext, CriticalException, decorators as d,
     IConfigurationProvider, Maybe, Types as CmT, constants } from '@micro-fleet/common'
 
 import { ExpressServerAddOn, Types as T, decorators } from '../../app'
@@ -15,10 +15,10 @@ import { ExpressServerAddOn, Types as T, decorators } from '../../app'
 const PORT = 31000
 const BASE_URL = `http://localhost:${PORT}`
 const ALLOW_ORIGIN = 'http://allow.localhost'
-const { WebSettingKeys: W } = constants
+const { Web: W } = constants
 const { controller } = decorators
 
-@injectable()
+@d.injectable()
 class MockConfigurationProvider implements IConfigurationProvider {
     public readonly name: string = 'MockConfigurationProvider'
     public configFilePath: string

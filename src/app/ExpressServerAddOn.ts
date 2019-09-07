@@ -8,10 +8,10 @@ import * as https from 'https'
 
 import * as express from 'express'
 import * as cors from 'cors'
-import { injectable, inject, CriticalException, IDependencyContainer, Guard,
+import { CriticalException, IDependencyContainer, Guard, decorators as d,
     Maybe, IConfigurationProvider, Types as T, constants,
-    HandlerContainer, Newable, IServiceAddOn, PrimitiveType, ObjectUtil } from '@micro-fleet/common'
-const { WebSettingKeys: W } = constants
+    HandlerContainer, Newable, IServiceAddOn, PrimitiveType, isSerializable } from '@micro-fleet/common'
+const { Web: W } = constants
 
 import { MetaData } from './constants/MetaData'
 import { ActionDescriptor } from './decorators/action'
@@ -32,7 +32,7 @@ type ControllerExports = { [name: string]: Newable }
 
 export enum ControllerCreationStrategy { SINGLETON, TRANSIENT }
 
-@injectable()
+@d.injectable()
 export class ExpressServerAddOn implements IServiceAddOn {
 
     /**
@@ -153,8 +153,8 @@ export class ExpressServerAddOn implements IServiceAddOn {
 
 
     constructor(
-        @inject(T.CONFIG_PROVIDER) protected _configProvider: IConfigurationProvider,
-        @inject(T.DEPENDENCY_CONTAINER) protected _depContainer: IDependencyContainer
+        @d.inject(T.CONFIG_PROVIDER) protected _configProvider: IConfigurationProvider,
+        @d.inject(T.DEPENDENCY_CONTAINER) protected _depContainer: IDependencyContainer
     ) {
         Guard.assertArgDefined('_configProvider', _configProvider)
         Guard.assertArgDefined('_depContainer', _depContainer)
@@ -466,8 +466,7 @@ export class ExpressServerAddOn implements IServiceAddOn {
         res = res.status(200)
         switch (typeof actionResult) {
             case 'object':
-                const isSerializable = ObjectUtil.isSerializable(actionResult)
-                res.json(isSerializable ? actionResult.toJSON() : actionResult)
+                res.json(isSerializable(actionResult) ? actionResult.toJSON() : actionResult)
                 break
             case 'undefined':
                 res.end()

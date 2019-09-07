@@ -5,7 +5,7 @@ import * as spies from 'chai-spies'
 chai.use(spies)
 const expect = chai.expect
 import * as request from 'request-promise-native'
-import { injectable, DependencyContainer, serviceContext,
+import { DependencyContainer, serviceContext, decorators as d,
     IConfigurationProvider, Maybe, Types as CmT, constants } from '@micro-fleet/common'
 
 import { ExpressServerAddOn, ControllerCreationStrategy,
@@ -17,17 +17,18 @@ const BASE_URL = `http://localhost:${PORT}`
 const CONTROLLER_NAME = 'HeaderController'
 const HEADER_NAME_1 = 'AUTHORIZATION'
 const HEADER_VAL_1 = 'abc123DEF456@_+-'
-const HEADER_NAME_2 = 'Host'
-const HEADER_NAME_3 = 'Content-Type'
-const HEADER_VAL_3 = 'application/json'
+const HEADER_NAME_2 = 'X-Age'
+const HEADER_VAL_2 = '20'
+const HEADER_NAME_3 = 'X-Success'
+const HEADER_VAL_3 = 'true'
 const HEADER_NAME_LIST = 'x-list'
 const HEADER_LIST_1 = 'item-1'
 const HEADER_LIST_2 = 'item-2'
 const HEADER_LIST_3 = 'item-3'
-const { WebSettingKeys: W } = constants
+const { Web: W } = constants
 
 
-@injectable()
+@d.injectable()
 class MockConfigurationProvider implements IConfigurationProvider {
     public readonly name: string = 'MockConfigurationProvider'
     public configFilePath: string
@@ -209,7 +210,7 @@ describe('@header()', function() {
                     method: 'GET',
                     headers: {
                         [HEADER_NAME_1]: HEADER_VAL_1,
-                        [HEADER_NAME_2]: BASE_URL,
+                        [HEADER_NAME_2]: HEADER_VAL_2,
                         [HEADER_NAME_3]: HEADER_VAL_3,
                     },
                 })
@@ -219,9 +220,9 @@ describe('@header()', function() {
                 const controller: any = container.resolve(CONTROLLER_NAME)
                 expect(controller['spyFn']).to.be.called.once
                 expect(controller['spyFn']).to.be.called.with.exactly(
-                    HEADER_VAL_1, HEADER_VAL_1,
-                    BASE_URL, BASE_URL,
-                    HEADER_VAL_3, HEADER_VAL_3,
+                    'string', HEADER_VAL_1,
+                    'number', HEADER_VAL_2,
+                    'boolean', HEADER_VAL_3,
                     undefined,
                 )
             })

@@ -1,25 +1,28 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const param_decor_base_1 = require("./param-decor-base");
-function getExtras(req, name, parseFn) {
+function getExtras(req, name) {
     if (!name) {
-        return req.params;
+        return req.extras;
     }
-    return parseFn ? parseFn(req.params[name]) : req.params[name];
+    return req.extras[name];
 }
 /**
  * For action parameter decoration.
+ *
  * Will resolve the parameter's value with selected property from `request.extras`.
+ *
+ * @param {string} name A key whose value will be extracted from `request.extras`.
+ *     If not specified, the whole object will be returned, equivalent to `request.extras`.
  */
-function extras(name, parseFn) {
+function extras(name) {
     return function (proto, method, paramIndex) {
         param_decor_base_1.decorateParam({
             TargetClass: proto.constructor,
             method,
             paramIndex,
-            resolverFn: (request) => getExtras(request, name, parseFn),
+            resolverFn: (request) => getExtras(request, name),
         });
-        return proto;
     };
 }
 exports.extras = extras;

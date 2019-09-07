@@ -3,14 +3,12 @@ import { decorateParam } from './param-decor-base'
 
 export const RES_INJECTED = Symbol('RES_INJECTED')
 
-export type ResponseDecorator = () => Function
-
 /**
  * For action parameter decoration.
  * Resolves the parameter's value with the current response object
  */
-export function response(): Function {
-    return function (proto: any, method: string, paramIndex: number): Function {
+export function response(): ParameterDecorator {
+    return function (proto: any, method: string | symbol, paramIndex: number): void {
         decorateParam({
             TargetClass: proto.constructor,
             method,
@@ -20,6 +18,5 @@ export function response(): Function {
                 return res
             },
         })
-        return proto
     }
 }

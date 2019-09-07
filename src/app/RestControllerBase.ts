@@ -1,4 +1,4 @@
-import { injectable } from '@micro-fleet/common'
+import { decorators as d } from '@micro-fleet/common'
 
 import { Response } from './interfaces'
 
@@ -11,7 +11,7 @@ export type TrailsRouteConfigItem = {
 }
 
 
-@injectable()
+@d.injectable()
 export abstract class RestControllerBase {
 
     constructor() {

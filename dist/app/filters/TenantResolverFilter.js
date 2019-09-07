@@ -49,8 +49,8 @@ let TenantResolverFilter = class TenantResolverFilter extends ActionFilterBase_1
     }
 };
 TenantResolverFilter = __decorate([
-    common_1.injectable(),
-    __param(0, common_1.inject(cache_1.Types.CACHE_PROVIDER)),
+    common_1.decorators.injectable(),
+    __param(0, common_1.decorators.inject(cache_1.Types.CACHE_PROVIDER)),
     __metadata("design:paramtypes", [Object])
 ], TenantResolverFilter);
 exports.TenantResolverFilter = TenantResolverFilter;

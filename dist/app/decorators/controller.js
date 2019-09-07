@@ -14,7 +14,7 @@ function controller(path) {
         if (Reflect.hasOwnMetadata(MetaData_1.MetaData.CONTROLLER, targetClass)) {
             throw new common_1.CriticalException('Duplicate controller decorator');
         }
-        common_1.decorate(common_1.injectable(), targetClass);
+        common_1.decorators.decorate(common_1.decorators.injectable(), targetClass);
         if (!path) {
             // Extract path from controller name.
             // Only if controller name is in format {xxx}Controller.

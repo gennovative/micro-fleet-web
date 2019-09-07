@@ -1,5 +1,10 @@
 ## VERSIONS
 
+
+### 2.3.0
+- Sync version with other packages.
+- Param decorators can automatically infer model class from param type.
+
 ### 1.2.0
 - Converted action decorators `@model` to param decorator.
 - Added parameters decorators for action methods.

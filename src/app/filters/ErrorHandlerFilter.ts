@@ -1,4 +1,4 @@
-import { injectable } from '@micro-fleet/common'
+import { decorators as d } from '@micro-fleet/common'
 
 import { IActionErrorHandler } from '../decorators/filter'
 import { Request, Response } from '../interfaces'
@@ -6,7 +6,7 @@ import { Request, Response } from '../interfaces'
 /**
  * Catches unhandled exceptions from action methods.
  */
-@injectable()
+@d.injectable()
 export class ErrorHandlerFilter implements IActionErrorHandler {
 
     constructor(

@@ -81,15 +81,15 @@ class HeaderController {
     public multi(
             @d.header('AUTHORIZATION') token: string,
             @d.request() req: Request,
-            @d.header('Host') host: string,
+            @d.header('X-Age') age: number,
             @d.response() res: Response,
-            @d.header('Content-Type') contentType: string,
+            @d.header('X-Success') isSuccess: boolean,
             nothing: any,
         ) {
         this.spyFn(
-            token, req.header('AUTHORIZATION'),
-            host, req.header('Host'),
-            contentType, req.header('Content-Type'),
+            typeof token, req.header('AUTHORIZATION'),
+            typeof age, req.header('X-Age'),
+            typeof isSuccess, req.header('X-Success'),
             nothing,
         )
         res.sendStatus(200)

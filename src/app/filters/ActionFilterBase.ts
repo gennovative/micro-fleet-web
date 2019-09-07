@@ -1,7 +1,7 @@
-import { injectable } from '@micro-fleet/common'
+import { decorators as d } from '@micro-fleet/common'
 
 
-@injectable()
+@d.injectable()
 export abstract class ActionFilterBase {
 
     protected addReadonlyProp(obj: object, prop: string, value: any): void {

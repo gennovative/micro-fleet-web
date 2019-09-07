@@ -131,7 +131,7 @@ let RestControllerBase = class RestControllerBase {
     }
 };
 RestControllerBase = __decorate([
-    common_1.injectable(),
+    common_1.decorators.injectable(),
     __metadata("design:paramtypes", [])
 ], RestControllerBase);
 exports.RestControllerBase = RestControllerBase;

@@ -18,7 +18,7 @@ let ActionFilterBase = class ActionFilterBase {
     }
 };
 ActionFilterBase = __decorate([
-    common_1.injectable()
+    common_1.decorators.injectable()
 ], ActionFilterBase);
 exports.ActionFilterBase = ActionFilterBase;
 //# sourceMappingURL=ActionFilterBase.js.map

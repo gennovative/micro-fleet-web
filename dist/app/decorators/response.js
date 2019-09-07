@@ -17,7 +17,6 @@ function response() {
                 return res;
             },
         });
-        return proto;
     };
 }
 exports.response = response;

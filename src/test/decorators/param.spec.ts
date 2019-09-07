@@ -5,7 +5,7 @@ import * as spies from 'chai-spies'
 chai.use(spies)
 const expect = chai.expect
 import * as request from 'request-promise-native'
-import { injectable, DependencyContainer, serviceContext,
+import { DependencyContainer, serviceContext, decorators as d,
     IConfigurationProvider, Maybe, Types as CmT, constants } from '@micro-fleet/common'
 
 import { ExpressServerAddOn, ControllerCreationStrategy,
@@ -16,12 +16,12 @@ const PORT = 31000
 const CONTROLLER_NAME = 'ParamController'
 const BASE_URL = `http://localhost:${PORT}`
 const ORG_NAME = 'gennova'
-const DEPT_NAME = 'tech'
-const EMPLOYEE_NAME = 'shazam'
-const { WebSettingKeys: W } = constants
+const YEAR = '2050'
+const SELECTED = '0'
+const { Web: W } = constants
 
 
-@injectable()
+@d.injectable()
 class MockConfigurationProvider implements IConfigurationProvider {
     public readonly name: string = 'MockConfigurationProvider'
     public configFilePath: string
@@ -159,7 +159,7 @@ describe('@param()', function() {
         let error: any
         server.init()
             .then(() => {
-                const url = `${BASE_URL}/api/${ORG_NAME}/param/${DEPT_NAME}/multi/${EMPLOYEE_NAME}`
+                const url = `${BASE_URL}/api/${ORG_NAME}/param/${YEAR}/multi/${SELECTED}`
                 // console.log('Requesting:', url)
                 return request(url)
             })
@@ -168,9 +168,9 @@ describe('@param()', function() {
                 const controller: any = container.resolve(CONTROLLER_NAME)
                 expect(controller['spyFn']).to.be.called.once
                 expect(controller['spyFn']).to.be.called.with.exactly(
-                    ORG_NAME, ORG_NAME,
-                    DEPT_NAME, DEPT_NAME,
-                    EMPLOYEE_NAME, EMPLOYEE_NAME,
+                    'string', ORG_NAME,
+                    'number', YEAR,
+                    'boolean', SELECTED,
                     undefined,
                 )
             })

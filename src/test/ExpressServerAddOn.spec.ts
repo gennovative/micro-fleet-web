@@ -7,7 +7,7 @@ chai.use(spies)
 const expect = chai.expect
 import * as request from 'request-promise-native'
 import { StatusCodeError } from 'request-promise-native/errors'
-import { injectable, DependencyContainer, serviceContext, /* CriticalException, */
+import { DependencyContainer, serviceContext, decorators as d,
     IConfigurationProvider, Maybe, Types as CmT, constants } from '@micro-fleet/common'
 
 import { ExpressServerAddOn /*, Types as T, decorators */ } from '../app'
@@ -16,11 +16,11 @@ import { ExpressServerAddOn /*, Types as T, decorators */ } from '../app'
 const BASE_URL = 'http://localhost'
 const BASE_URL_SSL = 'https://localhost'
 // const ALLOW_ORIGIN = 'http://allow.localhost'
-const { WebSettingKeys: W } = constants
+const { Web: W } = constants
 // const { controller } = decorators
 
 
-@injectable()
+@d.injectable()
 class MockConfigurationProvider implements IConfigurationProvider {
     public readonly name: string = 'MockConfigurationProvider'
     public configFilePath: string

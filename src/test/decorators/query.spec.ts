@@ -5,7 +5,7 @@ import * as spies from 'chai-spies'
 chai.use(spies)
 const expect = chai.expect
 import * as request from 'request-promise-native'
-import { injectable, DependencyContainer, serviceContext,
+import { DependencyContainer, serviceContext, decorators as d,
     IConfigurationProvider, Maybe, Types as CmT, constants } from '@micro-fleet/common'
 
 import { ExpressServerAddOn, ControllerCreationStrategy,
@@ -16,14 +16,15 @@ const PORT = 31000
 const BASE_URL = `http://localhost:${PORT}`
 const CONTROLLER_NAME = 'QueryController'
 const ORG_NAME = 'gennova'
-const DEPT_NAME = 'tech'
+const YEAR = '2050'
+const SELECTED = '0'
 const EMPLOYEE_NAME_1 = 'shazam'
 const EMPLOYEE_NAME_2 = 'wonderwoman'
 const EMPLOYEE_NAME_3 = 'superman'
-const { WebSettingKeys: W } = constants
+const { Web: W } = constants
 
 
-@injectable()
+@d.injectable()
 class MockConfigurationProvider implements IConfigurationProvider {
     public readonly name: string = 'MockConfigurationProvider'
     public configFilePath: string
@@ -186,7 +187,7 @@ describe('@query()', function() {
         let error: any
         server.init()
             .then(() => {
-                const url = `${BASE_URL}/query/multi?org=${ORG_NAME}&dept=${DEPT_NAME}&emp=${EMPLOYEE_NAME_1}`
+                const url = `${BASE_URL}/query/multi?org=${ORG_NAME}&year=${YEAR}&selected=${SELECTED}`
                 // console.log('Requesting:', url)
                 return request(url)
             })
@@ -195,9 +196,9 @@ describe('@query()', function() {
                 const controller: any = container.resolve(CONTROLLER_NAME)
                 expect(controller['spyFn']).to.be.called.once
                 expect(controller['spyFn']).to.be.called.with.exactly(
-                    ORG_NAME, ORG_NAME,
-                    DEPT_NAME, DEPT_NAME,
-                    EMPLOYEE_NAME_1, EMPLOYEE_NAME_1,
+                    'string', ORG_NAME,
+                    'number', YEAR,
+                    'boolean', SELECTED,
                     undefined,
                 )
             })

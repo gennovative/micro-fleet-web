@@ -1,5 +1,5 @@
 import { Request } from '../interfaces'
-import { decorateParam, ParseFunction } from './param-decor-base'
+import { decorateParam, ParseFunction, primitiveParserFactory } from './param-decor-base'
 
 
 /**
@@ -12,26 +12,18 @@ import { decorateParam, ParseFunction } from './param-decor-base'
  * @param {Function} parseFn Function to parse extracted value to expected data type.
  *     This parameter is ignored if `name` is not specified.
  */
-export type ParamDecorator = (name?: string, parseFn?: ParseFunction) => Function
+export function param(name?: string, parseFn?: ParseFunction): ParameterDecorator {
+    return function (proto: any, method: string | symbol, paramIndex: number): void {
+        function resolverFn(request: Request) {
+            parseFn = parseFn || primitiveParserFactory(proto, method, paramIndex)
+            return parseFn(request.params[name])
+        }
 
-
-function getRouteParam(req: Request, name?: string, parseFn?: ParseFunction): any {
-    if (!name) { return req.params }
-    return parseFn ? parseFn(req.params[name]) : req.params[name]
-}
-
-/**
- * For action parameter decoration.
- * Will resolve the parameter's value with a route params from `request.params`.
- */
-export function param(name?: string, parseFn?: ParseFunction): Function {
-    return function (proto: any, method: string, paramIndex: number): Function {
         decorateParam({
             TargetClass: proto.constructor,
             method,
             paramIndex,
-            resolverFn: (request) => getRouteParam(request, name, parseFn),
+            resolverFn: Boolean(name) ? resolverFn : req => req.params,
         })
-        return proto
     }
 }

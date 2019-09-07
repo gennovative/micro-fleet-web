@@ -47,19 +47,19 @@ class ParamController {
         res.sendStatus(200)
     }
 
-    @d.GET(':dept/multi/:emp')
+    @d.GET(':year/multi/:selected')
     public multi(
             @d.param('org') orgName: string,
             @d.request() req: Request,
-            @d.param('dept') deptName: string,
+            @d.param('year') year: number,
             @d.response() res: Response,
-            @d.param('emp') employeeName: string,
+            @d.param('selected') isSelected: boolean,
             nothing: any,
         ) {
         this.spyFn(
-            orgName, req.params['org'],
-            deptName, req.params['dept'],
-            employeeName, req.params['emp'],
+            typeof orgName, req.params['org'],
+            typeof year, req.params['year'],
+            typeof isSelected, req.params['selected'],
             nothing,
         )
         res.sendStatus(200)

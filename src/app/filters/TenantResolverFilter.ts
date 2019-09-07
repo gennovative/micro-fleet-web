@@ -1,4 +1,4 @@
-import { injectable, inject, Maybe, Guard } from '@micro-fleet/common'
+import { Maybe, Guard, decorators as d } from '@micro-fleet/common'
 import { ICacheProvider, CacheLevel, Types as CaT } from '@micro-fleet/cache'
 
 import { IActionFilter } from '../decorators/filter'
@@ -9,13 +9,13 @@ import { ActionFilterBase } from './ActionFilterBase'
 /**
  * Provides method to look up tenant ID from tenant slug.
  */
-@injectable()
+@d.injectable()
 export class TenantResolverFilter
     extends ActionFilterBase
     implements IActionFilter {
 
     constructor(
-            @inject(CaT.CACHE_PROVIDER) protected _cache: ICacheProvider,
+            @d.inject(CaT.CACHE_PROVIDER) protected _cache: ICacheProvider,
             // @inject(GvT.TENANT_PROVIDER) protected _tenantProvider: ITenantProvider
         ) {
         super()
