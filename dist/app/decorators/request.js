@@ -11,7 +11,7 @@ function request() {
             TargetClass: proto.constructor,
             method,
             paramIndex,
-            resolverFn: (req) => req,
+            resolverFn: param_decor_base_1.identity,
         });
     };
 }

@@ -1,12 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const param_decor_base_1 = require("./param-decor-base");
-function getExtras(req, name) {
-    if (!name) {
-        return req.extras;
-    }
-    return req.extras[name];
-}
 /**
  * For action parameter decoration.
  *
@@ -21,9 +15,17 @@ function extras(name) {
             TargetClass: proto.constructor,
             method,
             paramIndex,
-            resolverFn: (request) => getExtras(request, name),
+            resolverFn: Boolean(name) ? getExtras(name) : allExtras,
         });
     };
 }
 exports.extras = extras;
+function getExtras(name) {
+    return function (req) {
+        return req.extras[name];
+    };
+}
+function allExtras(req) {
+    return req.extras;
+}
 //# sourceMappingURL=extras.js.map

@@ -472,7 +472,7 @@ export class ExpressServerAddOn implements IServiceAddOn {
                 res.end()
                 break
             default:
-                res.send(actionResult)
+                res.send(String(actionResult))
         }
     }
 
@@ -548,7 +548,7 @@ export class ExpressServerAddOn implements IServiceAddOn {
                     // This allows URL prefix to have route params
                     // Eg: /api/v1/:tenant
                     routePath,
-                    this._extractFilterExecuteFunc(FilterClass, filterParams) as express.RequestHandler
+                    this._extractFilterExecuteFunc(FilterClass, filterParams) as express.Application,
                 )
             }
         })

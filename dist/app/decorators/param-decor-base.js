@@ -32,6 +32,10 @@ function getParamType(proto, method, paramIndex) {
     return paramTypes[paramIndex];
 }
 exports.getParamType = getParamType;
+function identity(val) {
+    return val;
+}
+exports.identity = identity;
 function primitiveParserFactory(proto, method, paramIndex) {
     const targetType = getParamType(proto, method, paramIndex);
     switch (targetType) {
@@ -53,7 +57,7 @@ function primitiveParserFactory(proto, method, paramIndex) {
                 return Object(rawModel);
             };
         default:
-            return (rawModel) => rawModel;
+            return identity;
     }
 }
 exports.primitiveParserFactory = primitiveParserFactory;

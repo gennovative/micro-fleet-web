@@ -35,7 +35,7 @@ class ParamDecorController {
 
     @d.POST('/valid')
     public doValid(
-            req: Request<SampleModel>,
+            req: Request,
             @d.response() res: Response,
             @d.model(SampleModel) result: SampleModel,
         ) {
@@ -45,7 +45,7 @@ class ParamDecorController {
 
     @d.PATCH('/custom')
     public doCustom(
-            @d.request() req: Request<SampleModel>,
+            @d.request() req: Request,
             @d.model({
                 ItemClass: SampleModel,
                 extractFn: (r: Request) => r.body,
@@ -59,7 +59,7 @@ class ParamDecorController {
 
     @d.PUT('/partial')
     public doPartial(
-            req: Request<SampleModel>,
+            req: Request,
             @d.model({
                 ItemClass: SampleModel,
                 isPartial: true,

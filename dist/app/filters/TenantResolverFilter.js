@@ -8,21 +8,15 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-var __param = (this && this.__param) || function (paramIndex, decorator) {
-    return function (target, key) { decorator(target, key, paramIndex); }
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 const common_1 = require("@micro-fleet/common");
-const cache_1 = require("@micro-fleet/cache");
 const ActionFilterBase_1 = require("./ActionFilterBase");
 /**
  * Provides method to look up tenant ID from tenant slug.
  */
 let TenantResolverFilter = class TenantResolverFilter extends ActionFilterBase_1.ActionFilterBase {
-    constructor(_cache) {
+    constructor() {
         super();
-        this._cache = _cache;
-        common_1.Guard.assertArgDefined('cache', _cache);
     }
     async execute(req, res, next) {
         const { tenantSlug } = req.params;
@@ -31,11 +25,11 @@ let TenantResolverFilter = class TenantResolverFilter extends ActionFilterBase_1
             req.params['tenantId'] = null;
             return next();
         }
-        const key = `common-web::tenant::${tenantSlug}`;
-        const tenantId = await this._cache.getPrimitive(key);
+        // const key = `common-web::tenant::${tenantSlug}`
+        const tenantId = common_1.Maybe.Just('0'); // await this._cache.getPrimitive(key) as Maybe<string>
         if (tenantId.isJust) {
             console.log('TenantResolver: from cache');
-            req.params['tenantId'] = tenantId;
+            req['extras']['tena' + 'ntId'] = tenantId.value;
             return next();
         }
         // TODO: Else, look up from database
@@ -43,15 +37,14 @@ let TenantResolverFilter = class TenantResolverFilter extends ActionFilterBase_1
         // if (!tenant) { return null }
         // Mocking
         const tenant = { id: Math.random().toString().slice(2) };
-        this._cache.setPrimitive(key, tenant.id, { level: cache_1.CacheLevel.BOTH });
+        // this._cache.setPrimitive(key, tenant.id, { level: CacheLevel.BOTH })
         this.addReadonlyProp(req.extras, 'tenantId', tenant.id);
         next();
     }
 };
 TenantResolverFilter = __decorate([
     common_1.decorators.injectable(),
-    __param(0, common_1.decorators.inject(cache_1.Types.CACHE_PROVIDER)),
-    __metadata("design:paramtypes", [Object])
+    __metadata("design:paramtypes", [])
 ], TenantResolverFilter);
 exports.TenantResolverFilter = TenantResolverFilter;
 //# sourceMappingURL=TenantResolverFilter.js.map

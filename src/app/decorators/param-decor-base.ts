@@ -60,6 +60,9 @@ export function getParamType(proto: any, method: string | symbol, paramIndex: nu
     return paramTypes[paramIndex]
 }
 
+export function identity(val: any): any {
+    return val
+}
 
 export function primitiveParserFactory(proto: any, method: string | symbol, paramIndex: number): ParseFunction {
     const targetType = getParamType(proto, method, paramIndex)
@@ -82,6 +85,6 @@ export function primitiveParserFactory(proto: any, method: string | symbol, para
                 return Object(rawModel)
             }
         default:
-            return (rawModel: any) => rawModel
+            return identity
     }
 }

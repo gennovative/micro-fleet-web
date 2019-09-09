@@ -28,7 +28,7 @@ class ModelManualController {
 
     @d.POST('/valid')
     public doValid(
-            req: Request<SampleModel>,
+            req: Request,
             @d.response() res: Response,
             @d.model(SampleModel) result: SampleModel,
         ) {
@@ -38,7 +38,7 @@ class ModelManualController {
 
     @d.PATCH('/custom')
     public doCustomExtract(
-            @d.request() req: Request<SampleModel>,
+            @d.request() req: Request,
             @d.model(<ModelDecoratorOptions> {
                 ItemClass: SampleModel,
                 extractFn: (r: Request) => r.body.one,
@@ -60,7 +60,7 @@ class ModelManualController {
 
     @d.PUT('/partial')
     public doPartial(
-            req: Request<SampleModel>,
+            req: Request,
             @d.model({
                 ItemClass: SampleModel,
                 isPartial: true,

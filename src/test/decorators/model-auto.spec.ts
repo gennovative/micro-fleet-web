@@ -219,5 +219,37 @@ describe('@model() - auto', function() {
                 })
                 .finally(() => done(error))
         })
+
+        it('Should execute post-processing function', (done: Function) => {
+            // Arrange
+            const NUM = 20
+            const payload = <SampleModel> {
+                name: 'Valid name',
+                age: 20,
+                position: 'Coolie manager',
+            }
+            let error: any
+            server.init()
+                .then(() => {
+                    return request(`${BASE_URL}/${NUM}/postprocess`, {
+                        method: 'PATCH',
+                        body: payload,
+                        json: true,
+                    })
+                })
+                .then(() => {
+                    const controller: any = container.resolve(CONTROLLER_NAME)
+                    expect(controller['spyFn']).to.be.called.once
+                    expect(controller['spyFn']).to.be.called.with.exactly(
+                        'SampleModel', payload.name, payload.age + NUM, payload.position,
+                    )
+                })
+                .catch((err: any) => {
+                    // Unexpectedly Assert
+                    console.error(error = err)
+                    expect(false, 'Should never come here!').to.be.true
+                })
+                .finally(() => done(error))
+        })
     }) // describe 'translating'
 }) // describe '@model() - auto'

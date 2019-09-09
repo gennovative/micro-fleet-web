@@ -1,7 +1,7 @@
 import { Guard, IModelAutoMapper, MinorException, ITranslatable, Result } from '@micro-fleet/common'
 
 import { Request } from '../interfaces'
-import { decorateParam, ParseFunction, getParamType } from './param-decor-base'
+import { decorateParam, ParseFunction, getParamType, identity } from './param-decor-base'
 
 
 export type ModelDecoratorOptions = {
@@ -9,7 +9,13 @@ export type ModelDecoratorOptions = {
     /**
      * Function to extract model object from request body.
      */
-    extractFn?: <T extends object = object>(request: Request<T>) => any
+    extractFn?: (request: Request) => any
+
+    /**
+     * Function to be called after model is created with desired type,
+     * and before assigned as parameter value.
+     */
+    postProcessFn?: (model: any, request: Request) => void
 
     /**
      * Turns on or off model validation before translating.
@@ -28,16 +34,7 @@ export type ModelDecoratorOptions = {
      * be specified here.
      */
     ItemClass?: ITranslatable
-
-    /**
-     * If true, will attempt to resolve tenantId from `request.extras`
-     * then attach to the result model.
-     */
-    hasTenantId?: boolean,
 }
-
-
-export type ModelDecorator = (opts: ITranslatable | ModelDecoratorOptions) => Function
 
 
 /**
@@ -53,6 +50,8 @@ export function model(opts: ITranslatable | ModelDecoratorOptions = {}): Paramet
                 ItemClass: opts,
             }
         }
+        opts.extractFn = opts.extractFn || ((req: Request) => req.body)
+        opts.postProcessFn = opts.postProcessFn || identity
 
         let rsParser: Result<ParseFunction>
         decorateParam({
@@ -69,18 +68,12 @@ export function model(opts: ITranslatable | ModelDecoratorOptions = {}): Paramet
     }
 }
 
-export async function translateModel(req: Request, options: ModelDecoratorOptions, parse: ParseFunction): Promise<object> {
-    const { extractFn, hasTenantId } = options
-    if (!extractFn && req.body == null) {
-        throw new MinorException('Request must have property "body". Otherwise, you must provide "extractFn" in decorator option.')
-    }
-    const rawModel = Boolean(extractFn) ? extractFn(req) : req.body
-    if (rawModel != null) {
-        const resultModel = parse(rawModel)
-        hasTenantId && (resultModel.tenantId = req.extras.tenantId)
-        return resultModel
-    }
-    return rawModel
+async function translateModel(req: Request, options: ModelDecoratorOptions, parse: ParseFunction): Promise<object> {
+    const { extractFn, postProcessFn } = options
+    const rawModel = extractFn(req)
+    const resultModel = parse(rawModel)
+    postProcessFn(resultModel, req)
+    return resultModel
 }
 
 

@@ -45,7 +45,7 @@ class ModelAutoController {
 
     @d.PATCH('/custom')
     public doCustomExtract(
-        @d.request() req: Request<SampleModel>,
+        @d.request() req: Request,
         @d.model(<ModelDecoratorOptions> {
             extractFn: (r: Request) => r.query,
         })
@@ -59,6 +59,20 @@ class ModelAutoController {
         this.spyFn(
             modelQuery.constructor.name, modelQuery.name, modelQuery.age, modelQuery.position,
             modelBody.constructor.name, modelBody.name, modelBody.age, modelBody.position,
+        )
+        res.sendStatus(200)
+    }
+
+    @d.PATCH('/:num/postprocess')
+    public postProcess(
+        @d.model({
+            postProcessFn: (m: SampleModel, r: Request) => m.age += parseInt(r.params.num),
+        })
+        model: SampleModel,
+        @d.response() res: Response
+    ) {
+        this.spyFn(
+            model.constructor.name, model.name, model.age, model.position,
         )
         res.sendStatus(200)
     }

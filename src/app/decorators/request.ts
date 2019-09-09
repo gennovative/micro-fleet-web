@@ -1,4 +1,4 @@
-import { decorateParam } from './param-decor-base'
+import { decorateParam, identity } from './param-decor-base'
 
 
 /**
@@ -11,7 +11,7 @@ export function request(): ParameterDecorator {
             TargetClass: proto.constructor,
             method,
             paramIndex,
-            resolverFn: (req) => req,
+            resolverFn: identity,
         })
     }
 }

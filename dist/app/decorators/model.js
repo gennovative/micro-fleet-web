@@ -15,6 +15,8 @@ function model(opts = {}) {
                 ItemClass: opts,
             };
         }
+        opts.extractFn = opts.extractFn || ((req) => req.body);
+        opts.postProcessFn = opts.postProcessFn || param_decor_base_1.identity;
         let rsParser;
         param_decor_base_1.decorateParam({
             TargetClass: proto.constructor,
@@ -31,19 +33,12 @@ function model(opts = {}) {
 }
 exports.model = model;
 async function translateModel(req, options, parse) {
-    const { extractFn, hasTenantId } = options;
-    if (!extractFn && req.body == null) {
-        throw new common_1.MinorException('Request must have property "body". Otherwise, you must provide "extractFn" in decorator option.');
-    }
-    const rawModel = Boolean(extractFn) ? extractFn(req) : req.body;
-    if (rawModel != null) {
-        const resultModel = parse(rawModel);
-        hasTenantId && (resultModel.tenantId = req.extras.tenantId);
-        return resultModel;
-    }
-    return rawModel;
+    const { extractFn, postProcessFn } = options;
+    const rawModel = extractFn(req);
+    const resultModel = parse(rawModel);
+    postProcessFn(resultModel, req);
+    return resultModel;
 }
-exports.translateModel = translateModel;
 /**
  * Selects a function to parse request body to model object.
  */

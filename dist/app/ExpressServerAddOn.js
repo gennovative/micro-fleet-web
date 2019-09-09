@@ -339,7 +339,7 @@ let ExpressServerAddOn = class ExpressServerAddOn {
                 res.end();
                 break;
             default:
-                res.send(actionResult);
+                res.send(String(actionResult));
         }
     }
     _buildActionRoutesAndFilters(actionFunc, actionName, CtrlClass, router) {

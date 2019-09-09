@@ -1,5 +1,4 @@
-import { Maybe, Guard, decorators as d } from '@micro-fleet/common'
-import { ICacheProvider, CacheLevel, Types as CaT } from '@micro-fleet/cache'
+import { Maybe, decorators as d } from '@micro-fleet/common'
 
 import { IActionFilter } from '../decorators/filter'
 import { Request, Response } from '../interfaces'
@@ -15,11 +14,8 @@ export class TenantResolverFilter
     implements IActionFilter {
 
     constructor(
-            @d.inject(CaT.CACHE_PROVIDER) protected _cache: ICacheProvider,
-            // @inject(GvT.TENANT_PROVIDER) protected _tenantProvider: ITenantProvider
         ) {
         super()
-        Guard.assertArgDefined('cache', _cache)
     }
 
     public async execute(req: Request, res: Response, next: Function): Promise<void> {
@@ -31,12 +27,12 @@ export class TenantResolverFilter
             return next()
         }
 
-        const key = `common-web::tenant::${tenantSlug}`
-        const tenantId = await this._cache.getPrimitive(key) as Maybe<string>
+        // const key = `common-web::tenant::${tenantSlug}`
+        const tenantId = Maybe.Just('0') // await this._cache.getPrimitive(key) as Maybe<string>
 
         if (tenantId.isJust) {
             console.log('TenantResolver: from cache')
-            req.params['tenantId'] = tenantId
+            req['extras']['tena' + 'ntId'] = tenantId.value
             return next()
         }
 
@@ -46,7 +42,7 @@ export class TenantResolverFilter
 
         // Mocking
         const tenant = { id: Math.random().toString().slice(2) }
-        this._cache.setPrimitive(key, tenant.id, { level: CacheLevel.BOTH })
+        // this._cache.setPrimitive(key, tenant.id, { level: CacheLevel.BOTH })
 
         this.addReadonlyProp(req.extras, 'tenantId', tenant.id)
         next()

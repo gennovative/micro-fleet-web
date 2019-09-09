@@ -2,14 +2,6 @@ import { Request } from '../interfaces'
 import { decorateParam, ParseFunction, primitiveParserFactory } from './param-decor-base'
 
 
-function getQueryString(req: Request, name?: string, parseFn?: ParseFunction): any {
-    const raw: string | string[] = req.query[name]
-    if (Array.isArray(raw)) {
-        return raw.map(parseFn)
-    }
-    return parseFn(raw)
-}
-
 /**
  * For action parameter decoration.
  *
@@ -31,8 +23,20 @@ export function query(name?: string, parseFn?: ParseFunction): ParameterDecorato
             TargetClass: proto.constructor,
             method,
             paramIndex,
-            // resolverFn: (request) => getQueryString(request, name, parseFn),
-            resolverFn: Boolean(name) ? resolverFn : req => req.query,
+            resolverFn: Boolean(name) ? resolverFn : allQuery,
         })
     }
+}
+
+
+function getQueryString(req: Request, name?: string, parseFn?: ParseFunction): any {
+    const raw: string | string[] = req.query[name]
+    if (Array.isArray(raw)) {
+        return raw.map(parseFn)
+    }
+    return parseFn(raw)
+}
+
+function allQuery(req: Request) {
+    return req.query
 }

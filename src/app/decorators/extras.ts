@@ -2,12 +2,6 @@ import { Request } from '../interfaces'
 import { decorateParam } from './param-decor-base'
 
 
-function getExtras(req: Request, name?: string): any {
-    if (!name) { return req.extras }
-    return req.extras[name]
-}
-
-
 /**
  * For action parameter decoration.
  *
@@ -22,7 +16,18 @@ export function extras(name?: string): ParameterDecorator {
             TargetClass: proto.constructor,
             method,
             paramIndex,
-            resolverFn: (request) => getExtras(request, name),
+            resolverFn: Boolean(name) ? getExtras(name) : allExtras,
         })
     }
+}
+
+
+function getExtras(name: string) {
+    return function(req: Request) {
+        return req.extras[name]
+    }
+}
+
+function allExtras(req: Request) {
+    return req.extras
 }

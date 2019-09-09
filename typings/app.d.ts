@@ -125,25 +125,23 @@ declare module '@micro-fleet/web/dist/app/decorators/filter' {
 }
 declare module '@micro-fleet/web/dist/app/interfaces' {
     import * as express from 'express';
-    export type Request<TModel = object> = express.Request & {
+    export interface RequestExtras {
+        /**
+         * Object attached by global filter `TenantResolverFilter`
+         */
+        readonly tenantId?: string;
+    }
+    export interface Request extends express.Request {
         /**
          * Contains custom objects.
          *
          * If any @micro-fleet filter wants to attach new property(-es) to
          * request object, it should attach here.
          */
-        readonly extras: object & {
-            /**
-             * Object attached by @model decorator (ModelFilter)
-             */
-            readonly model?: TModel;
-            /**
-             * Object attached by @tenant decorator (TenantResolverFilter)
-             */
-            readonly tenantId?: string;
-        };
-    };
-    export type Response = express.Response;
+        readonly extras: RequestExtras;
+    }
+    export interface Response extends express.Response {
+    }
 
 }
 declare module '@micro-fleet/web/dist/app/WebContext' {
@@ -193,6 +191,7 @@ declare module '@micro-fleet/web/dist/app/decorators/param-decor-base' {
      */
     export function decorateParam(opts: DecorateParamOptions): void;
     export function getParamType(proto: any, method: string | symbol, paramIndex: number): any;
+    export function identity(val: any): any;
     export function primitiveParserFactory(proto: any, method: string | symbol, paramIndex: number): ParseFunction;
 
 }
@@ -453,12 +452,16 @@ declare module '@micro-fleet/web/dist/app/decorators/controller' {
 declare module '@micro-fleet/web/dist/app/decorators/model' {
     import { ITranslatable } from '@micro-fleet/common';
     import { Request } from '@micro-fleet/web/dist/app/interfaces';
-    import { ParseFunction } from '@micro-fleet/web/dist/app/decorators/param-decor-base';
     export type ModelDecoratorOptions = {
         /**
          * Function to extract model object from request body.
          */
-        extractFn?: <T extends object = object>(request: Request<T>) => any;
+        extractFn?: (request: Request) => any;
+        /**
+         * Function to be called after model is created with desired type,
+         * and before assigned as parameter value.
+         */
+        postProcessFn?: (model: any, request: Request) => void;
         /**
          * Turns on or off model validation before translating.
          * Default to use translator's `enableValidation` property.
@@ -474,13 +477,7 @@ declare module '@micro-fleet/web/dist/app/decorators/model' {
          * be specified here.
          */
         ItemClass?: ITranslatable;
-        /**
-         * If true, will attempt to resolve tenantId from `request.extras`
-         * then attach to the result model.
-         */
-        hasTenantId?: boolean;
     };
-    export type ModelDecorator = (opts: ITranslatable | ModelDecoratorOptions) => Function;
     /**
      * For action parameter decoration.
      * Attempts to translate request body to desired model class,
@@ -488,7 +485,6 @@ declare module '@micro-fleet/web/dist/app/decorators/model' {
      * @param opts Can be the Model Class or option object.
      */
     export function model(opts?: ITranslatable | ModelDecoratorOptions): ParameterDecorator;
-    export function translateModel(req: Request, options: ModelDecoratorOptions, parse: ParseFunction): Promise<object>;
 
 }
 declare module '@micro-fleet/web/dist/app/decorators/extras' {
@@ -504,20 +500,19 @@ declare module '@micro-fleet/web/dist/app/decorators/extras' {
 
 }
 declare module '@micro-fleet/web/dist/app/decorators/header' {
-    import { Request } from '@micro-fleet/web/dist/app/interfaces';
     import { ParseFunction } from '@micro-fleet/web/dist/app/decorators/param-decor-base';
-    export type HeaderDecorator = (name: string, parseFn?: ParseFunction, listDelimiter?: string) => Function;
-    export function getHeader(req: Request, name: string, parse?: ParseFunction, listDelimiter?: string): string | string[];
     /**
      * For action parameter decoration.
-     * Will resolve the parameter's value with header value from `request.params`.
-     * @param {string} name Case-insensitive header name
-     * @param {ParseFunction} parseFn Function to parse the value or array item.
+     * Will resolve the parameter's value with header value from `request.headers`.
+     * @param {string} name Case-insensitive header name.
+     *    If not specified, the deserialized headers object will be returned, equivalent to `request.headers`.
+     * @param {ParseFunction} parseFn Function to parse the value or array items.
      *    If not given, a default function will attempt to parse based on param type.
-     * @param {string} listDelimiter If provided, use this as delimiter to split
-     *      the value to array or strings.
+     *    This parameter is ignored if `name` is not specified.
+     * @param {string} listDelimiter If provided, use this as delimiter to split the value to array or strings.
+     *     This parameter is ignored if `name` is not specified.
      */
-    export function header(name: string, parseFn?: ParseFunction, listDelimiter?: string): ParameterDecorator;
+    export function header(name?: string, parseFn?: ParseFunction, listDelimiter?: string): ParameterDecorator;
 
 }
 declare module '@micro-fleet/web/dist/app/decorators/request' {
@@ -712,21 +707,6 @@ declare module '@micro-fleet/web/dist/app/filters/ErrorHandlerFilter' {
     }
 
 }
-declare module '@micro-fleet/web/dist/app/filters/TenantResolverFilter' {
-    import { ICacheProvider } from '@micro-fleet/cache';
-    import { IActionFilter } from '@micro-fleet/web/dist/app/decorators/filter';
-    import { Request, Response } from '@micro-fleet/web/dist/app/interfaces';
-    import { ActionFilterBase } from '@micro-fleet/web/dist/app/filters/ActionFilterBase';
-    /**
-     * Provides method to look up tenant ID from tenant slug.
-     */
-    export class TenantResolverFilter extends ActionFilterBase implements IActionFilter {
-        protected _cache: ICacheProvider;
-        constructor(_cache: ICacheProvider);
-        execute(req: Request, res: Response, next: Function): Promise<void>;
-    }
-
-}
 declare module '@micro-fleet/web/dist/app/constants/Types' {
     export class Types {
         static readonly TENANT_RESOLVER = "web.TenantResolver";
@@ -754,7 +734,6 @@ declare module '@micro-fleet/web' {
     export * from '@micro-fleet/web/dist/app/interfaces';
     export * from '@micro-fleet/web/dist/app/filters/ActionFilterBase';
     export * from '@micro-fleet/web/dist/app/filters/ErrorHandlerFilter';
-    export * from '@micro-fleet/web/dist/app/filters/TenantResolverFilter';
     export * from '@micro-fleet/web/dist/app/ExpressServerAddOn';
     export * from '@micro-fleet/web/dist/app/RestControllerBase';
     export * from '@micro-fleet/web/dist/app/register-addon';
@@ -779,5 +758,18 @@ declare module '@micro-fleet/web/dist/app/decorators/tenantId' {
      */
     export function extractTenantId(req: Request): Promise<Maybe<string>>;
     export function tenantId(): Function;
+
+}
+declare module '@micro-fleet/web/dist/app/filters/TenantResolverFilter' {
+    import { IActionFilter } from '@micro-fleet/web/dist/app/decorators/filter';
+    import { Request, Response } from '@micro-fleet/web/dist/app/interfaces';
+    import { ActionFilterBase } from '@micro-fleet/web/dist/app/filters/ActionFilterBase';
+    /**
+     * Provides method to look up tenant ID from tenant slug.
+     */
+    export class TenantResolverFilter extends ActionFilterBase implements IActionFilter {
+        constructor();
+        execute(req: Request, res: Response, next: Function): Promise<void>;
+    }
 
 }

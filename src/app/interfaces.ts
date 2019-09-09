@@ -1,23 +1,22 @@
 import * as express from 'express'
 
-export type Request<TModel = object> = express.Request & {
+
+export interface RequestExtras {
+    /**
+     * Object attached by global filter `TenantResolverFilter`
+     */
+    readonly tenantId?: string,
+}
+
+export interface Request extends express.Request {
     /**
      * Contains custom objects.
      *
      * If any @micro-fleet filter wants to attach new property(-es) to
      * request object, it should attach here.
      */
-    readonly extras: object & {
-        /**
-         * Object attached by @model decorator (ModelFilter)
-         */
-        readonly model?: TModel,
-
-        /**
-         * Object attached by @tenant decorator (TenantResolverFilter)
-         */
-        readonly tenantId?: string,
-    },
+    readonly extras: RequestExtras,
 }
 
-export type Response = express.Response
+export interface Response extends express.Response {
+}

@@ -23,7 +23,11 @@ export function param(name?: string, parseFn?: ParseFunction): ParameterDecorato
             TargetClass: proto.constructor,
             method,
             paramIndex,
-            resolverFn: Boolean(name) ? resolverFn : req => req.params,
+            resolverFn: Boolean(name) ? resolverFn : allParams,
         })
     }
+}
+
+function allParams(req: Request) {
+    return req.params
 }

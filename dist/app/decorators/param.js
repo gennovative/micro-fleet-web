@@ -21,9 +21,12 @@ function param(name, parseFn) {
             TargetClass: proto.constructor,
             method,
             paramIndex,
-            resolverFn: Boolean(name) ? resolverFn : req => req.params,
+            resolverFn: Boolean(name) ? resolverFn : allParams,
         });
     };
 }
 exports.param = param;
+function allParams(req) {
+    return req.params;
+}
 //# sourceMappingURL=param.js.map

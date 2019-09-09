@@ -1,13 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const param_decor_base_1 = require("./param-decor-base");
-function getQueryString(req, name, parseFn) {
-    const raw = req.query[name];
-    if (Array.isArray(raw)) {
-        return raw.map(parseFn);
-    }
-    return parseFn(raw);
-}
 /**
  * For action parameter decoration.
  *
@@ -28,10 +21,19 @@ function query(name, parseFn) {
             TargetClass: proto.constructor,
             method,
             paramIndex,
-            // resolverFn: (request) => getQueryString(request, name, parseFn),
-            resolverFn: Boolean(name) ? resolverFn : req => req.query,
+            resolverFn: Boolean(name) ? resolverFn : allQuery,
         });
     };
 }
 exports.query = query;
+function getQueryString(req, name, parseFn) {
+    const raw = req.query[name];
+    if (Array.isArray(raw)) {
+        return raw.map(parseFn);
+    }
+    return parseFn(raw);
+}
+function allQuery(req) {
+    return req.query;
+}
 //# sourceMappingURL=query.js.map
