@@ -32,8 +32,9 @@ class MockConfigurationProvider implements IConfigurationProvider {
                 return this.enableCors ? Maybe.Just(ALLOW_ORIGIN) : Maybe.Nothing()
             case W.WEB_PORT:
                 return Maybe.Just(PORT)
+            default:
+                return Maybe.Nothing()
         }
-        return Maybe.Nothing()
     }
 
     public init = () => Promise.resolve()
@@ -44,6 +45,8 @@ class MockConfigurationProvider implements IConfigurationProvider {
 
 }
 
+
+// tslint:disable: no-floating-promises
 
 describe('@controller()', function() {
     this.timeout(5000)

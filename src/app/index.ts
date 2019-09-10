@@ -5,7 +5,6 @@ export { IActionFilter, IActionErrorHandler, FilterPriority,
 export * from './interfaces'
 export * from './filters/ActionFilterBase'
 export * from './filters/ErrorHandlerFilter'
-export * from './filters/TenantResolverFilter'
 export * from './ExpressServerAddOn'
 export * from './RestControllerBase'
 export * from './register-addon'

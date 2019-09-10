@@ -14,10 +14,6 @@ export type TrailsRouteConfigItem = {
 @d.injectable()
 export abstract class RestControllerBase {
 
-    constructor() {
-        // Empty
-    }
-
 
     //#region Sucessful responses
 

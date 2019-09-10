@@ -9,13 +9,13 @@ export type ModelDecoratorOptions = {
     /**
      * Function to extract model object from request body.
      */
-    extractFn?: (request: Request) => any
+    extractFn?(request: Request): any;
 
     /**
      * Function to be called after model is created with desired type,
      * and before assigned as parameter value.
      */
-    postProcessFn?: (model: any, request: Request) => void
+    postProcessFn?(model: any, request: Request): void;
 
     /**
      * Turns on or off model validation before translating.

@@ -11,7 +11,6 @@ exports.addFilterToTarget = filter_1.addFilterToTarget;
 exports.pushFilterToArray = filter_1.pushFilterToArray;
 __export(require("./filters/ActionFilterBase"));
 __export(require("./filters/ErrorHandlerFilter"));
-__export(require("./filters/TenantResolverFilter"));
 __export(require("./ExpressServerAddOn"));
 __export(require("./RestControllerBase"));
 __export(require("./register-addon"));

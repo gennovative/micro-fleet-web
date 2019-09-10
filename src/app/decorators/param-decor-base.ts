@@ -31,7 +31,7 @@ export type DecorateParamOptions = {
     /**
      * The function to figure out the value for the decorated parameter
      */
-    resolverFn: (req: Request, res: Response) => Promise<any> | any,
+    resolverFn(req: Request, res: Response): Promise<any> | any;
 }
 
 export type ParamDecorDescriptor = Function[]

@@ -45,6 +45,8 @@ class MockConfigurationProvider implements IConfigurationProvider {
 }
 
 
+// tslint:disable: no-floating-promises
+
 describe('ExpressServerAddOn', function() {
     this.timeout(5000)
     // this.timeout(60000) // For debugging
@@ -59,7 +61,7 @@ describe('ExpressServerAddOn', function() {
 
     })
 
-    afterEach(async () => {
+    afterEach(() => {
         container.dispose()
         container = null
     })

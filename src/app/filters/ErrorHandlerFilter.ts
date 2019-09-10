@@ -9,12 +9,6 @@ import { Request, Response } from '../interfaces'
 @d.injectable()
 export class ErrorHandlerFilter implements IActionErrorHandler {
 
-    constructor(
-        // @inject() private logProvider: ILogProvider
-    ) {
-        // Empty
-    }
-
     public execute(error: Error, req: Request, res: Response, next: Function): void {
         const isDebugMode = Boolean(process.env['DEBUG'])
         //

@@ -28,8 +28,9 @@ class MockConfigurationProvider implements IConfigurationProvider {
         switch (key) {
             case W.WEB_PORT:
                 return Maybe.Just(PORT)
+            default:
+                return Maybe.Nothing()
         }
-        return Maybe.Nothing()
     }
 
     public init = () => Promise.resolve()
@@ -47,6 +48,8 @@ function isSortedDesc(arr: number[]): boolean {
     }
     return true
 }
+
+// tslint:disable: no-floating-promises
 
 describe('@filter()', function() {
     // this.timeout(5000)

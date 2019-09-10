@@ -1,5 +1,6 @@
 import * as express from 'express'
 
+// tslint:disable: interface-name
 
 export interface RequestExtras {
     /**
@@ -7,6 +8,7 @@ export interface RequestExtras {
      */
     readonly tenantId?: string,
 }
+
 
 export interface Request extends express.Request {
     /**
@@ -17,6 +19,7 @@ export interface Request extends express.Request {
      */
     readonly extras: RequestExtras,
 }
+
 
 export interface Response extends express.Response {
 }

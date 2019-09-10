@@ -182,7 +182,7 @@ declare module '@micro-fleet/web/dist/app/decorators/param-decor-base' {
         /**
          * The function to figure out the value for the decorated parameter
          */
-        resolverFn: (req: Request, res: Response) => Promise<any> | any;
+        resolverFn(req: Request, res: Response): Promise<any> | any;
     };
     export type ParamDecorDescriptor = Function[];
     /**
@@ -362,7 +362,6 @@ declare module '@micro-fleet/web/dist/app/RestControllerBase' {
         config?: any;
     };
     export abstract class RestControllerBase {
-        constructor();
         /**
          * Responds as Accepted with status code 202 and optional data.
          * @param res Express response object.
@@ -456,12 +455,12 @@ declare module '@micro-fleet/web/dist/app/decorators/model' {
         /**
          * Function to extract model object from request body.
          */
-        extractFn?: (request: Request) => any;
+        extractFn?(request: Request): any;
         /**
          * Function to be called after model is created with desired type,
          * and before assigned as parameter value.
          */
-        postProcessFn?: (model: any, request: Request) => void;
+        postProcessFn?(model: any, request: Request): void;
         /**
          * Turns on or off model validation before translating.
          * Default to use translator's `enableValidation` property.
@@ -702,7 +701,6 @@ declare module '@micro-fleet/web/dist/app/filters/ErrorHandlerFilter' {
      * Catches unhandled exceptions from action methods.
      */
     export class ErrorHandlerFilter implements IActionErrorHandler {
-        constructor();
         execute(error: Error, req: Request, res: Response, next: Function): void;
     }
 

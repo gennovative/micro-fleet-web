@@ -1,6 +1,6 @@
 {
     "name": "@micro-fleet/web",
-    "version": "2.3.0-rc1",
+    "version": "2.3.0-rc3",
     "description": "Contains classes used by web and rest services.",
     "scripts": {
         "build": "npm run compile && npm run test",
@@ -11,7 +11,7 @@
         "copy-resources": "cpx \"src/test/shared/ssl/**/*.*\" dist/test/shared/ssl",
         "release": "npm run build && npm run definition",
         "test": "nyc --extension=.ts --reporter=json --reporter=html --include dist/app/**/*.js --include src/app/**/*.ts mocha --recursive dist/test",
-        "lint": "tslint --fix 'src/**/*.ts'",
+        "lint": "tslint --fix -p tsconfig.json --exclude '**/*.d.ts'",
         "watch": "npm run clean && npm run lint && npm run copy-resources && tsc --watch --pretty",
         "prepublishOnly": "npm run release"
     },
@@ -41,13 +41,12 @@
         "request": "~2.88",
         "request-promise-native": "~1.0",
         "rimraf": "~3.0",
-        "ts-generator": "~0.0.8",
         "ts-mockito": "~2.4",
         "tslint": "~5.19",
         "typescript": "~3.6"
     },
     "peerDependencies": {
-        "@micro-fleet/common": "=2.3.0-rc1"
+        "@micro-fleet/common": "=2.3.0-rc3"
     },
     "publishConfig": {
         "access": "public"

@@ -31,8 +31,9 @@ class MockConfigurationProvider implements IConfigurationProvider {
         switch (key) {
             case W.WEB_PORT:
                 return Maybe.Just(PORT)
+            default:
+                return Maybe.Nothing()
         }
-        return Maybe.Nothing()
     }
 
     public init = () => Promise.resolve()
@@ -43,6 +44,8 @@ class MockConfigurationProvider implements IConfigurationProvider {
 
 }
 
+
+// tslint:disable: no-floating-promises
 
 describe('@response()', function() {
     // this.timeout(5000)
