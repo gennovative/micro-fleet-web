@@ -60,7 +60,7 @@ export function model(opts: ITranslatable | ModelDecoratorOptions = {}): Paramet
             paramIndex,
             resolverFn: (request) => {
                 rsParser = rsParser || modelParserFactory(proto, method, paramIndex, opts as ModelDecoratorOptions)
-                rsParser.throwError()
+                rsParser.throwErrorIfAny()
                 return translateModel(request, opts as ModelDecoratorOptions, rsParser.value)
             },
         })
@@ -97,7 +97,10 @@ function modelParserFactory(proto: any, method: string | symbol, paramIndex: num
     else if (ItemClass) {
         return Result.Ok(translate(ItemClass, isPartial, translateOpt, errPrefix))
     }
-    return Result.Failure(`${errPrefix} Cannot automatically infer model type. ItemClass must be specified.`)
+    return Result.Failure(
+        `${errPrefix} Cannot automatically infer model type. ItemClass must be specified.`,
+        '@model decorator',
+    )
 }
 
 function toArray(ItemClass: ITranslatable, isPartial: boolean, translateOpt: any, errPrefix: string): ParseFunction {

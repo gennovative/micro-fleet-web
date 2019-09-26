@@ -24,7 +24,7 @@ function model(opts = {}) {
             paramIndex,
             resolverFn: (request) => {
                 rsParser = rsParser || modelParserFactory(proto, method, paramIndex, opts);
-                rsParser.throwError();
+                rsParser.throwErrorIfAny();
                 return translateModel(request, opts, rsParser.value);
             },
         });
@@ -58,7 +58,7 @@ function modelParserFactory(proto, method, paramIndex, opts) {
     else if (ItemClass) {
         return common_1.Result.Ok(translate(ItemClass, isPartial, translateOpt, errPrefix));
     }
-    return common_1.Result.Failure(`${errPrefix} Cannot automatically infer model type. ItemClass must be specified.`);
+    return common_1.Result.Failure(`${errPrefix} Cannot automatically infer model type. ItemClass must be specified.`, '@model decorator');
 }
 function toArray(ItemClass, isPartial, translateOpt, errPrefix) {
     return function (rawModel) {
