@@ -60,8 +60,8 @@ describe('@controller()', function() {
             container = new DependencyContainer
             serviceContext.setDependencyContainer(container)
             container.bindConstant(CmT.DEPENDENCY_CONTAINER, container)
-            container.bind(CmT.CONFIG_PROVIDER, MockConfigurationProvider).asSingleton()
-            container.bind(T.WEBSERVER_ADDON, ExpressServerAddOn).asSingleton()
+            container.bindConstructor(CmT.CONFIG_PROVIDER, MockConfigurationProvider).asSingleton()
+            container.bindConstructor(T.WEBSERVER_ADDON, ExpressServerAddOn).asSingleton()
 
             server = container.resolve(T.WEBSERVER_ADDON)
 

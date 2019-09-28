@@ -57,7 +57,7 @@ describe('ExpressServerAddOn', function() {
         container = new DependencyContainer
         serviceContext.setDependencyContainer(container)
         container.bindConstant(CmT.DEPENDENCY_CONTAINER, container)
-        container.bind(CmT.CONFIG_PROVIDER, MockConfigurationProvider).asSingleton()
+        container.bindConstructor(CmT.CONFIG_PROVIDER, MockConfigurationProvider).asSingleton()
 
     })
 

@@ -242,7 +242,7 @@ let ExpressServerAddOn = class ExpressServerAddOn {
             this._assertValidController(ctrlName, CtrlClass);
             const router = this._buildControllerRoutes(CtrlClass, app);
             this._buildControllerFilters(CtrlClass, router);
-            const bound = this._depContainer.bind(CtrlClass.name, CtrlClass);
+            const bound = this._depContainer.bindConstructor(CtrlClass.name, CtrlClass);
             if (this.controllerCreation == ControllerCreationStrategy.SINGLETON) {
                 bound.asSingleton();
             }
@@ -444,7 +444,7 @@ let ExpressServerAddOn = class ExpressServerAddOn {
         const container = this._depContainer;
         // const container: IDependencyContainer = serviceContext.dependencyContainer
         if (!container.isBound(TargetClass.name)) {
-            const bindResult = container.bind(TargetClass.name, TargetClass);
+            const bindResult = container.bindConstructor(TargetClass.name, TargetClass);
             isSingleton && bindResult.asSingleton();
         }
         return container.resolve(TargetClass.name);

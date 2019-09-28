@@ -36,13 +36,13 @@ describe('registerDbAddOn', function () {
 
     it('Should not register dependencies if already registered', () => {
         // Arrange
-        depCon.bind<ExpressServerAddOn>(T.WEBSERVER_ADDON, ExpressServerAddOn)
-        chai.spy.on(depCon, 'bind')
+        depCon.bindConstructor<ExpressServerAddOn>(T.WEBSERVER_ADDON, ExpressServerAddOn)
+        chai.spy.on(depCon, 'bindConstructor')
 
         // Act
         registerWebAddOn()
 
         // Assert
-        expect(depCon.bind).not.to.be.called
+        expect(depCon.bindConstructor).not.to.be.called
     })
 }) // describe
