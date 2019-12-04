@@ -1,6 +1,6 @@
 {
     "name": "@micro-fleet/web",
-    "version": "2.3.0-rc5",
+    "version": "2.4.0-rc1",
     "description": "Contains classes used by web and rest services.",
     "scripts": {
         "build": "npm run compile && npm run test",
@@ -16,7 +16,7 @@
         "prepublishOnly": "npm run release"
     },
     "dependencies": {
-        "@hapi/joi": "~15.1",
+        "@hapi/joi": "=16.1.8",
         "cors": "~2.8",
         "debug": "~4.1",
         "express": "~4.17",
@@ -29,7 +29,7 @@
         "@types/cors": "~2.8",
         "@types/debug": "~4.1",
         "@types/express": "~4.17",
-        "@types/hapi__joi": "~15.0",
+        "@types/hapi__joi": "^16.0.4",
         "@types/mocha": "~5.2",
         "@types/node": "~10.14",
         "@types/request-promise-native": "~1.0",
@@ -46,7 +46,7 @@
         "typescript": "~3.6"
     },
     "peerDependencies": {
-        "@micro-fleet/common": "=2.3.0-rc5"
+        "@micro-fleet/common": "=2.4.0-rc1"
     },
     "publishConfig": {
         "access": "public"
