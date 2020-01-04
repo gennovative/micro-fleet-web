@@ -13,7 +13,7 @@ const MetaData_1 = require("../constants/MetaData");
 function action(verb, path) {
     return function (proto, funcName) {
         common_1.Guard.assertIsTruthy(funcName, 'This decorator is for action method inside controller class');
-        if (!path) {
+        if (!path && typeof funcName === 'string') {
             path = `/${funcName}`;
         }
         else if (path.length > 1) {

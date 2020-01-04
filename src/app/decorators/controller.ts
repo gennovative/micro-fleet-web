@@ -11,11 +11,11 @@ export type ControllerDecorator = (path?: string) => Function
 /**
  * Used to decorate REST controller class.
  * @param {string} path Segment of URL pointing to this controller.
- *         If '_' is given, it is extract from controller class name: {path}Controller.
- *         If not specified, it is default to be empty string.
+ *         If not specified, it is extracted from controller class name: {path}Controller,
+ *         and converted to all lowercase.
  */
-export function controller(path?: string): Function {
-    return function (targetClass: Function): Function {
+export function controller(path?: string): ClassDecorator {
+    return function (targetClass: Function): any {
         if (Reflect.hasOwnMetadata(MetaData.CONTROLLER, targetClass)) {
             throw new CriticalException('Duplicate controller decorator')
         }

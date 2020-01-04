@@ -6,8 +6,8 @@ const MetaData_1 = require("../constants/MetaData");
 /**
  * Used to decorate REST controller class.
  * @param {string} path Segment of URL pointing to this controller.
- *         If '_' is given, it is extract from controller class name: {path}Controller.
- *         If not specified, it is default to be empty string.
+ *         If not specified, it is extracted from controller class name: {path}Controller,
+ *         and converted to all lowercase.
  */
 function controller(path) {
     return function (targetClass) {

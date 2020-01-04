@@ -22,58 +22,59 @@ declare module '@micro-fleet/web/dist/app/decorators/action' {
      * @param {string} path Segment of URL pointing to this action.
      *         If not specified, it is default to be the action's function name.
      */
-    export function action(verb: string, path?: string): Function;
+    export function action(verb: string, path?: string): PropertyDecorator;
     /**
      * Used to decorate an action that accepts request of ALL verbs.
      * @param {string} path Segment of URL pointing to this action.
      *         If not specified, it is default to be the action's function name.
      */
-    export function ALL(path?: string): Function;
+    export function ALL(path?: string): PropertyDecorator;
     /**
      * Used to decorate an action that accepts GET request.
      * @param {string} path Segment of URL pointing to this action.
      *         If not specified, it is default to be the action's function name.
      */
-    export function GET(path?: string): Function;
+    export function GET(path?: string): PropertyDecorator;
     /**
      * Used to decorate an action that accepts POST request.
      * @param {string} path Segment of URL pointing to this action.
      *         If not specified, it is default to be the action's function name.
      */
-    export function POST(path?: string): Function;
+    export function POST(path?: string): PropertyDecorator;
     /**
      * Used to decorate an action that accepts PUT request.
      * @param {string} path Segment of URL pointing to this action.
      *         If not specified, it is default to be the action's function name.
      */
-    export function PUT(path?: string): Function;
+    export function PUT(path?: string): PropertyDecorator;
     /**
      * Used to decorate an action that accepts PATCH request.
      * @param {string} path Segment of URL pointing to this action.
      *         If not specified, it is default to be the action's function name.
      */
-    export function PATCH(path?: string): Function;
+    export function PATCH(path?: string): PropertyDecorator;
     /**
      * Used to decorate an action that accepts DELETE request.
      * @param {string} path Segment of URL pointing to this action.
      *         If not specified, it is default to be the action's function name.
      */
-    export function DELETE(path?: string): Function;
+    export function DELETE(path?: string): PropertyDecorator;
     /**
      * Used to decorate an action that accepts HEAD request.
      * @param {string} path Segment of URL pointing to this action.
      *         If not specified, it is default to be the action's function name.
      */
-    export function HEAD(path?: string): Function;
+    export function HEAD(path?: string): PropertyDecorator;
     /**
      * Used to decorate an action that accepts OPTIONS request.
      * @param {string} path Segment of URL pointing to this action.
      *         If not specified, it is default to be the action's function name.
      */
-    export function OPTIONS(path?: string): Function;
+    export function OPTIONS(path?: string): PropertyDecorator;
 
 }
 declare module '@micro-fleet/web/dist/app/decorators/filter' {
+    import { RequestHandler } from 'express';
     import { Newable } from '@micro-fleet/common';
     /**
      * Provides operations to intercept HTTP requests to a controller.
@@ -97,30 +98,47 @@ declare module '@micro-fleet/web/dist/app/decorators/filter' {
         HIGH = 2
     }
     export type FilterDecorator = <T extends ActionInterceptor>(FilterClass: Newable<T>, priority?: FilterPriority, ...filterParams: any[]) => Function;
+    /**
+     * Represents an array of MicroFleet filter classes or Express middlewares.
+     */
     export type FilterArray<T extends ActionInterceptor = ActionInterceptor> = {
-        FilterClass: Newable<T>;
+        FilterClass: Newable<T> | RequestHandler;
         filterParams: any[];
     }[];
     export type PrioritizedFilterArray = FilterArray[];
     /**
+     * Marks the given Class as MicroFleet filter class.
+     */
+    export function markAsFilterClass(Class: object | Function): boolean;
+    /**
+     * Checks if the given Class is a MicroFleet filter class.
+     */
+    export function isFilterClass(Class: object | Function): boolean;
+    /**
      * Used to add filter to controller class and controller action.
+     * If you want to add raw Express middleware, use @middleware() instead.
      * @param {class} FilterClass Filter class whose name must end with "Filter".
      * @param {FilterPriority} priority Filters with greater priority run before ones with less priority.
      */
     export function filter<T extends ActionInterceptor>(FilterClass: Newable<T>, priority?: FilterPriority, ...filterParams: any[]): Function;
     /**
+     * Used to add Express middleware to controller class and controller action.
+     * All Express middlewares are of FilterPriority.MEDIUM.
+     */
+    export function middleware(handler: RequestHandler): PropertyDecorator | ClassDecorator;
+    /**
      * Adds a filter to `TargetClass`. `TargetClass` can be a class or class prototype,
      * depending on whether the filter is meant to apply on class or class method.
-     * @param FilterClass The filter class.
+     * @param FilterClassOrMiddleware The filter class or Express middleware.
      * @param TargetClassOrPrototype A class or class prototype.
      * @param targetFunc Method name, if `TargetClass` is prototype object,
      * @param {FilterPriority} priority Filters with greater priority run before ones with less priority.
      */
-    export function addFilterToTarget<T extends ActionInterceptor>(FilterClass: Newable<T>, TargetClassOrPrototype: Newable<T>, targetFunc?: string, priority?: FilterPriority, ...filterParams: any[]): Function;
+    export function addFilterToTarget<T extends ActionInterceptor>(FilterClassOrMiddleware: Newable<T> | RequestHandler, TargetClassOrPrototype: Newable<T>, targetFunc?: string | symbol, priority?: FilterPriority, ...filterParams: any[]): new (...args: any[]) => T;
     /**
      * Prepares a filter then push it to given array.
      */
-    export function pushFilterToArray<T extends ActionInterceptor>(filters: PrioritizedFilterArray, FilterClass: Newable<T>, priority?: FilterPriority, ...filterParams: any[]): void;
+    export function pushFilterToArray<T extends ActionInterceptor>(filters: PrioritizedFilterArray, FilterClassOrMiddleware: Newable<T> | RequestHandler, priority?: FilterPriority, ...filterParams: any[]): void;
 
 }
 declare module '@micro-fleet/web/dist/app/interfaces' {
@@ -232,6 +250,10 @@ declare module '@micro-fleet/web/dist/app/ExpressServerAddOn' {
          * Gets or sets path to folder containing controller classes.
          */
         controllerPath: string;
+        /**
+         * Whether to delete decorator metadata after initialization.
+         */
+        cleanUpDecorators: boolean;
         protected _globalFilters: PrioritizedFilterArray;
         protected _globalErrorHandlers: Newable[];
         /**
@@ -341,14 +363,15 @@ declare module '@micro-fleet/web/dist/app/ExpressServerAddOn' {
         protected _buildActionRoutesAndFilters(actionFunc: Function, actionName: string, CtrlClass: Newable, router: express.Router): void;
         protected _getActionFilters(CtrlClass: Function, actionName: string): FilterArray;
         protected _extractActionFromPrototype(prototype: any, name: string): Maybe<Function>;
-        protected _useFilterMiddleware(filters: PrioritizedFilterArray, appOrRouter: express.Express | express.Router, routePath?: string): void;
+        protected _useFilters(filters: PrioritizedFilterArray, appOrRouter: express.Express | express.Router, routePath?: string): void;
         protected _useErrorHandlerMiddleware(handlers: Newable[], appOrRouter: express.Express | express.Router): void;
-        protected _extractFilterExecuteFunc<TFilter extends ActionInterceptor>(FilterClass: Newable<TFilter>, filterParams: any[], paramLength?: number): Function;
+        protected _extractFilterExecuteFunc<TFilter extends ActionInterceptor>(FilterClassOrMiddleware: Newable<TFilter> | express.RequestHandler, filterParams: any[], paramLength?: number): Function;
         protected _instantiateClass<TTarget extends ActionInterceptor>(TargetClass: Newable<TTarget>, isSingleton: boolean, arg1?: any, arg2?: any, arg3?: any, arg4?: any, arg5?: any): ActionInterceptor;
         protected _instantiateClassFromContainer(TargetClass: Newable, isSingleton: boolean): any;
         protected _instantiateClassTraditionally(TargetClass: Newable, isSingleton: boolean, arg1?: any, arg2?: any, arg3?: any, arg4?: any, arg5?: any): any;
         protected _getMetadata(metaKey: string, classOrProto: any, propName?: string): any;
         protected _assertValidController(ctrlName: string, CtrlClass: Newable): void;
+        protected _shouldIgnoreController(ctrlName: string): boolean;
     }
     export {};
 
@@ -437,15 +460,22 @@ declare module '@micro-fleet/web/dist/app/RestControllerBase' {
     }
 
 }
+declare module '@micro-fleet/web/dist/app/constants/Types' {
+    export class Types {
+        static readonly TENANT_RESOLVER = "web.TenantResolver";
+        static readonly WEBSERVER_ADDON = "web.ExpressServerAddOn";
+    }
+
+}
 declare module '@micro-fleet/web/dist/app/decorators/controller' {
     export type ControllerDecorator = (path?: string) => Function;
     /**
      * Used to decorate REST controller class.
      * @param {string} path Segment of URL pointing to this controller.
-     *         If '_' is given, it is extract from controller class name: {path}Controller.
-     *         If not specified, it is default to be empty string.
+     *         If not specified, it is extracted from controller class name: {path}Controller,
+     *         and converted to all lowercase.
      */
-    export function controller(path?: string): Function;
+    export function controller(path?: string): ClassDecorator;
 
 }
 declare module '@micro-fleet/web/dist/app/decorators/model' {
@@ -557,7 +587,7 @@ declare module '@micro-fleet/web/dist/app/decorators' {
     import { controller } from '@micro-fleet/web/dist/app/decorators/controller';
     import * as m from '@micro-fleet/web/dist/app/decorators/model';
     import { extras } from '@micro-fleet/web/dist/app/decorators/extras';
-    import { filter } from '@micro-fleet/web/dist/app/decorators/filter';
+    import { filter, middleware } from '@micro-fleet/web/dist/app/decorators/filter';
     import { header } from '@micro-fleet/web/dist/app/decorators/header';
     import { request } from '@micro-fleet/web/dist/app/decorators/request';
     import { response } from '@micro-fleet/web/dist/app/decorators/response';
@@ -637,6 +667,11 @@ declare module '@micro-fleet/web/dist/app/decorators' {
          */
         filter: typeof filter;
         /**
+         * Used to add Express middleware to controller class and controller action.
+         * Middlewares run before all Micro Fleet filters.
+         */
+        middleware: typeof middleware;
+        /**
          * For action parameter decoration.
          *
          * Will resolve the parameter's value with selected property from `request.extras`.
@@ -705,11 +740,34 @@ declare module '@micro-fleet/web/dist/app/filters/ErrorHandlerFilter' {
     }
 
 }
-declare module '@micro-fleet/web/dist/app/constants/Types' {
-    export class Types {
-        static readonly TENANT_RESOLVER = "web.TenantResolver";
-        static readonly WEBSERVER_ADDON = "web.ExpressServerAddOn";
-    }
+declare module '@micro-fleet/web/dist/app/mock-for-test' {
+    import { IConfigurationProvider, IDependencyContainer } from '@micro-fleet/common';
+    import { ExpressServerAddOn } from '@micro-fleet/web/dist/app/ExpressServerAddOn';
+    /**
+     * Creates a mock instance of ExpressServerAddOn
+     */
+    export function createExpressMockServer(options?: CreateExpressMockServerOptions): CreateExpressMockServerResult;
+    export type CreateExpressMockServerOptions = {
+        /**
+         * Data for configuration provider.
+         */
+        configs?: object;
+        /**
+         * Factory function to create dependency container.
+         */
+        createDependencyContainer?(): IDependencyContainer;
+        /**
+         * Factory function to create configuration container.
+         * @param configs This is `configs` option.
+         * @param depContainer This is the container created by the option `createDependencyContainer()`.
+         */
+        createConfigurationProvider?(configs: object, depContainer: IDependencyContainer): IConfigurationProvider;
+    };
+    export type CreateExpressMockServerResult = {
+        server: ExpressServerAddOn;
+        configProvider: IConfigurationProvider;
+        depContainer: IDependencyContainer;
+    };
 
 }
 declare module '@micro-fleet/web/dist/app/register-addon' {
@@ -726,16 +784,17 @@ declare module '@micro-fleet/web/dist/app/register-addon' {
 
 }
 declare module '@micro-fleet/web' {
-    export * from '@micro-fleet/web/dist/app/decorators';
     export * from '@micro-fleet/web/dist/app/constants/MetaData';
+    export * from '@micro-fleet/web/dist/app/constants/Types';
+    export * from '@micro-fleet/web/dist/app/decorators';
     export { IActionFilter, IActionErrorHandler, FilterPriority, addFilterToTarget, pushFilterToArray } from '@micro-fleet/web/dist/app/decorators/filter';
-    export * from '@micro-fleet/web/dist/app/interfaces';
+    export * from '@micro-fleet/web/dist/app/ExpressServerAddOn';
     export * from '@micro-fleet/web/dist/app/filters/ActionFilterBase';
     export * from '@micro-fleet/web/dist/app/filters/ErrorHandlerFilter';
-    export * from '@micro-fleet/web/dist/app/ExpressServerAddOn';
+    export * from '@micro-fleet/web/dist/app/interfaces';
+    export * from '@micro-fleet/web/dist/app/mock-for-test';
     export * from '@micro-fleet/web/dist/app/RestControllerBase';
     export * from '@micro-fleet/web/dist/app/register-addon';
-    export * from '@micro-fleet/web/dist/app/constants/Types';
     export * from '@micro-fleet/web/dist/app/WebContext';
 
 }

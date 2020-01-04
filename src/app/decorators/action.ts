@@ -18,10 +18,10 @@ export type ActionDescriptor = {
  * @param {string} path Segment of URL pointing to this action.
  *         If not specified, it is default to be the action's function name.
  */
-export function action(verb: string, path?: string): Function {
-    return function (proto: any, funcName: string): Function {
+export function action(verb: string, path?: string): PropertyDecorator {
+    return function (proto: any, funcName: string | symbol) {
         Guard.assertIsTruthy(funcName, 'This decorator is for action method inside controller class')
-        if (!path) {
+        if (!path && typeof funcName === 'string') {
             path = `/${funcName}`
         } else if (path.length > 1) {
             if (!path.startsWith('/')) {
@@ -53,7 +53,7 @@ export function action(verb: string, path?: string): Function {
  * @param {string} path Segment of URL pointing to this action.
  *         If not specified, it is default to be the action's function name.
  */
-export function ALL(path?: string): Function {
+export function ALL(path?: string): PropertyDecorator {
     return action('all', path)
 }
 
@@ -62,7 +62,7 @@ export function ALL(path?: string): Function {
  * @param {string} path Segment of URL pointing to this action.
  *         If not specified, it is default to be the action's function name.
  */
-export function GET(path?: string): Function {
+export function GET(path?: string): PropertyDecorator {
     return action('get', path)
 }
 
@@ -71,7 +71,7 @@ export function GET(path?: string): Function {
  * @param {string} path Segment of URL pointing to this action.
  *         If not specified, it is default to be the action's function name.
  */
-export function POST(path?: string): Function {
+export function POST(path?: string): PropertyDecorator {
     return action('post', path)
 }
 
@@ -80,7 +80,7 @@ export function POST(path?: string): Function {
  * @param {string} path Segment of URL pointing to this action.
  *         If not specified, it is default to be the action's function name.
  */
-export function PUT(path?: string): Function {
+export function PUT(path?: string): PropertyDecorator {
     return action('put', path)
 }
 
@@ -89,7 +89,7 @@ export function PUT(path?: string): Function {
  * @param {string} path Segment of URL pointing to this action.
  *         If not specified, it is default to be the action's function name.
  */
-export function PATCH(path?: string): Function {
+export function PATCH(path?: string): PropertyDecorator {
     return action('patch', path)
 }
 
@@ -98,7 +98,7 @@ export function PATCH(path?: string): Function {
  * @param {string} path Segment of URL pointing to this action.
  *         If not specified, it is default to be the action's function name.
  */
-export function DELETE(path?: string): Function {
+export function DELETE(path?: string): PropertyDecorator {
     return action('delete', path)
 }
 
@@ -107,7 +107,7 @@ export function DELETE(path?: string): Function {
  * @param {string} path Segment of URL pointing to this action.
  *         If not specified, it is default to be the action's function name.
  */
-export function HEAD(path?: string): Function {
+export function HEAD(path?: string): PropertyDecorator {
     return action('head', path)
 }
 
@@ -116,6 +116,6 @@ export function HEAD(path?: string): Function {
  * @param {string} path Segment of URL pointing to this action.
  *         If not specified, it is default to be the action's function name.
  */
-export function OPTIONS(path?: string): Function {
+export function OPTIONS(path?: string): PropertyDecorator {
     return action('options', path)
 }

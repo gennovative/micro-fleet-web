@@ -30,6 +30,7 @@ exports.decorators = {
     action: act.action,
     controller: controller_1.controller,
     filter: filter_1.filter,
+    middleware: filter_1.middleware,
     extras: extras_1.extras,
     header: header_1.header,
     model: m.model,

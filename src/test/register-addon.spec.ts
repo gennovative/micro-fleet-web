@@ -9,7 +9,7 @@ import { IDependencyContainer, DependencyContainer, serviceContext,
 import { registerWebAddOn, ExpressServerAddOn, Types as T } from '../app'
 
 
-describe('registerDbAddOn', function () {
+describe('registerExpressServerAddOn', function () {
     // this.timeout(60000) // For debuging
 
     let depCon: IDependencyContainer
