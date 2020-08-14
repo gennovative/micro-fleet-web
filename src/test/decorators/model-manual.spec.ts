@@ -5,11 +5,10 @@ import * as spies from 'chai-spies'
 chai.use(spies)
 const expect = chai.expect
 import * as request from 'request-promise-native'
-import { DependencyContainer, serviceContext, constants, decorators as d,
-    IConfigurationProvider, Maybe, Types as CmT } from '@micro-fleet/common'
+import { DependencyContainer, serviceContext, constants } from '@micro-fleet/common'
 
 import { ExpressServerAddOn, ControllerCreationStrategy, ErrorHandlerFilter,
-    Types as T } from '../../app'
+    createExpressMockServer} from '../../app'
 import { SampleModel } from '../shared/SampleModel'
 
 // For typing only
@@ -23,32 +22,6 @@ const BASE_URL = `http://localhost:${PORT}/model-manual`
 const { Web: W } = constants
 
 
-@d.injectable()
-class MockConfigurationProvider implements IConfigurationProvider {
-    public readonly name: string = 'MockConfigurationProvider'
-    public configFilePath: string
-
-    public enableRemote: boolean = false
-    public enableCors: boolean = false
-
-    public get(key: string): Maybe<any> {
-        switch (key) {
-            case W.WEB_PORT:
-                return Maybe.Just(PORT)
-            default:
-                return Maybe.Nothing()
-        }
-    }
-
-    public init = () => Promise.resolve()
-    public deadLetter = () => Promise.resolve()
-    public dispose = () => Promise.resolve()
-    public onUpdate = (listener: (changedKeys: string[]) => void) => { /* Empty */ }
-    public fetch = () => Promise.resolve(true)
-
-}
-
-
 // tslint:disable: no-floating-promises
 
 describe('@model() - manual', function() {
@@ -56,26 +29,28 @@ describe('@model() - manual', function() {
     // this.timeout(60000) // For debugging
 
     let server: ExpressServerAddOn
-    let container: DependencyContainer
+    let depContainer: DependencyContainer
 
-
-    beforeEach(() => {
-        container = new DependencyContainer
-        serviceContext.setDependencyContainer(container)
-        container.bindConstant(CmT.DEPENDENCY_CONTAINER, container)
-        container.bindConstructor(CmT.CONFIG_PROVIDER, MockConfigurationProvider).asSingleton()
-        container.bindConstructor(T.WEBSERVER_ADDON, ExpressServerAddOn).asSingleton()
-
-        server = container.resolve(T.WEBSERVER_ADDON)
+    function createServer(configs: object = {}): ExpressServerAddOn {
+        ({ server, depContainer } = createExpressMockServer({ configs }))
+        serviceContext.setDependencyContainer(depContainer)
         server.controllerCreation = ControllerCreationStrategy.SINGLETON
         server.controllerPath = path.join(process.cwd(), 'dist',
             'test', 'shared', CONTROLLER_FILE)
+        return server
+    }
+
+
+    beforeEach(() => {
+        server = createServer({
+            [W.WEB_PORT]: PORT,
+        })
     })
 
     afterEach(async () => {
-        container.dispose()
+        depContainer.dispose()
         await server.dispose()
-        container = server = null
+        depContainer = server = null
         serviceContext.setDependencyContainer(null)
     })
 
@@ -99,7 +74,7 @@ describe('@model() - manual', function() {
                 })
                 .then(() => {
                     // Unexpectedly Assert
-                    const controller: any = container.resolve(CONTROLLER_NAME)
+                    const controller: any = depContainer.resolve(CONTROLLER_NAME)
                     expect(controller['spyFn']).to.be.called.once
                     expect(controller['spyFn']).to.be.called.with.exactly('SampleModel', payload.name, payload.age, payload.position)
                 })
@@ -127,7 +102,7 @@ describe('@model() - manual', function() {
                     })
                 })
                 .then(() => {
-                    const controller: any = container.resolve(CONTROLLER_NAME)
+                    const controller: any = depContainer.resolve(CONTROLLER_NAME)
                     expect(controller['spyFn']).to.be.called.once
                     expect(controller['spyFn']).to.be.called.with.exactly('SampleModel', payload.name, payload.age, payload.position)
                 })
@@ -163,7 +138,7 @@ describe('@model() - manual', function() {
                     })
                 })
                 .then(() => {
-                    const controller: any = container.resolve(CONTROLLER_NAME)
+                    const controller: any = depContainer.resolve(CONTROLLER_NAME)
                     expect(controller['spyFn']).to.be.called.once
                     expect(controller['spyFn']).to.be.called.with.exactly(
                         'SampleModel', payload.one.name, payload.one.age, payload.one.position,
@@ -194,7 +169,7 @@ describe('@model() - manual', function() {
                     })
                 })
                 .then(() => {
-                    const controller: any = container.resolve(CONTROLLER_NAME)
+                    const controller: any = depContainer.resolve(CONTROLLER_NAME)
                     expect(controller['spyFn']).to.be.called.once
                     expect(controller['spyFn']).to.be.called.with.exactly(
                         'SampleModel',
@@ -205,7 +180,8 @@ describe('@model() - manual', function() {
                 })
                 .catch((err: any) => {
                     // Unexpectedly Assert
-                    console.error(error = err)
+                    console.error('Unexpected Error')
+                    console.dir(error = err, { depth: 5 })
                     expect(false, 'Should never come here!').to.be.true
                 })
                 .finally(() => done(error))
@@ -215,6 +191,7 @@ describe('@model() - manual', function() {
     describe('validation', () => {
         it('Should respond with 422 status code if there is validation error.', (done: Function) => {
             // Arrange
+            process.env['DEBUG'] = 'true'
             const payload = <SampleModel> {
                 name: '',
                 age: 18,
@@ -230,19 +207,24 @@ describe('@model() - manual', function() {
                     })
                 })
                 .then(() => {
-                    const controller: any = container.resolve(CONTROLLER_NAME)
+                    const controller: any = depContainer.resolve(CONTROLLER_NAME)
                     expect(controller['spyFn']).have.been.called.below(1)
                 })
                 .catch((err: any) => {
                     // Assert
                     if (err instanceof StatusCodeError) {
+                        (err.statusCode !== 422) && console.error(err)
                         expect(err.statusCode).to.equal(422) // error: UNPROCESSABLE ENTITY
                     } else {
-                        console.error(error = err)
                         expect(false, 'Should never throw this kind of error!').to.be.true
                     }
                 })
-                .finally(() => done(error))
+                .catch(err => error = err)
+                .finally(() => {
+                    error && console.dir(error, { depth: 5 })
+                    delete process.env['DEBUG']
+                    done(error)
+                })
         })
     }) // describe 'translating'
 

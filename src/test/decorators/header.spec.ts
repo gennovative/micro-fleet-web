@@ -5,16 +5,15 @@ import * as spies from 'chai-spies'
 chai.use(spies)
 const expect = chai.expect
 import * as request from 'request-promise-native'
-import { DependencyContainer, serviceContext, decorators as d,
-    IConfigurationProvider, Maybe, Types as CmT, constants } from '@micro-fleet/common'
+import { DependencyContainer, serviceContext, constants } from '@micro-fleet/common'
 
-import { ExpressServerAddOn, ControllerCreationStrategy,
-    Types as T } from '../../app'
+import { ExpressServerAddOn, ControllerCreationStrategy, createExpressMockServer} from '../../app'
 
 
 const PORT = 31000
 const BASE_URL = `http://localhost:${PORT}`
 const CONTROLLER_NAME = 'HeaderController'
+const CONTROLLER_FILE = 'header-controller'
 const HEADER_NAME_1 = 'AUTHORIZATION'
 const HEADER_VAL_1 = 'abc123DEF456@_+-'
 const HEADER_NAME_2 = 'X-Age'
@@ -28,32 +27,6 @@ const HEADER_LIST_3 = 'item-3'
 const { Web: W } = constants
 
 
-@d.injectable()
-class MockConfigurationProvider implements IConfigurationProvider {
-    public readonly name: string = 'MockConfigurationProvider'
-    public configFilePath: string
-
-    public enableRemote: boolean = false
-    public enableCors: boolean = false
-
-    public get(key: string): Maybe<any> {
-        switch (key) {
-            case W.WEB_PORT:
-                return Maybe.Just(PORT)
-            default:
-                return Maybe.Nothing()
-        }
-    }
-
-    public init = () => Promise.resolve()
-    public deadLetter = () => Promise.resolve()
-    public dispose = () => Promise.resolve()
-    public onUpdate = (listener: (changedKeys: string[]) => void) => { /* Empty */ }
-    public fetch = () => Promise.resolve(true)
-
-}
-
-
 // tslint:disable: no-floating-promises
 
 describe('@header()', function() {
@@ -61,26 +34,27 @@ describe('@header()', function() {
     // this.timeout(60000) // For debugging
 
     let server: ExpressServerAddOn
-    let container: DependencyContainer
+    let depContainer: DependencyContainer
 
-
-    beforeEach(() => {
-        container = new DependencyContainer
-        serviceContext.setDependencyContainer(container)
-        container.bindConstant(CmT.DEPENDENCY_CONTAINER, container)
-        container.bindConstructor(CmT.CONFIG_PROVIDER, MockConfigurationProvider).asSingleton()
-        container.bindConstructor(T.WEBSERVER_ADDON, ExpressServerAddOn).asSingleton()
-
-        server = container.resolve(T.WEBSERVER_ADDON)
+    function createServer(configs: object = {}): ExpressServerAddOn {
+        ({ server, depContainer } = createExpressMockServer({ configs }))
+        serviceContext.setDependencyContainer(depContainer)
         server.controllerCreation = ControllerCreationStrategy.SINGLETON
         server.controllerPath = path.join(process.cwd(), 'dist',
-            'test', 'shared', 'header-controller')
+            'test', 'shared', CONTROLLER_FILE)
+        return server
+    }
+
+    beforeEach(() => {
+        server = createServer({
+            [W.WEB_PORT]: PORT,
+        })
     })
 
     afterEach(async () => {
-        container.dispose()
+        depContainer.dispose()
         await server.dispose()
-        container = server = null
+        depContainer = server = null
         serviceContext.setDependencyContainer(null)
     })
 
@@ -98,7 +72,7 @@ describe('@header()', function() {
             })
             .then(() => {
                 // Unexpectedly Assert
-                const controller: any = container.resolve(CONTROLLER_NAME)
+                const controller: any = depContainer.resolve(CONTROLLER_NAME)
                 expect(controller['spyFn']).to.be.called.once
                 expect(controller['spyFn']).to.be.called.with.exactly(
                     HEADER_VAL_1,
@@ -127,7 +101,7 @@ describe('@header()', function() {
             })
             .then(() => {
                 // Unexpectedly Assert
-                const controller: any = container.resolve(CONTROLLER_NAME)
+                const controller: any = depContainer.resolve(CONTROLLER_NAME)
                 expect(controller['spyFn']).to.be.called.once
                 expect(controller['spyFn']).to.be.called.with.exactly(
                     HEADER_VAL_1,
@@ -156,7 +130,7 @@ describe('@header()', function() {
             })
             .then(() => {
                 // Unexpectedly Assert
-                const controller: any = container.resolve(CONTROLLER_NAME)
+                const controller: any = depContainer.resolve(CONTROLLER_NAME)
                 expect(controller['spyFn']).to.be.called.once
                 expect(controller['spyFn']).to.be.called.with.exactly(
                     HEADER_VAL_1,
@@ -188,7 +162,7 @@ describe('@header()', function() {
             })
             .then(() => {
                 // Unexpectedly Assert
-                const controller: any = container.resolve(CONTROLLER_NAME)
+                const controller: any = depContainer.resolve(CONTROLLER_NAME)
                 expect(controller['spyFn']).to.be.called.once
                 expect(controller['spyFn']).to.be.called.with.exactly(
                     HEADER_LIST_1, HEADER_LIST_1,
@@ -220,7 +194,7 @@ describe('@header()', function() {
             })
             .then(() => {
                 // Unexpectedly Assert
-                const controller: any = container.resolve(CONTROLLER_NAME)
+                const controller: any = depContainer.resolve(CONTROLLER_NAME)
                 expect(controller['spyFn']).to.be.called.once
                 expect(controller['spyFn']).to.be.called.with.exactly(
                     'string', HEADER_VAL_1,
@@ -251,7 +225,7 @@ describe('@header()', function() {
             })
             .then(() => {
                 // Unexpectedly Assert
-                const controller: any = container.resolve(CONTROLLER_NAME)
+                const controller: any = depContainer.resolve(CONTROLLER_NAME)
                 expect(controller['spyFn']).to.be.called.once
                 expect(controller['spyFn']).to.be.called.with.exactly(
                     true,

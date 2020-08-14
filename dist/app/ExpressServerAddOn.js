@@ -53,6 +53,7 @@ let ExpressServerAddOn = class ExpressServerAddOn {
         this._port = 0;
         this._express = express();
         this.controllerCreation = ControllerCreationStrategy.SINGLETON;
+        this.cleanUpDecorators = true;
     }
     //#endregion Protected
     //#region Getters / Setters
@@ -87,6 +88,7 @@ let ExpressServerAddOn = class ExpressServerAddOn {
      * @param {FilterPriority} priority Filters with greater priority run before ones with less priority.
      */
     addGlobalFilter(FilterClass, priority) {
+        filter_1.markAsFilterClass(FilterClass);
         filter_1.pushFilterToArray(this._globalFilters, FilterClass, priority);
     }
     /**
@@ -94,6 +96,7 @@ let ExpressServerAddOn = class ExpressServerAddOn {
      * @param HandlerClass The error handler class.
      */
     addGlobalErrorHandler(HandlerClass) {
+        filter_1.markAsFilterClass(HandlerClass);
         this._globalErrorHandlers.push(HandlerClass);
     }
     /**
@@ -165,7 +168,7 @@ let ExpressServerAddOn = class ExpressServerAddOn {
         });
         // Binds global filters as application-level middlewares to specified Express instance.
         // Binds filters with priority HIGH
-        this._useFilterMiddleware(this._globalFilters.filter((f, i) => i == filter_1.FilterPriority.HIGH), app, this._urlPrefix);
+        this._useFilters(this._globalFilters.filter((f, i) => i == filter_1.FilterPriority.HIGH), app, this._urlPrefix);
         const corsOptions = {
             origin: this.getCfg(W.WEB_CORS, false),
             optionsSuccessStatus: 200,
@@ -175,7 +178,7 @@ let ExpressServerAddOn = class ExpressServerAddOn {
         app.use(express.json()); // Parse requests with JSON payloads
         // Binds filters with priority from MEDIUM to LOW
         // All 3rd party middlewares have priority MEDIUM.
-        this._useFilterMiddleware(this._globalFilters.filter((f, i) => i == filter_1.FilterPriority.MEDIUM || i == filter_1.FilterPriority.LOW), app, this._urlPrefix);
+        this._useFilters(this._globalFilters.filter((f, i) => i == filter_1.FilterPriority.MEDIUM || i == filter_1.FilterPriority.LOW), app, this._urlPrefix);
         return app;
     }
     _startServers(app) {
@@ -238,6 +241,9 @@ let ExpressServerAddOn = class ExpressServerAddOn {
     }
     _initControllers(controllers, app) {
         for (const ctrlName of Object.getOwnPropertyNames(controllers)) {
+            if (this._shouldIgnoreController(ctrlName)) {
+                continue;
+            }
             const CtrlClass = controllers[ctrlName];
             this._assertValidController(ctrlName, CtrlClass);
             const router = this._buildControllerRoutes(CtrlClass, app);
@@ -247,6 +253,10 @@ let ExpressServerAddOn = class ExpressServerAddOn {
                 bound.asSingleton();
             }
             this._initActions(CtrlClass, router);
+            if (this.cleanUpDecorators) {
+                Reflect.deleteMetadata(MetaData_1.MetaData.CONTROLLER, CtrlClass);
+                Reflect.deleteMetadata(MetaData_1.MetaData.CONTROLLER_FILTER, CtrlClass);
+            }
         }
     }
     _buildControllerRoutes(CtrlClass, app) {
@@ -256,8 +266,10 @@ let ExpressServerAddOn = class ExpressServerAddOn {
         return router;
     }
     _buildControllerFilters(CtrlClass, router) {
+        // const middlewares: express.RequestHandler[] = this._getMetadata(MetaData.CONTROLLER_MIDDLEWARE, CtrlClass)
+        // router.use(middlewares)
         const metaFilters = this._getMetadata(MetaData_1.MetaData.CONTROLLER_FILTER, CtrlClass);
-        this._useFilterMiddleware(metaFilters, router);
+        this._useFilters(metaFilters, router);
     }
     //#endregion Controller
     //#region Action
@@ -310,19 +322,22 @@ let ExpressServerAddOn = class ExpressServerAddOn {
     async _resolveParamValues(CtrlClass, actionName, req, res) {
         const paramDecors = this._getMetadata(MetaData_1.MetaData.PARAM_DECOR, CtrlClass, actionName);
         const args = [];
-        if (paramDecors) {
-            for (let i = 0; i < paramDecors.length; ++i) {
-                if (typeof paramDecors[i] === 'function') {
-                    const result = paramDecors[i].call(this, req, res);
-                    // TODO: This is generalization, we should only await for async calls, not sync calls.
-                    // Awaiting sync calls negatively affects the speed.
-                    args[i] = await result;
-                }
-                else {
-                    args[i] = undefined;
-                }
+        if (!paramDecors) {
+            return args;
+        }
+        for (let i = 0; i < paramDecors.length; ++i) {
+            if (typeof paramDecors[i] === 'function') {
+                const result = paramDecors[i].call(this, req, res);
+                // TODO: This is generalization, we should only await for async calls, not sync calls.
+                // Awaiting sync calls negatively affects the speed.
+                args[i] = await result;
+            }
+            else {
+                args[i] = undefined;
             }
         }
+        // DO NOT call Reflect.deleteMetadata
+        // We need keep param metadata for every requests.
         return args;
     }
     _autoRespond(actionResult, res, next) {
@@ -344,6 +359,7 @@ let ExpressServerAddOn = class ExpressServerAddOn {
     }
     _buildActionRoutesAndFilters(actionFunc, actionName, CtrlClass, router) {
         const actionDesc = this._getMetadata(MetaData_1.MetaData.ACTION, CtrlClass, actionName);
+        // const middlewares = this._getActionMiddlewares(CtrlClass, actionName)
         const filters = this._getActionFilters(CtrlClass, actionName);
         const filterFuncs = filters.map(f => this._extractFilterExecuteFunc(f.FilterClass, f.filterParams));
         // In case one action supports multiple methods (GET, POST etc.)
@@ -357,6 +373,10 @@ let ExpressServerAddOn = class ExpressServerAddOn {
             // This is equivalent to:
             // router.METHOD(path, filter_1, filter_2, actionFunc)
             routerMethod.apply(router, args);
+        }
+        if (this.cleanUpDecorators) {
+            Reflect.deleteMetadata(MetaData_1.MetaData.ACTION, CtrlClass, actionName);
+            Reflect.deleteMetadata(MetaData_1.MetaData.ACTION_FILTER, CtrlClass, actionName);
         }
     }
     _getActionFilters(CtrlClass, actionName) {
@@ -385,29 +405,44 @@ let ExpressServerAddOn = class ExpressServerAddOn {
     }
     //#endregion Action
     //#region Filter
-    _useFilterMiddleware(filters, appOrRouter, routePath = '/') {
+    _useFilters(filters, appOrRouter, routePath = '/') {
         if (!filters || !filters.length) {
             return;
         }
         // Must make a clone to avoid mutating the original filter array in Reflect metadata.
-        const cloned = Array.from(filters);
-        // `reverse()`: Policies with priority of greater number should run before ones with less priority.
+        // const cloned = Array.from(filters)
+        // `reduceRight()`: Policies with priority of greater number should run before ones with less priority.
         // Expected format:
         // filters = [
         //        1: [ FilterClass, FilterClass ],
         //        5: [ FilterClass, FilterClass ],
         // ]
-        cloned.reverse().forEach(samePriorityFilters => {
-            if (!samePriorityFilters || !samePriorityFilters.length) {
-                return;
+        const appMiddlewares = filters.reduceRight((prev, samePriorityFilters) => {
+            if (!Array.isArray(samePriorityFilters) || !samePriorityFilters.length) {
+                return prev;
             }
-            for (const { FilterClass, filterParams } of samePriorityFilters) { // 1: [ FilterClass, FilterClass ]
-                appOrRouter.use(
-                // This allows URL prefix to have route params
-                // Eg: /api/v1/:tenant
-                routePath, this._extractFilterExecuteFunc(FilterClass, filterParams));
-            }
-        });
+            const execFuncs = samePriorityFilters.map(({ FilterClass, filterParams }) => {
+                return this._extractFilterExecuteFunc(FilterClass, filterParams);
+            });
+            return prev.concat(execFuncs);
+        }, []);
+        appOrRouter.use(
+        // This allows URL prefix to have route params
+        // Eg: /api/v1/:tenant
+        routePath, ...appMiddlewares);
+        // cloned.reverse().forEach(samePriorityFilters => {
+        //     if (!samePriorityFilters || !samePriorityFilters.length) {
+        //         return
+        //     }
+        //     for (const { FilterClass, filterParams } of samePriorityFilters) { // 1: [ FilterClass, FilterClass ]
+        //         appOrRouter.use(
+        //             // This allows URL prefix to have route params
+        //             // Eg: /api/v1/:tenant
+        //             routePath,
+        //             this._extractFilterExecuteFunc(FilterClass, filterParams) as express.Application,
+        //         )
+        //     }
+        // })
     }
     _useErrorHandlerMiddleware(handlers, appOrRouter) {
         if (!handlers || !handlers.length) {
@@ -417,17 +452,20 @@ let ExpressServerAddOn = class ExpressServerAddOn {
             appOrRouter.use(this._extractFilterExecuteFunc(HandlerClass, [], 4));
         }
     }
-    _extractFilterExecuteFunc(FilterClass, filterParams, paramLength = 3) {
-        const filter = this._instantiateClass(FilterClass, true);
-        // This is the middleware function that Express will call
-        const filterFunc = function ( /* request, response, next */) {
-            return filter.execute.apply(filter, [...arguments, ...filterParams]);
-        };
-        // Express depends on number of parameters (aka Function.length)
-        // to determine whether a middleware is request handler or error handler.
-        // See more: https://expressjs.com/en/guide/error-handling.html
-        Object.defineProperty(filterFunc, 'length', { value: paramLength });
-        return filterFunc;
+    _extractFilterExecuteFunc(FilterClassOrMiddleware, filterParams, paramLength = 3) {
+        if (filter_1.isFilterClass(FilterClassOrMiddleware)) {
+            const filter = this._instantiateClass(FilterClassOrMiddleware, true);
+            // This is the middleware function that Express will call
+            const filterFunc = function ( /* request, response, next */) {
+                return filter.execute.apply(filter, [...arguments, ...filterParams]);
+            };
+            // Express depends on number of parameters (aka Function.length)
+            // to determine whether a middleware is request handler or error handler.
+            // See more: https://expressjs.com/en/guide/error-handling.html
+            Object.defineProperty(filterFunc, 'length', { value: paramLength });
+            return filterFunc;
+        }
+        return FilterClassOrMiddleware;
     }
     _instantiateClass(TargetClass, isSingleton, arg1, arg2, arg3, arg4, arg5) {
         // Create an instance either from dependency container or with normay way.
@@ -468,6 +506,9 @@ let ExpressServerAddOn = class ExpressServerAddOn {
         if (typeof CtrlClass !== 'function' || !Reflect.hasOwnMetadata(MetaData_1.MetaData.CONTROLLER, CtrlClass)) {
             throw new common_1.CriticalException(`Controller "${ctrlName}" must be a class and decorated with @controller()`);
         }
+    }
+    _shouldIgnoreController(ctrlName) {
+        return ctrlName.startsWith('_');
     }
 };
 ExpressServerAddOn = __decorate([

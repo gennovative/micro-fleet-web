@@ -6,43 +6,17 @@ chai.use(spies)
 const expect = chai.expect
 import * as request from 'request-promise-native'
 import { StatusCodeError } from 'request-promise-native/errors'
-import { DependencyContainer, serviceContext, decorators as d,
-    IConfigurationProvider, Maybe, Types as CmT, constants } from '@micro-fleet/common'
+import { DependencyContainer, serviceContext, constants } from '@micro-fleet/common'
 
 import { ExpressServerAddOn, ControllerCreationStrategy, ErrorHandlerFilter,
-    Types as T } from '../../app'
+    createExpressMockServer} from '../../app'
 
 
 const PORT = 31000
 const CONTROLLER_NAME = 'RespondingController'
+const CONTROLLER_FILE = 'responding-controller'
 const BASE_URL = `http://localhost:${PORT}`
 const { Web: W } = constants
-
-
-@d.injectable()
-class MockConfigurationProvider implements IConfigurationProvider {
-    public readonly name: string = 'MockConfigurationProvider'
-    public configFilePath: string
-
-    public enableRemote: boolean = false
-    public enableCors: boolean = false
-
-    public get(key: string): Maybe<any> {
-        switch (key) {
-            case W.WEB_PORT:
-                return Maybe.Just(PORT)
-            default:
-                return Maybe.Nothing()
-        }
-    }
-
-    public init = () => Promise.resolve()
-    public deadLetter = () => Promise.resolve()
-    public dispose = () => Promise.resolve()
-    public onUpdate = (listener: (changedKeys: string[]) => void) => { /* Empty */ }
-    public fetch = () => Promise.resolve(true)
-
-}
 
 
 // tslint:disable: no-floating-promises
@@ -52,7 +26,7 @@ describe('@response()', function() {
     this.timeout(60000) // For debugging
 
     let server: ExpressServerAddOn
-    let container: DependencyContainer
+    let depContainer: DependencyContainer
 
     let error: any
     const unexpectFn = (res: any) => {
@@ -62,26 +36,26 @@ describe('@response()', function() {
         console.error(res)
     }
 
-
-
-    beforeEach(() => {
-        container = new DependencyContainer
-        serviceContext.setDependencyContainer(container)
-        container.bindConstant(CmT.DEPENDENCY_CONTAINER, container)
-        container.bindConstructor(CmT.CONFIG_PROVIDER, MockConfigurationProvider).asSingleton()
-        container.bindConstructor(T.WEBSERVER_ADDON, ExpressServerAddOn).asSingleton()
-
-        server = container.resolve(T.WEBSERVER_ADDON)
+    function createServer(configs: object = {}): ExpressServerAddOn {
+        ({ server, depContainer } = createExpressMockServer({ configs }))
+        serviceContext.setDependencyContainer(depContainer)
         server.controllerCreation = ControllerCreationStrategy.SINGLETON
         server.controllerPath = path.join(process.cwd(), 'dist',
-            'test', 'shared', 'responding-controller')
+            'test', 'shared', CONTROLLER_FILE)
+        return server
+    }
+
+    beforeEach(() => {
+        server = createServer({
+            [W.WEB_PORT]: PORT,
+        })
         server.addGlobalErrorHandler(ErrorHandlerFilter)
     })
 
     afterEach(async () => {
-        container.dispose()
+        depContainer.dispose()
         await server.dispose()
-        container = server = null
+        depContainer = server = null
         serviceContext.setDependencyContainer(null)
     })
 
@@ -95,7 +69,7 @@ describe('@response()', function() {
                 })
                 .then((res) => {
                     // Assert
-                    const controller: any = container.resolve(CONTROLLER_NAME)
+                    const controller: any = depContainer.resolve(CONTROLLER_NAME)
                     expect(controller['spyFn']).to.be.called.once
                     expect(res).to.equal('RespondingController.getAutoSync')
                 })
@@ -115,7 +89,7 @@ describe('@response()', function() {
                 })
                 .then((res: any) => {
                     // Assert
-                    const controller: any = container.resolve(CONTROLLER_NAME)
+                    const controller: any = depContainer.resolve(CONTROLLER_NAME)
                     expect(controller['spyFn']).to.be.called.once
                     expect(res.info).to.equal('RespondingController.getAutoAsync')
                 })
@@ -135,7 +109,7 @@ describe('@response()', function() {
                 .then(unexpectFn)
                 .catch((err: StatusCodeError) => {
                     // Assert
-                    const controller: any = container.resolve(CONTROLLER_NAME)
+                    const controller: any = depContainer.resolve(CONTROLLER_NAME)
                     expect(controller['spyFn']).to.be.called.once
                     expect(err.statusCode).to.equal(500)
                     // In production mode: expect(err.error).to.equal('')
@@ -158,7 +132,7 @@ describe('@response()', function() {
                 .then(unexpectFn)
                 .catch((err: StatusCodeError) => {
                     // Assert
-                    const controller: any = container.resolve(CONTROLLER_NAME)
+                    const controller: any = depContainer.resolve(CONTROLLER_NAME)
                     expect(controller['spyFn']).to.be.called.once
                     expect(err.statusCode).to.equal(500)
                     // In production mode: expect(err.error).to.equal('')
@@ -179,7 +153,7 @@ describe('@response()', function() {
                 })
                 .then((res) => {
                     // Assert
-                    const controller: any = container.resolve(CONTROLLER_NAME)
+                    const controller: any = depContainer.resolve(CONTROLLER_NAME)
                     expect(controller['spyFn']).to.be.called.once
                     expect(res).to.equal('RespondingController.getManualSync')
                 })
@@ -199,7 +173,7 @@ describe('@response()', function() {
                 })
                 .then(function (res: any) {
                     // Assert
-                    const controller: any = container.resolve(CONTROLLER_NAME)
+                    const controller: any = depContainer.resolve(CONTROLLER_NAME)
                     expect(controller['spyFn']).to.be.called.once
                     // expect(err.statusCode).to.equal(500)
                     expect(res.info).to.equal('RespondingController.getManualAsync')
@@ -220,7 +194,7 @@ describe('@response()', function() {
                 .then(unexpectFn)
                 .catch((err: StatusCodeError) => {
                     // Assert
-                    const controller: any = container.resolve(CONTROLLER_NAME)
+                    const controller: any = depContainer.resolve(CONTROLLER_NAME)
                     expect(controller['spyFn']).to.be.called.once
                     expect(err.statusCode).to.equal(500)
                     expect(err.error).to.equal('1234567890')
@@ -242,7 +216,7 @@ describe('@response()', function() {
                 .then(unexpectFn)
                 .catch((err: StatusCodeError) => {
                     // Assert
-                    const controller: any = container.resolve(CONTROLLER_NAME)
+                    const controller: any = depContainer.resolve(CONTROLLER_NAME)
                     expect(controller['spyFn']).to.be.called.once
                     expect(err.statusCode).to.equal(502)
                     expect(err.error.reason).to.equal('RespondingController.getManualFailAsync')

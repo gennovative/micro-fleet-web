@@ -16,7 +16,7 @@ const { Web: W } = constants
 import { MetaData } from './constants/MetaData'
 import { ActionDescriptor } from './decorators/action'
 import { IActionErrorHandler, ActionInterceptor, PrioritizedFilterArray,
-    FilterArray, FilterPriority, pushFilterToArray } from './decorators/filter'
+    FilterArray, FilterPriority, pushFilterToArray, isFilterClass, markAsFilterClass } from './decorators/filter'
 import { Request, Response } from './interfaces'
 import { webContext } from './WebContext'
 import { ParamDecorDescriptor } from './decorators/param-decor-base'
@@ -49,6 +49,11 @@ export class ExpressServerAddOn implements IServiceAddOn {
      * Gets or sets path to folder containing controller classes.
      */
     public controllerPath: string
+
+    /**
+     * Whether to delete decorator metadata after initialization.
+     */
+    public cleanUpDecorators: boolean
 
 
     //#region Protected
@@ -165,6 +170,7 @@ export class ExpressServerAddOn implements IServiceAddOn {
         this._port = 0
         this._express = express()
         this.controllerCreation = ControllerCreationStrategy.SINGLETON
+        this.cleanUpDecorators = true
     }
 
 
@@ -176,6 +182,7 @@ export class ExpressServerAddOn implements IServiceAddOn {
      * @param {FilterPriority} priority Filters with greater priority run before ones with less priority.
      */
     public addGlobalFilter<TFilter extends ActionInterceptor>(FilterClass: Newable<TFilter>, priority?: FilterPriority): void {
+        markAsFilterClass(FilterClass)
         pushFilterToArray(this._globalFilters, FilterClass, priority)
     }
 
@@ -184,6 +191,7 @@ export class ExpressServerAddOn implements IServiceAddOn {
      * @param HandlerClass The error handler class.
      */
     public addGlobalErrorHandler<THandler extends IActionErrorHandler>(HandlerClass: Newable<THandler>): void {
+        markAsFilterClass(HandlerClass)
         this._globalErrorHandlers.push(HandlerClass)
     }
 
@@ -267,7 +275,7 @@ export class ExpressServerAddOn implements IServiceAddOn {
 
         // Binds global filters as application-level middlewares to specified Express instance.
         // Binds filters with priority HIGH
-        this._useFilterMiddleware(
+        this._useFilters(
             this._globalFilters.filter((f, i) => i == FilterPriority.HIGH),
             app,
             this._urlPrefix
@@ -283,7 +291,7 @@ export class ExpressServerAddOn implements IServiceAddOn {
 
         // Binds filters with priority from MEDIUM to LOW
         // All 3rd party middlewares have priority MEDIUM.
-        this._useFilterMiddleware(
+        this._useFilters(
             this._globalFilters.filter((f, i) => i == FilterPriority.MEDIUM || i == FilterPriority.LOW),
             app,
             this._urlPrefix
@@ -362,6 +370,8 @@ export class ExpressServerAddOn implements IServiceAddOn {
 
     protected _initControllers(controllers: ControllerExports, app: express.Express): void {
         for (const ctrlName of Object.getOwnPropertyNames(controllers)) {
+            if (this._shouldIgnoreController(ctrlName)) { continue }
+
             const CtrlClass = controllers[ctrlName]
             this._assertValidController(ctrlName, CtrlClass)
             const router = this._buildControllerRoutes(CtrlClass, app)
@@ -373,6 +383,11 @@ export class ExpressServerAddOn implements IServiceAddOn {
             }
 
             this._initActions(CtrlClass, router)
+
+            if (this.cleanUpDecorators) {
+                Reflect.deleteMetadata(MetaData.CONTROLLER, CtrlClass)
+                Reflect.deleteMetadata(MetaData.CONTROLLER_FILTER, CtrlClass)
+            }
         }
     }
 
@@ -384,8 +399,11 @@ export class ExpressServerAddOn implements IServiceAddOn {
     }
 
     protected _buildControllerFilters(CtrlClass: Function, router: express.Router): void {
+        // const middlewares: express.RequestHandler[] = this._getMetadata(MetaData.CONTROLLER_MIDDLEWARE, CtrlClass)
+        // router.use(middlewares)
+
         const metaFilters: PrioritizedFilterArray = this._getMetadata(MetaData.CONTROLLER_FILTER, CtrlClass)
-        this._useFilterMiddleware(metaFilters, router)
+        this._useFilters(metaFilters, router)
     }
 
     //#endregion Controller
@@ -442,18 +460,22 @@ export class ExpressServerAddOn implements IServiceAddOn {
     protected async _resolveParamValues(CtrlClass: Newable, actionName: string, req: Request, res: Response): Promise<any[]> {
         const paramDecors: ParamDecorDescriptor = this._getMetadata(MetaData.PARAM_DECOR, CtrlClass, actionName)
         const args: any = []
-        if (paramDecors) {
-            for (let i = 0; i < paramDecors.length; ++i) {
-                if (typeof paramDecors[i] === 'function') {
-                    const result: any = paramDecors[i].call(this, req, res)
-                    // TODO: This is generalization, we should only await for async calls, not sync calls.
-                    // Awaiting sync calls negatively affects the speed.
-                    args[i] = await result
-                } else {
-                    args[i] = undefined
-                }
+        if (!paramDecors) { return args }
+
+        for (let i = 0; i < paramDecors.length; ++i) {
+            if (typeof paramDecors[i] === 'function') {
+                const result: any = paramDecors[i].call(this, req, res)
+                // TODO: This is generalization, we should only await for async calls, not sync calls.
+                // Awaiting sync calls negatively affects the speed.
+                args[i] = await result
+            } else {
+                args[i] = undefined
             }
         }
+
+        // DO NOT call Reflect.deleteMetadata
+        // We need keep param metadata for every requests.
+
         return args
     }
 
@@ -478,6 +500,7 @@ export class ExpressServerAddOn implements IServiceAddOn {
 
     protected _buildActionRoutesAndFilters(actionFunc: Function, actionName: string, CtrlClass: Newable, router: express.Router): void {
         const actionDesc: ActionDescriptor = this._getMetadata(MetaData.ACTION, CtrlClass, actionName)
+        // const middlewares = this._getActionMiddlewares(CtrlClass, actionName)
         const filters = this._getActionFilters(CtrlClass, actionName)
         const filterFuncs = filters.map(f => this._extractFilterExecuteFunc(f.FilterClass, f.filterParams))
 
@@ -492,6 +515,11 @@ export class ExpressServerAddOn implements IServiceAddOn {
             // This is equivalent to:
             // router.METHOD(path, filter_1, filter_2, actionFunc)
             routerMethod.apply(router, args)
+        }
+
+        if (this.cleanUpDecorators) {
+            Reflect.deleteMetadata(MetaData.ACTION, CtrlClass, actionName)
+            Reflect.deleteMetadata(MetaData.ACTION_FILTER, CtrlClass, actionName)
         }
     }
 
@@ -526,32 +554,47 @@ export class ExpressServerAddOn implements IServiceAddOn {
 
     //#region Filter
 
-    protected _useFilterMiddleware(filters: PrioritizedFilterArray,
+    protected _useFilters(filters: PrioritizedFilterArray,
             appOrRouter: express.Express | express.Router, routePath: string = '/'): void {
         if (!filters || !filters.length) { return }
 
         // Must make a clone to avoid mutating the original filter array in Reflect metadata.
-        const cloned = Array.from(filters)
+        // const cloned = Array.from(filters)
 
-        // `reverse()`: Policies with priority of greater number should run before ones with less priority.
+        // `reduceRight()`: Policies with priority of greater number should run before ones with less priority.
         // Expected format:
         // filters = [
         //        1: [ FilterClass, FilterClass ],
         //        5: [ FilterClass, FilterClass ],
         // ]
-        cloned.reverse().forEach(samePriorityFilters => {
-            if (!samePriorityFilters || !samePriorityFilters.length) {
-                return
+        const appMiddlewares: express.RequestHandler[] = filters.reduceRight((prev: any[], samePriorityFilters: FilterArray) => {
+            if (!Array.isArray(samePriorityFilters) || !samePriorityFilters.length) {
+                return prev
             }
-            for (const { FilterClass, filterParams } of samePriorityFilters) { // 1: [ FilterClass, FilterClass ]
-                appOrRouter.use(
-                    // This allows URL prefix to have route params
-                    // Eg: /api/v1/:tenant
-                    routePath,
-                    this._extractFilterExecuteFunc(FilterClass, filterParams) as express.Application,
-                )
-            }
-        })
+            const execFuncs = samePriorityFilters.map(({ FilterClass, filterParams }) => {
+                return this._extractFilterExecuteFunc(FilterClass, filterParams)
+            })
+            return prev.concat(execFuncs)
+        }, [])
+        appOrRouter.use(
+            // This allows URL prefix to have route params
+            // Eg: /api/v1/:tenant
+            routePath as any,
+            ...appMiddlewares,
+        )
+        // cloned.reverse().forEach(samePriorityFilters => {
+        //     if (!samePriorityFilters || !samePriorityFilters.length) {
+        //         return
+        //     }
+        //     for (const { FilterClass, filterParams } of samePriorityFilters) { // 1: [ FilterClass, FilterClass ]
+        //         appOrRouter.use(
+        //             // This allows URL prefix to have route params
+        //             // Eg: /api/v1/:tenant
+        //             routePath,
+        //             this._extractFilterExecuteFunc(FilterClass, filterParams) as express.Application,
+        //         )
+        //     }
+        // })
     }
 
     protected _useErrorHandlerMiddleware(handlers: Newable[], appOrRouter: express.Express | express.Router): void {
@@ -562,19 +605,25 @@ export class ExpressServerAddOn implements IServiceAddOn {
         }
     }
 
-    protected _extractFilterExecuteFunc<TFilter extends ActionInterceptor>(FilterClass: Newable<TFilter>, filterParams: any[],
-            paramLength: number = 3): Function {
-        const filter: ActionInterceptor = this._instantiateClass(FilterClass, true)
-        // This is the middleware function that Express will call
-        const filterFunc = function (/* request, response, next */) {
-            return filter.execute.apply(filter, [...arguments, ...filterParams] as any)
-        }
+    protected _extractFilterExecuteFunc<TFilter extends ActionInterceptor>(
+        FilterClassOrMiddleware: Newable<TFilter> | express.RequestHandler,
+        filterParams: any[],
+        paramLength: number = 3
+    ): Function {
+        if (isFilterClass(FilterClassOrMiddleware)) {
+            const filter: ActionInterceptor = this._instantiateClass(FilterClassOrMiddleware as Newable, true)
+            // This is the middleware function that Express will call
+            const filterFunc = function (/* request, response, next */) {
+                return filter.execute.apply(filter, [...arguments, ...filterParams] as any)
+            }
 
-        // Express depends on number of parameters (aka Function.length)
-        // to determine whether a middleware is request handler or error handler.
-        // See more: https://expressjs.com/en/guide/error-handling.html
-        Object.defineProperty(filterFunc, 'length', { value: paramLength })
-        return filterFunc
+            // Express depends on number of parameters (aka Function.length)
+            // to determine whether a middleware is request handler or error handler.
+            // See more: https://expressjs.com/en/guide/error-handling.html
+            Object.defineProperty(filterFunc, 'length', { value: paramLength })
+            return filterFunc
+        }
+        return FilterClassOrMiddleware
     }
 
     protected _instantiateClass<TTarget extends ActionInterceptor>(TargetClass: Newable<TTarget>, isSingleton: boolean,
@@ -626,6 +675,10 @@ export class ExpressServerAddOn implements IServiceAddOn {
         if (typeof CtrlClass !== 'function' || !Reflect.hasOwnMetadata(MetaData.CONTROLLER, CtrlClass)) {
             throw new CriticalException(`Controller "${ctrlName}" must be a class and decorated with @controller()`)
         }
+    }
+
+    protected _shouldIgnoreController(ctrlName: string): boolean {
+        return ctrlName.startsWith('_')
     }
 
     //#endregion Validation

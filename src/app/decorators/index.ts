@@ -6,7 +6,7 @@ import * as act from './action'
 import { controller } from './controller'
 import * as m from './model'
 import { extras } from './extras'
-import { filter } from './filter'
+import { filter, middleware } from './filter'
 import { header } from './header'
 import { request } from './request'
 import { response } from './response'
@@ -102,6 +102,12 @@ export type Decorators = {
     filter: typeof filter,
 
     /**
+     * Used to add Express middleware to controller class and controller action.
+     * Middlewares run before all Micro Fleet filters.
+     */
+    middleware: typeof middleware,
+
+    /**
      * For action parameter decoration.
      *
      * Will resolve the parameter's value with selected property from `request.extras`.
@@ -169,6 +175,7 @@ export const decorators: Decorators = {
     action: act.action,
     controller,
     filter,
+    middleware,
     extras,
     header,
     model: m.model,
