@@ -36,7 +36,7 @@
         "chai": "~4.2",
         "chai-spies": "~1.0",
         "cpx": "~1.5",
-        "mocha": "~6.2",
+        "mocha": "~10.2",
         "nyc": "~14.1",
         "request": "~2.88",
         "request-promise-native": "~1.0",
